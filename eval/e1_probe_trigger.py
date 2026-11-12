@@ -115,6 +115,7 @@ def main():
             rec = {
                 "id": p["id"], "target": target, "expect": expect,
                 "domain": p.get("domain"), "source": p.get("source"),
+                "probe_type": p.get("probe_type") or "route_hard",   # P1-4: 行为依赖探针标注透传
                 "triggered": hit, "in_planned": target in r["planned_path"],
                 "deepened": target in (r.get("deepen_events") or []),
                 "walked": walked, "planned": r["planned_path"],

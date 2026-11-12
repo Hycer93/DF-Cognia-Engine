@@ -104,6 +104,10 @@ def write_report(durations):
     # E1
     per = e1_summary()
     lines.append("\n## E1 触发率\n")
+    # P1-4（2026-11-12 用户裁决）：行为依赖探针标注
+    # Bc 全靠节点 LLM 自发 [[DEEPEN:Bc]] 标记进链（in_planned 恒 False），
+    # 属高脆弱软通路——该指标不能单独作为代码回归证据，大幅波动须换判定模型复测。
+    BEHAVIOR_DEPENDENT = {"Bc": "Bc-G02依赖LLM自发DEEPEN标记进链，属行为依赖探针：单轮数值不可作代码回归证据；大幅波动须≥2个判定模型交叉复测后归因"}
     if per:
         for t, d in sorted(per.items()):
             tr, trn = d["trigger"]
@@ -113,6 +117,8 @@ def write_report(durations):
             lines.append(f"- **{t}** 正例 {tr}/{trn} ({tr/max(1,trn):.0%}) | "
                          f"负例误触 {ng}/{ngn} ({ng/max(1,ngn):.0%}) | "
                          f"hint结构命中 {hints:.0%} | DEEPEN自发 {dp}/{dpn}")
+            if t in BEHAVIOR_DEPENDENT:
+                lines.append(f"  - ⚠ 行为依赖探针: {BEHAVIOR_DEPENDENT[t]}")
             for h in d["heldout"]:
                 lines.append(f"  - held-out {h['id']}: 路由{'✓' if h['hit'] else '✗'} "
                              f"hint={h['hint']}")
