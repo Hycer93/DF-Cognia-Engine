@@ -91,6 +91,61 @@ def _combined_sim(mine: dict, other: dict, vec_mine: dict, vec_other: dict) -> f
 CASCADE_DROP = 0.15          # [先验-可校准] 下钻后回落幅度判定"显著"
 
 
+# ---- 冲突判定前置过滤器（用户裁决2026-11-12 ②④：同entity折叠+占位分流）----
+# 过滤器顺序（规约）：先查entity归属 → 再做占位检测 → 再执行三层级联嵌入比对。
+# ① 同entity互撞折叠：两张卡已挂同一entity → 不进冲突判定流水线，仅留审计日志。
+#    例外：演化链关系（evolved_into/derive）的卡对不同entity，照常走冲突判定——
+#    防演化分支后继推翻前驱时漏抓（P10→P22口径）。
+# ② 占位检测前置：任一方detail判定为占位 → 级联停在summary层，不做detail嵌入比对；
+#    不是dismiss而是分流到摘要-only可疑对队列（summary_only_suspects.jsonl），
+#    防止无效detail拉高分数制造假分，同时保留真实分叉的告警通道。
+# ③ 实体锚增强（中期，未落码）：命中专利编号/股票标的等强标识符 → 路由到谱系/交易
+#    事件核查分支，实体特征是裁决线索非最终判据。
+# ④ 换嵌入基座（BGE）：后置大手术，触发指标主看检索召回/gate命中率/别名匹配质量，
+#    不为冲突误报驱动；换基座须整套重标（conflict/augment/equivalent阈值+CASCADE_DROP
+#    +全库向量+E8回归集），级联逻辑本身保留。
+SUMMARY_ONLY_SUSPECTS_JSONL = os.path.join(MEM_DIR, "summary_only_suspects.jsonl")
+ENTITY_COLLISION_SKIP_JSONL = os.path.join(MEM_DIR, "entity_collision_skip.jsonl")
+_PLACEHOLDER_HINTS_OK = ("极简规约豁免", "强谓词/指针", "高相似但有差异化")
+
+
+def _is_placeholder_card(m: dict) -> bool:
+    """卡片 detail 是否为占位（复用质检门禁 detect_placeholder 复合判定）。
+
+    两类占位形态（2026-11-12 冲突终审实证）：
+    a) 复读型（detect_placeholder 原口径）：detail≈summary 复读且无新增实体/谓词/指针；
+    b) 无信息短文本型（本处补充）：detail 极短（<15字，如"复盘详情"/"d1"）或为
+       领域路径标签（"详情层：A·B·C"模板，载体是分类路径非内容）。
+    b 类不走质检门禁（门禁判据依赖 detail≈summary 相似度，对短文本恒不触发），
+    在此处独立判定——口径：len<15 且不含数字实体/文件指针/谓词标点=占位。"""
+    try:
+        from memory_quality_gate import detect_placeholder
+        ph = detect_placeholder(m.get("summary", ""), m.get("detail", ""), m.get("source_ref"))
+        if ph.get("is_placeholder"):
+            return True
+    except Exception:
+        pass
+    d = (m.get("detail") or "").strip()
+    if not d:
+        return False
+    # 领域路径标签模板（载体是分类路径非内容）——定位式拦截，不限长度
+    if d.startswith("详情层：") or d.startswith("详情层:"):
+        return True
+    if len(d) >= 15:
+        return False
+    # 短文本豁免条件：含量词型规约数字（"20条"式）、文件指针、或谓词标点+长度≥10
+    import re as _re
+    if _re.search(r"\d+[条个次字天%倍张份]", d):
+        return False
+    if _re.search(r"[\w\-/\\]+\.(txt|md|jsonl|py)\b", d):
+        return False
+    if len(d) >= 10 and any(p in d for p in (":", "：", "=", "→", "，")):
+        return False
+    if d.startswith("详情层：") or d.startswith("详情层:"):
+        return True   # 领域路径标签模板（载体是分类路径非内容）
+    return True
+
+
 def _cascade_sem(mine: dict, other: dict, sem_summary: float) -> tuple:
     """级联语义分：返回 (最终语义分, 走到第几层, 每层分数)。
     层1=summary（必算）；层2=detail（摘要过 conflict 线才下钻）；
@@ -106,6 +161,10 @@ def _cascade_sem(mine: dict, other: dict, sem_summary: float) -> tuple:
     gate = C.DOMAIN_SIM_THRESHOLDS.get(
         mine["dfcp_tag"]["domain"].split("-")[0],
         C.DOMAIN_SIM_THRESHOLDS["000"])["conflict"]
+    # 前置过滤②（用户裁决2026-11-12）：占位卡不做detail嵌入比对，级联停在summary。
+    # 规约：任意一方detail为占位 → 该层相似度不计入、不触发下钻、不强行拉高整体分数。
+    if _is_placeholder_card(mine) or _is_placeholder_card(other):
+        return sem_summary, 1, {"summary": sem_summary, "note": "placeholder_blocked"}
     if sem >= gate and d_a and d_b:
         va, vb = embed_semantic.embed([d_a[:512]]), embed_semantic.embed([d_b[:512]])
         sem_d = float(np.dot(va[0], vb[0]))
@@ -165,7 +224,31 @@ def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
 
     scored = []
     for other in cands:
+        # 前置过滤①（用户裁决2026-11-12）：同entity互撞折叠——
+        # 双方已挂同一entity_id（图谱末值为准）→ 不参与冲突判定，留审计日志。
+        # 例外：演化链卡对（evolved_into/derive 关系）不折叠，照常比对。
+        # entity 折叠以主记录为事实源（2026-11-12 终审回填直写主记录；图谱 ent_latest
+        # 是历史判定值，会覆盖今晚人工归并——冲突折叠加一层：主记录相同直接折叠）
+        my_ent_latest = me.get("entity_id") or ent_latest.get(inst_id)
+        other_ent_latest = other.get("entity_id") or ent_latest.get(other["inst_id"])
+        if (my_ent_latest and other_ent_latest and my_ent_latest == other_ent_latest):
+            append_jsonl(ENTITY_COLLISION_SKIP_JSONL, {
+                "ts": datetime.now().isoformat(),
+                "inst_id": inst_id, "conflict_with": other["inst_id"],
+                "entity_id": my_ent_latest,
+                "rule": "entity_collision_skip",
+                "note": "同entity互撞折叠, 不进冲突判定(演化链例外见冲突时照常比对)",
+            })
+            continue
         sim = _combined_sim(me, other, vec_me, _embed(other["summary"]))
+        # 占位卡档位封顶+可疑分流标记（2026-11-12 终审次生发现+规约②）：
+        # 占位对白送分通道有二——combined 的 dfcp_proximity（同域同标签占位对会被
+        # 抬过 equivalent 线假合并）与级联层。规约②：占位对不做合并/增补采信，
+        # 档位封顶 conflict 之下；但**不 dismiss 只分流**——封顶前 sim 过 conflict 线
+        # 的占位对标记 `_ph_suspect`，入队段送摘要-only可疑队列保留告警通道。
+        if (_is_placeholder_card(me) or _is_placeholder_card(other)) and sim >= th["conflict"]:
+            other["_ph_suspect_with"] = me["inst_id"]      # 封顶前过线 → 分流标记
+            sim = th["conflict"] - 0.01
         # 三级级联（§4.6）：摘要层疑似（过 conflict 线）→下钻 detail/source 校正
         sem_sum = _cosine(vec_me, _embed(other["summary"]))
         if sim >= th["conflict"]:
@@ -218,18 +301,43 @@ def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
     # 回填 entity_id 到原子层主记录（关系回填不改 inst_id/full_hash/dfcp_tag——账本刚性不破）
     _backfill_entity(inst_id, entity_id)
 
+    # 摘要-only可疑分流（规约②：封顶钳线下后 rel 判 new，靠标记补送告警——
+    # 占位对不 dismiss，进 summary_only_suspects.jsonl，detail 回填后复审）
+    for s, o in scored:
+        if o.pop("_ph_suspect_with", None) is not None:
+            append_jsonl(SUMMARY_ONLY_SUSPECTS_JSONL, {
+                "ts": datetime.now().isoformat(),
+                "inst_id": inst_id, "conflict_with": o["inst_id"],
+                "sim_summary_combined": round(s + 0.01, 4),
+                "summary_a": me["summary"], "summary_b": o["summary"],
+                "status": "summary_only_suspect",
+                "note": "占位对封顶钳线→分流; 真实分叉待detail回填后复审, 不自动dismiss",
+            })
+
     # 冲突条目送评审流水线（接元思域：分叉=潜在矛盾对撞素材）
     # 入队去重（2026-11-12 债③根因修复）：同卡对已有 pending 条目则跳过——
     # 此前 classify_and_link 每跑一次重复入队一次（305 条实为 103 对，同对最多重复 14 次）
     if rel == C.REL_FORK_CONFLICT and best is not None:
         if not _conflict_pair_pending(inst_id, best["inst_id"]):
-            append_jsonl(CONFLICT_QUEUE_JSONL, {
-                "ts": datetime.now().isoformat(),
-                "inst_id": inst_id, "conflict_with": best["inst_id"],
-                "entity_id": entity_id, "sim": round(best_sim, 4),
-                "summary_a": me["summary"], "summary_b": best["summary"],
-                "status": "pending_review",
-            })
+            # 前置过滤②分流（用户裁决2026-11-12）：任一方detail占位 → 不进正常冲突队列，
+            # 分流到摘要-only可疑对（保留告警通道，不自动dismiss，不进元思域对撞）
+            if _is_placeholder_card(me) or _is_placeholder_card(best):
+                append_jsonl(SUMMARY_ONLY_SUSPECTS_JSONL, {
+                    "ts": datetime.now().isoformat(),
+                    "inst_id": inst_id, "conflict_with": best["inst_id"],
+                    "entity_id": entity_id, "sim": round(best_sim, 4),
+                    "summary_a": me["summary"], "summary_b": best["summary"],
+                    "status": "summary_only_suspect",
+                    "note": "detail占位→级联停在summary层; 真实分叉待detail回填后复审",
+                })
+            else:
+                append_jsonl(CONFLICT_QUEUE_JSONL, {
+                    "ts": datetime.now().isoformat(),
+                    "inst_id": inst_id, "conflict_with": best["inst_id"],
+                    "entity_id": entity_id, "sim": round(best_sim, 4),
+                    "summary_a": me["summary"], "summary_b": best["summary"],
+                    "status": "pending_review",
+                })
 
     return {"status": "ok", "relation": rel, "entity_id": entity_id,
             "best_match": best["inst_id"][:8] if best else None, "best_sim": round(best_sim, 4)}
