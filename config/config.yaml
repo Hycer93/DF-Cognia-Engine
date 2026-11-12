@@ -1,0 +1,24 @@
+llm:
+  active: deepseek
+  codechat:
+    model: ""
+  ollama:
+    base_url: "http://127.0.0.1:11434/v1"
+    model: "qwen3:32b"
+    api_key: "ollama"
+  deepseek:
+    base_url: "https://api.deepseek.com/v1"
+    model: "deepseek-chat"
+    api_key_env: "DEEPSEEK_API_KEY"
+
+graph:
+  data_file: "data/mind_graph.json"
+  hebbian:
+    epsilon: 0.05
+    min_weight: 0.05
+    max_weight: 2.0
+
+router:
+  mandatory: ["Aa", "Eo", "Jw"]
+  simple_max_chars: 40
+  task_keywords: ["设计", "分析", "对比", "方案", "风险", "审查", "复盘", "架构", "决策", "溯源"]

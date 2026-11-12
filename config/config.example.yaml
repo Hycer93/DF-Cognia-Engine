@@ -1,0 +1,51 @@
+# cognitive_engine_v3 配置样例
+# 复制为 config.yaml 后使用；所有路径均为相对工程根或环境变量
+
+llm:
+  # active: ollama | deepseek | codechat
+  active: deepseek
+
+  codechat:
+    # CodeChat 企业后端（aiplus.desaysv.com task-agent 协议）
+    # token 自动从桌面端登录态提取，或 set CODECHAT_TOKEN
+    # model 留空则默认 deepseek-v4.1-flash（轻量测试）
+    # 可选: glm-5.3 / glm-5.3-flash / deepseek-v4.1-flash / deepseek-v4-flash / qwen-3.8-flash / qwen-3.7-flash
+    model: ""
+
+  ollama:
+    base_url: "http://127.0.0.1:11434/v1"
+    model: "qwen3:32b"
+    api_key: "ollama"          # OpenAI 兼容层占位，不需要真实 key
+
+  deepseek:
+    base_url: "https://api.deepseek.com/v1"
+    model: "deepseek-flash"
+    api_key_env: "DEEPSEEK_API_KEY"   # 从环境变量读取，禁止硬编码
+
+graph:
+  # 图数据文件（27 骨架转译产物）
+  data_file: "data/mind_graph.json"
+  # 边权初始值来源：骨架优先级 P0=1.0 P1=0.9 ... P8=0.2
+  # 赫布更新参数
+  hebbian:
+    epsilon: 0.05          # 单次边权增减幅度
+    min_weight: 0.05
+    max_weight: 2.0
+
+memory:
+  chroma_path: "data/chromadb"     # 新库位置，不与旧库共用
+  collections:
+    flash: "flash_v3"
+    knowledge: "knowledge_v3"
+    chat: "chat_v3"
+
+router:
+  # 三条保底骨架（发散/验证/总结），任何路由结果都会被并入
+  mandatory: ["Aa", "Eo", "Jw"]
+  # 简单任务阈值：问题字符数低于此值且无任务型关键词 → 只走保底
+  simple_max_chars: 40
+  task_keywords: ["设计", "分析", "对比", "方案", "风险", "审查", "复盘", "架构", "决策", "溯源"]
+
+logging:
+  level: INFO
+  dir: "logs"

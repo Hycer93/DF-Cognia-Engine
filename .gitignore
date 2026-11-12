@@ -1,0 +1,21 @@
+# 版本管理边界（2026-11-12 P0-1 定案）
+# 纳管目标：配置与代码的可复现性。config.yaml 必须入库（证据链核心）。
+# 不纳管：数据/日志/密钥衍生物（体量大或每次全变，无版本价值）。
+
+# 数据与日志（含 mind_graph / 探针结果 / 晨报，体量大且高频重写）
+data/
+logs/
+calibration/
+
+# 运行产物与缓存
+__pycache__/
+*.pyc
+*.db
+*.db-journal
+
+# 记忆层运行时产物（本体另有 corpus_store 事务保护）
+memory/mem_index/
+
+# 本地杂项
+*.swp
+.DS_Store

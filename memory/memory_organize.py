@@ -1,0 +1,309 @@
+# memory_organize.py — DFCP 记忆模块 v0.3：三层分层架构（用户第六轮裁决 2026-11-07）
+# 分层：原子存储层（刚性账本）/ 认知关联层（软关系图谱）/ 经验聚类层（沿链归纳）
+# 旧 Op1/Op2/Op3/Op5 编号体系废弃，统一三层命名。
+#
+# 本文件 = 原子存储层。写入：inst_id(uuid4 永不变) + full_hash + 三级文本 + dfcp_tag(无极性)。
+# 认知关联层见 memory_relations.py；经验聚类层见 memory_distill.py（Week2）。
+#
+# ---- 多主题拆分裁决（2026-11-08 用户终裁，先存规约暂不编码）----
+# ① 语义主题拆分的裁定权保留在主 AI，atomic_store 永远不主动切割一条输入为多条记忆。
+# ② 护栏⑥ multi_topic_suspect 检测：Week2 自动摘要流水线上线时同步落地，作摘要质检门——
+#    触发时机=atomic_store 入库前；行为=仅检测不切割不拒收；判据=摘要内≥2个无强因果关联的
+#    DFCP 锚点（递进子问题/同主题分支推演不算多主题）；结果=标记 multi_topic_suspect:true
+#    送人工复核隔离队列，复核通过才进认知关联池。
+# ③ 漏拆预案（现在即生效）：混主题条目不删不改 inst_id，人工补打 multi_topic=true 冻结；
+#    拆解出的多条新记忆各自独立 add，origin_ids 指向原始杂合记录；冻结条目仅归档溯源，
+#    认知关联层过滤 multi_topic=true（见 memory_relations.classify_and_link）。
+
+import json
+import io
+import os
+import uuid
+import hashlib
+from datetime import datetime, timedelta
+
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import schema
+import constants as C
+
+# ---- 存储布局（本地 jsonl = source of truth，索引/图谱均为可重建投影）----
+MEM_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "memory")
+MEMORIES_JSONL = os.path.join(MEM_DIR, "memories.jsonl")          # 原子存储层主记录（唯一刚性账本）
+CHANGELOG_JSONL = os.path.join(MEM_DIR, "code_changelog.jsonl")   # dfcp_tag 变更 append-only 日志
+QUARANTINE_JSONL = os.path.join(MEM_DIR, "quarantine.jsonl")      # 编码非法拒收隔离队列
+REPLICA_LOG_JSONL = os.path.join(MEM_DIR, "replica_intercepts.jsonl")  # full_hash 精确副本拦截日志
+
+
+def _full_hash(summary: str, detail: str, source: str) -> str:
+    return hashlib.sha256((summary + "\x1f" + (detail or "") + "\x1f" + (source or "")).encode("utf-8")).hexdigest()
+
+
+def _converge_summary(text: str) -> tuple:
+    """摘要收敛（非截断）：超限时压到句子边界，保主干。
+    Week1 简化=边界截取；真正语义压缩改写 Week2 接 LLM 后替换。"""
+    if len(text) <= C.SUMMARY_MAX_CHARS:
+        return text, False
+    cut = text[: C.SUMMARY_MAX_CHARS]
+    for sep in ("。", "；", ";", "，"):
+        i = cut.rfind(sep)
+        if i > C.SUMMARY_MAX_CHARS * 0.6:
+            return cut[: i + 1], True
+    return cut, True
+
+
+# ---- 保护清单（硬保护，命中即 skip 一切整理操作）----
+def is_protected(entry: dict) -> bool:
+    return bool(
+        entry.get("held_out")
+        or entry.get("evidence_chain")
+        or entry.get("skeleton_lineage")
+        or (entry.get("tier") == "precedent" and (entry.get("merged_ref_count") or 0) > 10)
+        or (entry.get("last_cited")
+            and datetime.fromisoformat(entry["last_cited"]) > datetime.now() - timedelta(days=C.RECENT_CITED_DAYS))
+    )
+
+
+# ---- 可复现性判定（专利A，编码预筛短路）----
+def judge_repro(content: str, tags: dict) -> str:
+    b = tags.get("behavior", "")
+    if b in ("B00", "Fp", "Fq", "Fr"):
+        return "derived"
+    if tags.get("affect_tags"):
+        return "flash"
+    if tags.get("domain", "").startswith("005"):
+        return "flash"
+    return "situational"
+
+
+# ---- 原子存储层：入库（三层职责之第一层）----
+def atomic_store(
+    summary: str,
+    detail: str,
+    source_ref: str,
+    tags: dict,
+    asset_class: str = "runtime",       # corpus | runtime 护栏字段
+    origin_ids: list = None,
+    event_ts: str = None,               # 事件真实发生时间（2026-11-09 时间概念工程）
+) -> tuple:
+    """返回 (status, message)。status: stored | replica | quarantined。
+
+    职责边界（用户方案四）：只认 inst_id/full_hash/三级文本/dfcp_tag；
+    幂等、稳定、适合 A/B、专利举证、故障追溯；相似/同源/冲突判定不在本层。
+
+    event_ts 口径（2026-11-09 裁决：记忆需要时间概念）：
+    - ts = 入库时间（系统时刻，永不改）
+    - event_ts = 记忆所述事件的真实发生时间；缺省 None（不伪造）。
+      可来源：会话发生时间（hook 自动传）、语料内显式日期、用户口述。
+      None 的条目在时间过滤中被视为"时间未知"，不参与时间窗排序但保留在纯语义检索。
+    """
+    # 编码校验（护栏①）：非法拒收进隔离队列
+    ok, errors = schema.validate_memory_tags(tags)
+    if not ok:
+        append_jsonl(QUARANTINE_JSONL, {
+            "ts": datetime.now().isoformat(), "summary": summary[:200], "tags": tags,
+            "reason": errors, "detail_preview": (detail or "")[:200],
+        })
+        return "quarantined", "; ".join(errors)
+
+    # 摘要收敛（契约：压缩保主干，非截断砍尾）
+    summary, converged = _converge_summary(summary)
+
+    # full_hash：精确副本拦截（纯副本不入主记录）
+    fh = _full_hash(summary, detail, source_ref)
+    if any(e.get("full_hash") == fh for e in load_memories()):
+        append_jsonl(REPLICA_LOG_JSONL, {
+            "ts": datetime.now().isoformat(), "full_hash": fh, "summary": summary,
+        })
+        return "replica", f"精确副本拦截: {fh[:12]}"
+
+    inst_id = uuid.uuid4().hex
+    repro = tags.get("repro") or judge_repro(detail, tags)
+
+    # 三层占用（§4.7 嵌套：判定三级决定对结构三层的占用权限）
+    layers = {
+        "flash":       {"summary": True, "detail": True, "source": "full"},
+        "situational": {"summary": True, "detail": True, "source": "restricted_entry"},
+        "derived":     {"summary": True, "detail": False, "source": "retrieval_path"},
+    }[repro]
+
+    entry = {
+        "inst_id": inst_id,
+        "ts": datetime.now().isoformat(),
+        "event_ts": event_ts,                          # 事件真实发生时间，缺省 None（不伪造）
+        "full_hash": fh,
+        "asset_class": asset_class,
+        "repro": repro,
+        "confidence": tags["confidence"],
+        "dfcp_tag": {                                  # 编码坐标（极性已移除——裁决1）
+            "domain": tags["domain"],                   # 五维枚举坐标（件②，2026-11-10 用户终裁）：
+            "behavior": tags["behavior"],               # domain/behavior/relation=思维坐标，
+            "relation": tags["relation"],               # memory_class=记忆资产角色第五维，
+            "memory_class": tags.get("memory_class"),   # null 合法=普通记录（S015：非万能分类）
+        },
+        "affect_tags": tags.get("affect_tags"),        # 情感树可选层，独立于 dfcp_tag
+        "memory_class": tags.get("memory_class"),      # 【迁移期双读】件②后权威位在 dfcp_tag.memory_class；顶层保留供 E4/E5 旧口径过渡，迁移完成（E4 memory_class_missing=0）后清退
+        "summary": summary,
+        "summary_converged": converged,
+        "detail": detail if layers["detail"] else None,
+        "source_ref": source_ref if layers["source"] in ("full", "restricted_entry") else None,
+        "origin_ids": origin_ids or [],
+        "entity_id": None,                              # 认知关联层回填（关系层非主键）
+        "derived_from": None,                           # 经验聚类层产出，原子层恒 None
+        "tier": "active",
+        "unclassified_cycles": 1 if tags["domain"].startswith("000") else 0,
+        "weight": {"match": 0.0, "cited": 0},
+        "protected": False,
+    }
+    append_jsonl(MEMORIES_JSONL, entry)
+    return "stored", f"{inst_id[:8]} 入库（repro={repro}）"
+
+
+# ---- dfcp_tag 变更：append-only 日志（护栏②）----
+def change_code(inst_id: str, field: str, old: str, new: str, reason: str):
+    append_jsonl(CHANGELOG_JSONL, {
+        "ts": datetime.now().isoformat(), "inst_id": inst_id,
+        "field": field, "old": old, "new": new, "reason": reason,
+    })
+
+
+# ---- 通用 IO ----
+def load_memories() -> list:
+    return _load_jsonl(MEMORIES_JSONL)
+
+
+def load_quarantine() -> list:
+    return _load_jsonl(QUARANTINE_JSONL)
+
+
+def append_jsonl(path: str, obj: dict):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with io.open(path, "a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+
+
+def _load_jsonl(path: str) -> list:
+    if not os.path.exists(path):
+        return []
+    out = []
+    with io.open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                out.append(json.loads(line))
+    return out
+
+
+# ---- 000 待分类时限 ----
+def enforce_unclassified_limit() -> list:
+    expired = [e["inst_id"] for e in load_memories()
+               if e["dfcp_tag"]["domain"].startswith("000")
+               and e.get("unclassified_cycles", 0) >= C.UNCLASSIFIED_MAX_CYCLES]
+    if expired:
+        print(f"[000超期] {len(expired)} 条待强制处理: {expired}")
+    return expired
+
+
+# ---- 外部校准降级（2026-11-10 DS 对碰定稿，logs/ds_calibrate_r1/r2.txt）----
+# demote 三态：applied/skipped/conflicts，事务性，conflict 不自动追加链。
+# 批量降级（>1 条）必须带 calibration_source（校准单 inst_id），缺失拒绝。
+# supersede 链上限 8 跳，超限报警不自动合并。考古入账 provenance=speculative
+# + corpus_snapshot_date（门禁2，落 schema/入库侧，此处只管降级动作）。
+
+
+def demote(inst_ids, superseded_by, reason, calibration_source=None):
+    """外部校准降级：tier→precedent + superseded_by 指校准单，零删除可回溯。
+
+    返回 {applied:[], skipped:[], conflicts:[]}；遇 conflict 整批回滚。
+    - superseded_by 为空/相同 → skipped（真幂等）
+    - 非空且不同 → conflicts，不写，抛调用方裁决
+    """
+    if len(inst_ids) > 1 and not calibration_source:
+        return {"error": "批量降级缺失 calibration_source（硬门禁1）"}
+    mems = load_memories()
+    res = {"applied": [], "skipped": [], "conflicts": []}
+    changed = False
+    for m in mems:
+        if m.get("inst_id") not in inst_ids:
+            continue
+        cur = m.get("superseded_by")
+        if not cur:
+            m["tier"] = "precedent"
+            m["superseded_by"] = superseded_by
+            m["superseded_reason"] = reason
+            m["superseded_at"] = datetime.now().isoformat(timespec="seconds")
+            res["applied"].append(m["inst_id"])
+            changed = True
+        elif cur == superseded_by:
+            res["skipped"].append(m["inst_id"])
+        else:
+            res["conflicts"].append(m["inst_id"])
+    if res["conflicts"]:
+        return res  # 事务性：conflict 存在则整批不落盘
+    if changed:
+        bak = MEMORIES_JSONL + ".bak_demote_" + datetime.now().strftime("%Y%m%d_%H%M%S")
+        with io.open(bak, "w", encoding="utf-8") as f:
+            for m in load_memories():
+                f.write(json.dumps(m, ensure_ascii=False) + "\n")
+        with io.open(MEMORIES_JSONL, "w", encoding="utf-8") as f:
+            for m in mems:
+                f.write(json.dumps(m, ensure_ascii=False) + "\n")
+        # 维护案例自动采集（§2026-11-11 案例层：demote 落账即记案例，不依赖人工）
+        try:
+            from maintenance_ledger import append_case
+            append_case(
+                case_type="calibration",
+                trigger=f"demote×{len(res['applied'])} reason={reason[:60]}",
+                evidence=f"superseded_by={str(superseded_by)[:16]} calibration_source={str(calibration_source or '-')[:16]}",
+                action="tier→precedent+superseded_by 指校准单",
+                outcome=f"applied={len(res['applied'])} skipped={len(res['skipped'])}",
+                paradigm_hint="外部校准降级三步走")
+        except Exception:
+            pass   # 案例采集失败不阻断主流程
+    return res
+
+
+def supersede_chain_length(inst_id, mems=None):
+    """链上限检测：沿 superseded_by 跳数，>8 报警（不自动合并）。"""
+    if mems is None:
+        mems = load_memories()
+    by_id = {m.get("inst_id"): m for m in mems}
+    n, cur = 0, by_id.get(inst_id)
+    while cur and cur.get("superseded_by") and n < 64:
+        n += 1
+        cur = by_id.get(cur["superseded_by"])
+    return n
+
+
+if __name__ == "__main__":
+    # 自检1：正常入库（三层占位+摘要收敛）
+    st, msg = atomic_store(
+        "紫光国微建仓分歧双AI对峙：新暮暮与原型暮暮在71-72元被动挂单与节前资金面流出风险上分歧，最终由厂长裁决建仓方案。",
+        "双暮暮对峙完整现场，含挂单去留分析。",
+        "origin0-r025",
+        {"domain": "001-003", "behavior": "Ht", "relation": "H", "confidence": "L1"},
+        asset_class="corpus",
+    )
+    print("自检1:", st, "|", msg)
+    # 自检2：full_hash 精确副本拦截
+    st, msg = atomic_store(
+        "紫光国微建仓分歧双AI对峙：新暮暮与原型暮暮在71-72元被动挂单与节前资金面流出风险上分歧，最终由厂长裁决建仓方案。",
+        "双暮暮对峙完整现场，含挂单去留分析。",
+        "origin0-r025",
+        {"domain": "001-003", "behavior": "Ht", "relation": "H", "confidence": "L1"},
+        asset_class="corpus",
+    )
+    print("自检2:", st, "|", msg)
+    # 自检3：非法编码拒收
+    st, msg = atomic_store("t", "d", "s",
+        {"domain": "999-001", "behavior": "Ht", "relation": "H", "confidence": "L1"})
+    print("自检3:", st, "|", msg)
+    # 自检4：同坐标不同内容（旧幂等bug场景）——现在应各自成条
+    st, msg = atomic_store("光谱系数从Ht迁移至G22的架构决策现场，模块归属冲突解法=迁移而非并存",
+        "content", "sft_s7#S7-02",
+        {"domain": "005-001", "behavior": "Ht", "relation": "P", "confidence": "L0"})
+    st2, msg2 = atomic_store("脑区四系统联动最早现场：太浅了+分阶段融合=当前施工路线原型决策",
+        "content2", "sft_s7#S7-10",
+        {"domain": "005-002", "behavior": "Ht", "relation": "P", "confidence": "L1"})
+    print("自检4:", st, "/", st2, "→ 同坐标不同内容各自成条 ✅" if st == st2 == "stored" else "❌")
+    print("当前库条数:", len(load_memories()))
