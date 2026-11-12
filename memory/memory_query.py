@@ -54,7 +54,14 @@ def _governance_families() -> dict:
 
 def _card_family(mem: dict, families: dict) -> str:
     """摘要卡 → 治理族：source_ref 可解析树地址则按语料 kind 归族；
-    旧式地址/无地址 → runtime 族（无治理限制，正常参与）。"""
+    旧式资产地址 → 按血缘映射归族（P0-3 收口，2026-11-12）；
+    真正无地址 → runtime 族（无治理限制，正常参与）。
+
+    旧式地址映射依据（assets 文件 src 字段考证）：
+    - sft_s7_corpus3_assets#S7-01~10 → corpus3_matrix_snapshot（origin3/origin3a 快照血缘；
+      注意 corpus3_source_raw=ds_share3 是另一份语料，sim_ok=False，勿混）
+    - sft_s7_corpus3_assets#S7-11/12 → corpus2_guiyuanzai_patents（origin-rXXX 专利族血缘）
+    - origin0-rXXX → corpus1_distill_master（投资会话语料）"""
     ref = mem.get("source_ref") or ""
     if ref.startswith("sqlite:corpus_store") and "#" in ref:
         node = ref.split("#", 1)[1].split(".")[0].split(" ")[0]
@@ -62,6 +69,13 @@ def _card_family(mem: dict, families: dict) -> str:
             return "novel_szt_chapters"
         if node == "patent":
             return "patent_disclosures"
+    # P0-3: 旧式资产地址归族（消除 corpus 卡绕治理的特例）
+    if ref.startswith("sft_s7_corpus3_assets.jsonl#"):
+        sid = ref.split("#", 1)[1]
+        return ("corpus2_guiyuanzai_patents" if sid in ("S7-11", "S7-12")
+                else "corpus3_matrix_snapshot")
+    if ref.startswith("origin0-"):
+        return "corpus1_distill_master"
     return "runtime"
 
 # ---- 置信度 L0-L4 → 归一分（L0=1.0, L4=0）----
