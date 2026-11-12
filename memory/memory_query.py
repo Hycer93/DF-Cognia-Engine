@@ -673,6 +673,68 @@ def cross_view(domain_prefix: str = None, behavior: str = None):
     return dict(cross)
 
 
+# ---------------- 取件原语：source_ref → 正文（读回路最后一公里，2026-11-12 P0 收尾） ----------------
+# 缺口背景：摘要卡把正文地址存进 source_ref，但 ask() 只给摘要层——回表取正文
+# 此前靠调用方手写 SQL，治理拦截（superseded）在取件环节不生效。
+# fetch_full/fetch_by_ref 补上这一跳：地址解析 + superseded 拦截 + 内容一致性校验。
+
+def _parse_source_ref(ref: str) -> str | None:
+    """sqlite:corpus_store.db#<树地址>(注释…) → 树地址；非库地址返回 None。"""
+    if not ref or not ref.startswith("sqlite:corpus_store") or "#" not in ref:
+        return None
+    node = ref.split("#", 1)[1]
+    return node.split("(")[0].split(" ")[0].strip()
+
+
+def fetch_by_ref(source_ref: str) -> dict | None:
+    """按摘要卡的 source_ref 取 corpus_store 正文（当前版）。
+    superseded 条目显式拦（返回 {'blocked': …} 而非静默 None）——
+    治理从检索层延伸到取件层，绕过 ask 手持地址直取也逃不掉。
+    None=地址不存在（与被拦区分，便于审计定位）。"""
+    node = _parse_source_ref(source_ref)
+    if not node:
+        return None
+    from corpus_store import get_corpus
+    row = get_corpus(node)
+    if row is not None:
+        return row
+    # get_corpus 只查 status='current'；命不中再查一次不限状态，区分"地址错"与"已作废"
+    import sqlite3
+    from corpus_store import _conn
+    c = _conn()
+    old = c.execute("SELECT id, status, superseded_by FROM raw_corpus WHERE id=? AND status!='current'",
+                    (node,)).fetchone()
+    c.close()
+    if old:
+        return {"blocked": "superseded", "id": old[0], "superseded_by": old[2]}
+    return None
+
+
+def fetch_full(inst_id: str, include_fiction: bool = False) -> dict | None:
+    """按记忆卡 inst_id 取其 source_ref 指向的正文全量。
+    走完整治理链：小说族须显式 include_fiction（与 ask 同口径）。
+    返回 {card, corpus} 或 {card, blocked}；无库地址的卡返回 {card}。"""
+    mems = load_memories()
+    card = next((m for m in mems if m.get("inst_id", "").startswith(inst_id)), None)
+    if card is None:
+        return None
+    ref = card.get("source_ref") or ""
+    node = _parse_source_ref(ref)
+    if node is None:
+        return {"card": card}
+    fams = _governance_families()
+    fam = _card_family(card, fams)
+    g = fams.get(fam)
+    if g and g.get("fiction") and not include_fiction:
+        return {"card": card, "blocked": "fiction(虚构禁入,需include_fiction=True)"}
+    row = fetch_by_ref(ref)
+    if row is None:
+        return {"card": card}
+    if "blocked" in row:
+        return {"card": card, "blocked": f"{row['blocked']}: {row.get('superseded_by', '')}"}
+    return {"card": card, "corpus": row}
+
+
 # ---------------- 回归验收：盲测三轮原查询 ----------------
 if __name__ == "__main__":
     print("=== Step3 回归验收（盲测原查询 vs 本地检索） ===\n")
