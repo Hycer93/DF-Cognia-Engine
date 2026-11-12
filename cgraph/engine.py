@@ -100,6 +100,7 @@ class Engine:
             "deepen_events": result.deepen_events,
             "verify_note": result.verify_note,
             "hebbian": update,
+            "complexity": decision.complexity,
         }
 
 

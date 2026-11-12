@@ -53,9 +53,39 @@ def detect_hint_hit(answer: str, hints: list) -> float:
     return round(hit / len(hints), 3)
 
 
+def snapshot_config() -> str:
+    """P0-1 证据链：每次 E1 启动，把当时的 config.yaml 快照落进 logs。
+    返回快照文件名（判读与归档同源）。11-12 定案——config 无版本史导致
+    11-9 基线实际配置不可考，Bc 崩塌排查证据链断裂，此为修复。"""
+    src = os.path.join(HERE, "config", "config.yaml")
+    snap = "config_snapshot_" + time.strftime("%Y%m%d_%H%M%S") + ".yaml"
+    dst = os.path.join(HERE, "logs", snap)
+    with open(src, encoding="utf-8") as f_in, open(dst, "w", encoding="utf-8") as f_out:
+        f_out.write(f"# E1 config 快照 @ {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f_out.write(f_in.read())
+    return snap
+
+
+def probe_meta(engine) -> dict:
+    """P0-1 证据链：判定环境三元组——后端/模型/图文件。
+    jsonl 每条强制携带，禁止空串（空串让跨天对比失去归因锚点）。"""
+    llm = engine.llm
+    backend = getattr(llm, "_backend", None) or engine.cfg["llm"]["active"]
+    model = getattr(llm, "model", "") or ""
+    return {
+        "llm_backend": str(backend),
+        "llm_model": str(model),
+        "graph_file": os.path.basename(engine.graph_file),
+    }
+
+
 def main():
+    snap = snapshot_config()
+    meta = None      # Engine 起来后填充；jsonl 侧空守卫见下
     engine = Engine()
+    meta = probe_meta(engine)
     probes = load_probes()
+    print(f"[E1] config 快照: logs/{snap} | 判定后端: {meta['llm_backend']}/{meta['llm_model']}", flush=True)
 
     done = set()
     if os.path.exists(E1_OUT):
@@ -79,24 +109,35 @@ def main():
             walked = r["actual_path"]
             hit = target in walked
             hint_score = detect_hint_hit(r["answer"], p.get("detection_hint"))
+            # complexity 强制真实取值：engine.run 未回传时从 verify/route 环节
+            # 拿不到就标 unknown——禁止空串（空串=归因锚点丢失）
+            complexity = r.get("complexity") or "unknown"
             rec = {
                 "id": p["id"], "target": target, "expect": expect,
                 "domain": p.get("domain"), "source": p.get("source"),
                 "triggered": hit, "in_planned": target in r["planned_path"],
                 "deepened": target in (r.get("deepen_events") or []),
                 "walked": walked, "planned": r["planned_path"],
-                "complexity": r.get("complexity", ""),
+                "complexity": complexity,
                 "hint_score": hint_score,
                 "verify": r.get("verify_note", ""),
                 "ms": r.get("ms"),
                 "answer_head": (r["answer"] or "")[:300],
                 "ts": time.strftime("%H:%M:%S"),
+                # P0-1: 判定环境三元组，每条强制携带
+                "llm_backend": meta["llm_backend"],
+                "llm_model": meta["llm_model"],
+                "graph_file": meta["graph_file"],
+                "config_snapshot": snap,
             }
         except Exception as e:
             stats["errors"] += 1
             rec = {"id": p["id"], "target": target, "expect": expect,
                   "error": f"{type(e).__name__}: {e}",
-                  "ts": time.strftime("%H:%M:%S")}
+                  "ts": time.strftime("%H:%M:%S"),
+                  # 失败样本同样带判定环境（失败归因也需要锚点）
+                  "llm_backend": meta["llm_backend"], "llm_model": meta["llm_model"],
+                  "graph_file": meta["graph_file"], "config_snapshot": snap}
         with open(E1_OUT, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
