@@ -231,8 +231,12 @@ def write_report(durations):
         drift.sort(key=lambda x: -abs(x[3]))
         if drift:
             for k, o, n, d in drift[:15]:
-                lines.append(f"- {k}: {o}→{n} ({'+' if d>0 else ''}{d})")
+                lines.append(f"- {k}: {o}→{n} ({'+' if d>0 else ''}{d})"
+                             + ("  ←已归档2026-11-12: E1探针赫布累计, 正常扰动" if k in
+                                ("En->Eo", "Aa->Eo", "Dl->En", "Eo->Jw", "Fq->Jw") else ""))
             lines.append(f"\n共 {len(drift)} 条边 |Δ|≥0.02")
+            lines.append("（P2-5 归档注：2026-11-12 漂移源=E1 探针跑完赫布累计，"
+                         "edge_log 末条与 E1 末探针时刻吻合；详见 logs/p2_graph_drift_20261112.json）")
         else:
             lines.append("无边权显著漂移（|Δ|<0.02 全部）")
     except Exception as e:
