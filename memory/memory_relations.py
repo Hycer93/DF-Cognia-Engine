@@ -219,17 +219,41 @@ def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
     _backfill_entity(inst_id, entity_id)
 
     # 冲突条目送评审流水线（接元思域：分叉=潜在矛盾对撞素材）
+    # 入队去重（2026-11-12 债③根因修复）：同卡对已有 pending 条目则跳过——
+    # 此前 classify_and_link 每跑一次重复入队一次（305 条实为 103 对，同对最多重复 14 次）
     if rel == C.REL_FORK_CONFLICT and best is not None:
-        append_jsonl(CONFLICT_QUEUE_JSONL, {
-            "ts": datetime.now().isoformat(),
-            "inst_id": inst_id, "conflict_with": best["inst_id"],
-            "entity_id": entity_id, "sim": round(best_sim, 4),
-            "summary_a": me["summary"], "summary_b": best["summary"],
-            "status": "pending_review",
-        })
+        if not _conflict_pair_pending(inst_id, best["inst_id"]):
+            append_jsonl(CONFLICT_QUEUE_JSONL, {
+                "ts": datetime.now().isoformat(),
+                "inst_id": inst_id, "conflict_with": best["inst_id"],
+                "entity_id": entity_id, "sim": round(best_sim, 4),
+                "summary_a": me["summary"], "summary_b": best["summary"],
+                "status": "pending_review",
+            })
 
     return {"status": "ok", "relation": rel, "entity_id": entity_id,
             "best_match": best["inst_id"][:8] if best else None, "best_sim": round(best_sim, 4)}
+
+
+def _conflict_pair_pending(a: str, b: str) -> bool:
+    """同卡对（无序）是否已有 pending 冲突条目——入队去重用（2026-11-12 债③修复）。
+    dismissed 的对允许重新入队（复审后再次分叉是新事件）。"""
+    if not os.path.exists(CONFLICT_QUEUE_JSONL):
+        return False
+    pair = {a, b}
+    with io.open(CONFLICT_QUEUE_JSONL, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if (r.get("status") == "pending_review"
+                    and {r.get("inst_id"), r.get("conflict_with")} == pair):
+                return True
+    return False
 
 
 def _new_entity() -> str:
