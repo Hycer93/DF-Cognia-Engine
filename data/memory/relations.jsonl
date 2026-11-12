@@ -1,0 +1,2 @@
+{"inst_id": "7b847619", "rel_type": "parallel_axis", "target": "1cecbe94", "note": "同战略两展开维度: 蒸馏=纵向轴降低单次生成量, 多Agent分发=横向轴减少重复生成; 卡内自证互补, 用户终审2026-11-12定性为relation非conflict", "ts": "2026-11-12T22:48:02"}
+{"inst_id": "1cecbe94", "rel_type": "parallel_axis", "target": "7b847619", "note": "同上(对称)", "ts": "2026-11-12T22:48:02"}
