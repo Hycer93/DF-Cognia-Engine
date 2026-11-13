@@ -13,6 +13,7 @@
 import argparse
 import json
 import sys
+import io
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -96,6 +97,12 @@ def main():
 
     p_stat = sub.add_parser("stat")
 
+    p_session = sub.add_parser(
+        "session",
+        help="hook 入口（PreCompact/Stop）：从 stdin/文件读会话候选走 judge 管道")
+    p_session.add_argument("--file", default=None,
+                           help="候选 JSON 文件路径（list[dict]）；缺省读 stdin")
+
     args = ap.parse_args()
     if args.cmd == "add":
         r = add(args.domain, args.behavior, args.relation,
@@ -128,6 +135,24 @@ def main():
             ed = m.get("event_ts") or _overlay_date(m["inst_id"])
             t_label = f"[{str(ed)[:10]}]" if ed else "[时间未知]"
             print(f"{score:.4f} {t_label} [{m['dfcp_tag']['domain']}|{m['dfcp_tag']['behavior']}] {m['summary'][:60]}")
+    elif args.cmd == "session":
+        # hook 入口：读候选（stdin 或 --file），走 judge 四档管道。
+        # 候选格式 = judge_and_store 的 candidates（summary/detail/source/domain/
+        # behavior/relation/confidence/memory_class/event_ts）。
+        # 设计（memory_hook.py 头注）：hook 全自动归档先小窗口试运行——
+        # 候选由 hook 端摘要生成（PreCompact 时主 AI 落盘会话裁决清单后调用），
+        # 本命令只做管道执行不做摘要提取，边界清晰。
+        raw = io.open(args.file, encoding="utf-8").read() if args.file else sys.stdin.read()
+        try:
+            candidates = json.loads(raw) if raw.strip() else []
+            if isinstance(candidates, dict):
+                candidates = [candidates]
+        except Exception as e:
+            print(json.dumps({"error": f"候选JSON解析失败: {e}"}, ensure_ascii=False))
+            sys.exit(1)
+        from memory_judge import judge_and_store
+        r = judge_and_store(candidates, context={"trigger": "hook"})
+        print(json.dumps(r, ensure_ascii=False, indent=1))
     elif args.cmd == "stat":
         mems = load_memories()
         from collections import Counter
