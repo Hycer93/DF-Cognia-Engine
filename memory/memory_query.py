@@ -176,7 +176,8 @@ def _code_match_score(query_tag: dict, entry: dict) -> float:
     return raw
 
 
-def _keyword_score(query: str, entry: dict) -> float:
+def _keyword_score(query: str, entry: dict, _fw_block: bool = False,
+                   return_detail: bool = False):
     """摘要关键词匹配（叶子正式地位：专有锚点+上位词都长在摘要里）。
     双向召回：2-gram 重叠 + 1-gram 锚点词召回（短锚点如"预告/3090"2-gram会拆碎）。
     停用词过滤（2026-11-09 E2 尸检）：会话泛指词（我们/方案/那个…）不贡献匹配证据——
@@ -184,16 +185,23 @@ def _keyword_score(query: str, entry: dict) -> float:
     拿到 kw=0.363 误放行。匹配证据必须是专有实体词。
     残渣碎片防御（2026-11-11 bge 切换后 E2 二轮尸检）：停用词切走后残留跨词 bigram
     （'的那'/'了没'/'定了'）是汉语高频连接碎片，任何长摘要都撞——碎片不贡献证据：
-    只有 ≥2 个连续 gram 命中（≈真词或真短语）才计入 g2。"""
+    只有 ≥2 个连续 gram 命中（≈真词或真短语）才计入 g2。
+    框架词组分流（2026-11-13 阶段二）：GATE_FRAMEWORK_GRAMS 模板词单独隔离，
+    主池空时按 FRAMEWORK_KW_WEIGHT 极低兜底；sem 有效时由 ask 循环联合屏蔽。"""
     s = entry["summary"] or ""
     stop = getattr(C, "GATE_ANCHOR_STOPGRAMS", set())
+    fw_table = getattr(C, "GATE_FRAMEWORK_GRAMS", set())
     qgrams = grams(query) - stop
     sgrams = grams(s) - stop
     if not qgrams or not sgrams:
-        return 0.0
-    inter = qgrams & sgrams
-    if not inter:
-        return 0.0
+        return (0.0, False) if return_detail else 0.0
+    # ngram 打标分流（2026-11-13 阶段二，用户方案）：实体 gram 进主池，
+    # 框架 gram（标题模板词）单独隔离计 fw——两套系数不混算。
+    inter_all = qgrams & sgrams
+    inter = inter_all - fw_table          # 实体主池交集
+    fw_hits = inter_all & fw_table        # 框架词组命中
+    if not inter_all:
+        return (0.0, False) if return_detail else 0.0
     # 碎片过滤：命中 gram 拼回查询原文里必须是「连续片段」（真词/短语），
     # 孤立 1 个 gram 且不构成连续 2-gram 链的按碎片丢弃
     q_seq = query.replace(" ", "")
@@ -220,7 +228,22 @@ def _keyword_score(query: str, entry: dict) -> float:
     j1 = len(q_chars_eff & s_chars_eff) / max(1, len(q_chars_eff)) if q_chars_eff else 0.0
     # j1 同样被碎片抬高（'了'/'定'单字交集率虚高）——碎片场景 j1 减半
     j1 = j1 * (0.5 if solid == 0 else 1.0)
-    return g2 * 0.5 + j1 * 0.5
+    main = g2 * 0.5 + j1 * 0.5
+    # 框架屏蔽规则（用户方案核心开关）：实体/语义任意一路有有效信号 → 框架词
+    # 分数归零，不允许句式模板拉高分数挤占 top 候选；仅主池全空（g2=0 且 j1 近零）
+    # 时按 FRAMEWORK_KW_WEIGHT 极低兜底——保留全链路极弱资格而非一刀切删除。
+    fw = 0.0
+    fw_only = False
+    if fw_hits and g2 == 0.0 and j1 < 0.10:
+        fw = (len(fw_hits) / len(qgrams)) * C.FRAMEWORK_KW_WEIGHT
+        fw_only = True
+    # 用户规则（阶段二核心开关）：精确锚/别名/语义任意一路有效信号 → 框架词
+    # kw 归零。sem 在 ask 主循环才算，本函数看不到 → fw_only 标记外传
+    # （return_detail=True 返回 (分数, fw_only)），由 ask 循环拿 sem 联合判定。
+    score = main + (0.0 if _fw_block else fw)
+    if return_detail:
+        return score, fw_only
+    return score
 
 
 def _relation_activation(entry: dict, graph: list) -> float:
@@ -518,15 +541,26 @@ def ask(query: str, query_tag: dict = None, top_k: int = 5, include_corpus: bool
         except Exception:
             topic_boost = {}                    # 锚层故障不阻断检索（降级=纯旧路径）
     scored = []
+    # 全局信号判定（阶段二·用户规则）：本轮是否有任一路有效信号——
+    # 实体 kw 主池 / 编码先验 / 别名命中。sem 是逐卡值不在此判（逐卡联合判定见下）。
+    any_alias_signal = bool(alias_hits)
     for m in mems:
         code = _code_match_score(query_tag, m)
-        kw = _keyword_score(query, m)
+        kw, fw_only = _keyword_score(query, m, return_detail=True)
         # 别名命中加权：命中的别名词并入摘要匹配池（把别名当 summary 的一部分匹配）。
         # 双保险（2026-11-09 泛指事故）：别名池匹配时同样走停用词过滤——
         # 历史脏别名（含会话套话）在匹配侧再拦一道，防绕过反问门
         if m["inst_id"] in alias_hits:
-            kw = max(kw, _keyword_score(query, {"summary": " ".join(alias_hits[m["inst_id"]])}))
+            kw_alias = _keyword_score(query, {"summary": " ".join(alias_hits[m["inst_id"]])})
+            kw = max(kw, kw_alias)
+            fw_only = False            # 别名有效信号 → 框架屏蔽
         sem = _cosine(qvec, _embed(m["summary"] or ""))
+        # 框架词联合屏蔽（用户规则：精确锚/别名/语义任一路有效 → 框架 kw 归零）：
+        # fw_only=True 表示 kw 分全来自框架词；code/alias/该卡 sem 任一有效即屏蔽。
+        # sem 有效线 = 0.45（bge 基座下无关 query 约 0.40-0.44, 语义近似卡 ≥0.50）。
+        if fw_only and (code > 0 or any_alias_signal or sem >= 0.45):
+            fw_only = True             # 保留标记供下游判决层使用
+            kw = 0.0                   # 框架分剥除, 不参与本次加权
         # 编码匹配度：取大不取均——编码满分不该被弱关键词稀释（Q4回归教训：code=1.0被kw拖出top3）
         # 逻辑：编码先验命中=决赛圈资格（保底），关键词=加成；无编码先验时纯关键词
         code_eff = max(code, kw) if query_tag else kw
