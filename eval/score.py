@@ -18,8 +18,8 @@ from cgraph.llm import LLMClient  # noqa: E402
 JUDGE_PROMPT = """你是回答质量评审员。对同一个问题有两个匿名回答（回答一、回答二）。
 从以下维度评分（各 1-10）：多维性(是否考虑多角度)、意图贴合(是否回答了真正的问题)、
 结构完整性(是否有验证/总结)、实用价值。
-输出严格 JSON: {{"one": {"multidim":n,"intent":n,"structure":n,"value":n},
-"two": {...}, "winner": "one"|"two"|"tie", "reason": "..."}}
+输出严格 JSON: {{"one": {{"multidim":n,"intent":n,"structure":n,"value":n}},
+"two": {{"multidim":n,"intent":n,"structure":n,"value":n}}, "winner": "one"|"two"|"tie", "reason": "..."}}
 问题: {q}
 回答一: {a}
 回答二: {b}"""
@@ -41,6 +41,7 @@ def main():
         two = rec["bare"]["answer"] if a_graph else rec["graph"]["answer"]
         prompt = JUDGE_PROMPT.format(q=rec["question"], a=str(one)[:3000], b=str(two)[:3000])
         resp = llm.chat([{"role": "user", "content": prompt}])
+        j = {}
         try:
             j = json.loads(resp[resp.find("{"):resp.rfind("}") + 1])
             winner = "graph" if ((j["winner"] == "one") == a_graph and j["winner"] != "tie") else \
