@@ -300,6 +300,41 @@ def topic_enabled() -> bool:
 
 # ---------------- 查询/统计 ----------------
 
+def browse_topic(topic_id: str, with_cards: bool = False) -> dict:
+    """按主题翻抽屉：返回某锚下全部挂载卡（浏览/盘点/复审底稿用，非搜索）。
+
+    - topic_id: 锚ID（如 topic_brain_region）或锚摘要关键词（含糊时取第一匹配）
+    - with_cards: True 时联表带回每张卡的 summary/confidence/memory_class（默认只回ID与计数）
+    - hold池卡片不在links表内，browse 不含 hold；hold 复审走 E7 管线
+    """
+    from memory_organize import load_memories
+    c = _conn()
+    try:
+        row = c.execute("SELECT topic_id, topic_abstract, status FROM topic_abstraction "
+                        "WHERE topic_id=? OR topic_id LIKE ? OR topic_abstract LIKE ? "
+                        "ORDER BY topic_id",
+                        (topic_id, f"%{topic_id}%", f"%{topic_id}%")).fetchone()
+        if row is None:
+            return {"topic_id": None, "cards": [], "note": "锚不存在或已归档后无匹配"}
+        tid = row["topic_id"]
+        links = c.execute("SELECT inst_id, method, ts FROM topic_links "
+                          "WHERE topic_id=? ORDER BY ts DESC", (tid,)).fetchall()
+    finally:
+        c.close()
+    out = {"topic_id": tid, "abstract": row["topic_abstract"], "status": row["status"],
+           "count": len(links), "inst_ids": [l["inst_id"] for l in links],
+           "methods": {l["method"]: sum(1 for x in links if x["method"] == l["method"])
+                       for l in links}}
+    if with_cards:
+        mems = {m["inst_id"]: m for m in load_memories()}
+        out["cards"] = [{"inst_id": l["inst_id"], "method": l["method"],
+                         "confidence": (mems.get(l["inst_id"]) or {}).get("confidence"),
+                         "memory_class": (mems.get(l["inst_id"]) or {}).get("memory_class"),
+                         "summary": (mems.get(l["inst_id"]) or {}).get("summary", "")[:80]}
+                        for l in links]
+    return out
+
+
 def stats() -> dict:
     c = _conn()
     try:
