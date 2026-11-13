@@ -92,6 +92,11 @@ class Engine:
                 self.memory.save_flash(
                     f"Q: {user_input[:200]}\nA(要点): {result.final_answer[:600]}",
                     category="轮末总结")
+            # 契约③：Jw 支线复盘产出单独归档——只进记忆，不进面向用户的回答
+            if result.jw_sidebranch:
+                self.memory.save_flash(
+                    f"复盘（Jw支线·内部工序）: {result.jw_sidebranch[:600]}",
+                    category="经验进化")
 
         return {
             "answer": result.final_answer,
@@ -101,6 +106,7 @@ class Engine:
             "verify_note": result.verify_note,
             "hebbian": update,
             "complexity": decision.complexity,
+            "jw_sidebranch": result.jw_sidebranch,
         }
 
 
