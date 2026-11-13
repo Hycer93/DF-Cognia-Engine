@@ -19,6 +19,7 @@ from memory_organize import load_memories, MEM_DIR, append_jsonl
 from memory_relations import _embed, _cosine, load_graph, grams
 import embed_semantic as _es
 import memory_alias as ma
+import topic_layer            # Topic锚层路由(规约2; 开关默认关, 零行为变化)
 from corpus_registry import load_registry
 
 # ---- 统一索引层·治理过滤（2026-11-12 用户裁决：DFCP 管召回打分，治理管后置过滤）----
@@ -488,6 +489,34 @@ def ask(query: str, query_tag: dict = None, top_k: int = 5, include_corpus: bool
     # 二级备用标签（2026-11-09 用户裁决：别名来自真实查询-命中反馈，不预填）：
     # 查询词直接击中别名的条目，别名词拼进 kw 匹配池（只提召回，不动门控公式）
     alias_hits = ma.alias_lookup(query)
+    # Topic 锚层路由（规约2, 2026-11-13 design_topic_layer.md）：
+    # 多路并行取并集——锚命中的 topic 内原子做 match 加成（仍走全库打分，
+    # 非主题内独占查询——禁串行漏斗：锚失配时全库路径原样召回）。
+    # 加成只在 match 侧（topic 是召回证据不是上下文先验——规约5：不掺 bias）。
+    # 开关关闭/无锚时 topic_boost 为空 dict，零行为变化。
+    topic_boost = {}
+    if topic_layer.topic_enabled():
+        try:
+            c_t = topic_layer._conn()
+            hits = []
+            for row in c_t.execute(
+                    "SELECT topic_id, cue_anchors FROM topic_abstraction WHERE status='active'"):
+                cues = json.loads(row["cue_anchors"])
+                if any(cue and cue in query for cue in cues):
+                    hits.append(row["topic_id"])
+            c_t.close()
+            if hits:
+                c_t = topic_layer._conn()
+                for tid in hits[:2]:            # top-2 主题（与 topic_route_retrieve 同口径）
+                    for row in c_t.execute(
+                            "SELECT inst_id FROM topic_links WHERE topic_id=?", (tid,)):
+                        topic_boost[row["inst_id"]] = tid
+                    c_t.execute("UPDATE topic_abstraction SET access_count=access_count+1 "
+                                "WHERE topic_id=?", (tid,))
+                c_t.commit()
+                c_t.close()
+        except Exception:
+            topic_boost = {}                    # 锚层故障不阻断检索（降级=纯旧路径）
     scored = []
     for m in mems:
         code = _code_match_score(query_tag, m)
@@ -508,9 +537,12 @@ def ask(query: str, query_tag: dict = None, top_k: int = 5, include_corpus: bool
         # 时间窗打分（2026-11-09）：窗外归零，窗内 1.0，时间未知降权参与
         t_hit, t_score, t_label = _time_filter_score(m, win, overlay)
 
-        # 脚手架期权重：char2gram 下 kw/sem 同源，语义保底从0.15提至与编码同档（换真嵌入基座后重标）
-        # 分项拆分（2026-11-08 裁决）：match_eff=匹配证据 / bias_eff=上下文先验；排序用总分，门控只认 match_eff
-        match_eff = code_eff * C.W_CODE_MATCH + sem * 0.30 + kw * 0.30
+        # 语义保底 0.15：无 query_tag 时纯关键词+语义仍可召回（模拟 sim3 模糊查询）
+        # topic 路由加成（规约2/5）：锚命中主题内原子 match_eff +0.10——
+        # 召回证据级加成（同 kw 命中性质），不碰 bias（topic 不是上下文先验），
+        # 不碰门控阈值（GATE_HARD_PASS 不动——锚只提座次不降门槛）
+        _tb = C.TOPIC_ROUTE_BOOST if m["inst_id"] in topic_boost else 0.0
+        match_eff = code_eff * C.W_CODE_MATCH + sem * 0.30 + kw * 0.30 + _tb
         bias_eff = conf * C.W_CONFIDENCE + cited * C.W_CITED_STATS + rel_act * C.W_RELATION_ACTIVATE
         total = (match_eff + bias_eff) * t_score
         # 语义保底 0.15：无 query_tag 时纯关键词+语义仍可召回（模拟 sim3 模糊查询）

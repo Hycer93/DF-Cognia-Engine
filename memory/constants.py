@@ -79,3 +79,10 @@ GATE_ANCHOR_STOPGRAMS = {      # [实测标定] 泛指词 2-gram 停用表：这
 #   total     = match_eff + bias_eff                  —— 排序仍用总分：先匹配、再按近期/置信加权
 # 行为边界：✅排序用 total；✅反问门只认 match_eff——bias 拉满也不能凭空造出匹配
 # 卡阈值附近样本打 marginal:true 入观测集，用于后续校准
+
+# ---- Topic 锚层路由（2026-11-13 design_topic_layer.md 规约2/5）----
+# 锚命中主题内原子的 match_eff 加成值：召回证据级（同 kw 命中性质），
+# 只提座次不降门槛（GATE_HARD_PASS 不动）、不进 bias（topic 非上下文先验）。
+# 0.10 ≈ 一档实体锚点 kw 命中的量级——够把主题内卡抬进合格池前排，不够
+# 单独把零匹配卡抬过 0.22 门（防锚滥用变后门）。
+TOPIC_ROUTE_BOOST = 0.10
