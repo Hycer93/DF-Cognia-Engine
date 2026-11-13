@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from memory_organize import atomic_store, load_memories
 import memory_relations
 import memory_distill
+import topic_layer             # Topic锚层挂载(规约3; 开关默认关)
 
 
 def add(domain, behavior, relation, confidence, summary, detail, source,
@@ -53,6 +54,11 @@ def add(domain, behavior, relation, confidence, summary, detail, source,
         report["link"] = r
         if r.get("relation") == "conflict":
             report["note"] = "检测到同源分叉冲突，已送评审队列（元思域对撞素材）"
+    # Topic锚层挂载（规约3, 2026-11-13 design_topic_layer.md）:
+    # 归一四档(anchor/hold)；白名单关闭时跳过=零行为变化。hold 池只记录不阻塞入库。
+    if inst_id and topic_layer.topic_enabled():
+        report["topic"] = topic_layer.mount_topic(
+            inst_id, summary, detail, method="judge")
     if auto_distill:
         d = memory_distill.distill_all()
         report["distill"] = {k: d[k] for k in ("created", "updated")}

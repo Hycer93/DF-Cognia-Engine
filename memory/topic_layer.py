@@ -1,0 +1,330 @@
+# memory/topic_layer.py — Topic 抽象锚层（L4 顶层索引，2026-11-13 定案）
+#
+# 设计文档: docs/design_topic_layer.md（v1.0 用户终审版，六规约红线）
+# 定位: 粗粒度降噪索引。只控制两件事：检索候选池范围 + 冲突比对是否进入。
+#       不参与置信/相似分/演化链等底层事实判定（规约5）。
+#
+# 架构（四层堆叠）:
+#   L4 TopicAbstraction（本模块，新增） → L3 Entity 谱系（已有，不动）
+#   → L2 认知原子（已有，不动） → L1 三粒度内容（已有，不动）
+#
+# 六规约对照（开发时逐条核对）:
+#   规约1 topic/entity 两套粒度互不替代——本模块不读不改 entity_id/演化链
+#   规约2 检索并行多路召回取并集——见 topic_route_retrieve()
+#   规约3 归一走 judge 风格四档 + hold 待归池——见 classify_topic()
+#   规约4 冲突拦截单向——见 conflict_gate()
+#   规约5 不碰底层事实——本模块无任何写 memory/confidence/relations 的路径
+#   规约6 锚生命周期——见 refresh_topics()/archive_idle_topics()（E7 挂载）
+#
+# 存储: SQLite（复用 corpus_store.db，新增 topic_abstraction 表 + topic_links 表）
+#       锚向量: topic_vector 存 JSON 数组（与 chroma 解耦——向量索引是可重建衍生物，
+#       本体不可只存在衍生物里，与 2026-11-12 用户四表裁决同一原则）
+
+import json
+import os
+import re
+import sqlite3
+from datetime import datetime
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(os.path.dirname(HERE), "data", "memory", "corpus_store.db")
+MEM_DIR = os.path.join(os.path.dirname(HERE), "data", "memory")
+HOLD_POOL_JSONL = os.path.join(MEM_DIR, "topic_hold_pool.jsonl")      # 规约3: 待归池
+TOPIC_LOG_JSONL = os.path.join(MEM_DIR, "topic_layer_log.jsonl")      # 全操作审计（append-only）
+
+TOPIC_SCHEMA = """
+CREATE TABLE IF NOT EXISTS topic_abstraction (
+    topic_id      TEXT PRIMARY KEY,          -- topic_<slug>，建锚后永不换号（refresh 只改内容）
+    topic_abstract TEXT NOT NULL,            -- 一句话主题抽象（refresh 时重提炼，规约6）
+    topic_vector  TEXT,                      -- JSON 数组（锚表征，可重算——衍生物）
+    cue_anchors   TEXT NOT NULL,             -- JSON list：多视角检索别名（复用别名体系思想）
+    status        TEXT NOT NULL DEFAULT 'active',  -- active / archived（规约6: 低访问归档不删除）
+    create_ts     TEXT NOT NULL,
+    update_ts     TEXT NOT NULL,
+    mount_count   INTEGER NOT NULL DEFAULT 0,  -- 挂载计数（归档判据之一）
+    access_count  INTEGER NOT NULL DEFAULT 0   -- 检索命中计数（归档判据之一）
+);
+
+CREATE TABLE IF NOT EXISTS topic_links (
+    inst_id    TEXT NOT NULL,                -- 认知原子 inst_id
+    topic_id   TEXT NOT NULL,
+    method     TEXT NOT NULL,                -- seed(建锚挂载) / judge(语义归一) / e7(夜间复审转正)
+    ts         TEXT NOT NULL,
+    PRIMARY KEY (inst_id, topic_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_links ON topic_links(topic_id);
+"""
+
+
+def _conn():
+    c = sqlite3.connect(DB_PATH)
+    c.row_factory = sqlite3.Row
+    return c
+
+
+def init_topic_db():
+    """幂等建表（corpus_store.init_db 后调用，或独立调用）"""
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    c = _conn()
+    c.executescript(TOPIC_SCHEMA)
+    c.commit()
+    c.close()
+
+
+def _log(op: str, payload: dict):
+    with open(TOPIC_LOG_JSONL, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": datetime.now().isoformat(timespec="seconds"),
+                            "op": op, **payload}, ensure_ascii=False) + "\n")
+
+
+# ---------------- 规约3: topic 归一（judge 风格四档，禁止当场二选一） ----------------
+
+def classify_topic(summary: str, detail: str = "") -> dict:
+    """新原子挂靠判定。返回 verdict dict：
+      {"verdict": "anchor", "topic_id": str}                       → 挂已有锚
+      {"verdict": "hold", "topic_id": None, "evidence_gap": str}   → 进待归池（默认保守态）
+      {"verdict": "new",   "topic_id": None, "abstract": str}      → 建新锚（仅高置信）
+    判据分三层（全部本地可判，LLM 语义化走 e7 夜间；在线路径零 LLM 依赖）：
+      1. cue_anchors 精确命中（同锚关键词）→ anchor（高置信）
+      2. 多锚命中（歧义）→ hold（宁可待归，不做二选一）
+      3. 零命中 → hold（不建新锚——建锚只发生在 E7 批量复审/人工显式 seed）
+    """
+    text = f"{summary or ''} {detail or ''}"
+    hits = []
+    c = _conn()
+    try:
+        for row in c.execute(
+                "SELECT topic_id, cue_anchors FROM topic_abstraction WHERE status='active'"):
+            cues = json.loads(row["cue_anchors"])
+            n = sum(1 for cue in cues if cue and cue in text)
+            if n > 0:
+                hits.append((row["topic_id"], n))
+    finally:
+        c.close()
+    if len(hits) == 1:
+        return {"verdict": "anchor", "topic_id": hits[0][0]}
+    if len(hits) > 1:
+        # 歧义：多锚同时命中 → 保守 hold（规约3 红线：禁当场二选一）
+        return {"verdict": "hold", "topic_id": None,
+                "evidence_gap": f"多锚歧义命中: {[h[0] for h in hits]}，交 E7 复审"}
+    return {"verdict": "hold", "topic_id": None,
+            "evidence_gap": "零锚命中；建新锚仅限 E7 批量复审或显式 seed"}
+
+
+def mount_topic(inst_id: str, summary: str, detail: str = "", *, method: str = "judge") -> dict:
+    """挂载入口（memory_hook.add 管道新增步骤）。幂等。
+    verdict=hold → 写 hold 池（topic_id=null 等夜间）；anchor → 写 topic_links。"""
+    v = classify_topic(summary, detail)
+    now = datetime.now().isoformat(timespec="seconds")
+    if v["verdict"] == "anchor":
+        c = _conn()
+        try:
+            c.execute("INSERT OR IGNORE INTO topic_links VALUES (?,?,?,?)",
+                      (inst_id, v["topic_id"], method, now))
+            c.execute("UPDATE topic_abstraction SET mount_count=mount_count+1, update_ts=? "
+                      "WHERE topic_id=?", (now, v["topic_id"]))
+            c.commit()
+        finally:
+            c.close()
+        _log("mount", {"inst_id": inst_id, "topic_id": v["topic_id"], "method": method})
+    else:
+        with open(HOLD_POOL_JSONL, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": now, "inst_id": inst_id,
+                                "summary": (summary or "")[:200],
+                                "evidence_gap": v.get("evidence_gap", "")},
+                               ensure_ascii=False) + "\n")
+        _log("hold", {"inst_id": inst_id, "why": v.get("evidence_gap", "")})
+    return v
+
+
+# ---------------- 规约2: 检索多路并行召回（禁串行漏斗） ----------------
+
+def topic_route_retrieve(query: str, subset_fetch, fallback_fetch,
+                         top_topics: int = 2, per_topic: int = 4, fallback_k: int = 2):
+    """多路并行召回取并集。两个 fetch 由调用方注入（检索后端解耦）：
+      subset_fetch(topic_id, query, k)  → 主题内子集召回（如何取子集是调用方实现）
+      fallback_fetch(query, k)          → 全库兜底召回（现有直查路径）
+    返回并集列表（含来源标记），不做串行过滤——锚匹配错误时兜底仍可召回正确原子。
+    topic 层全库无锚/全归档 → 自动退化为纯 fallback（白名单关闭态等价行为）。"""
+    c = _conn()
+    anchors = []
+    try:
+        for row in c.execute(
+                "SELECT topic_id, cue_anchors FROM topic_abstraction WHERE status='active'"):
+            cues = json.loads(row["cue_anchors"])
+            n = sum(1 for cue in cues if cue and cue in query)
+            if n > 0:
+                anchors.append((row["topic_id"], n))
+    finally:
+        c.close()
+    anchors.sort(key=lambda x: -x[1])
+    results, seen = [], set()
+    # 路1: top-N topic 子集召回（并行语义：互不依赖，各自独立取）
+    for tid, _score in anchors[:top_topics]:
+        for item in (subset_fetch(tid, query, per_topic) or []):
+            key = item.get("inst_id") or str(item)
+            if key not in seen:
+                seen.add(key)
+                results.append({**item, "_route": f"topic:{tid}"})
+        if anchors:
+            c2 = _conn()
+            try:
+                c2.execute("UPDATE topic_abstraction SET access_count=access_count+1 "
+                           "WHERE topic_id=?", (tid,))
+                c2.commit()
+            finally:
+                c2.close()
+    # 路2: 全库兜底召回（永不断流——规约2 红线）
+    for item in (fallback_fetch(query, fallback_k) or []):
+        key = item.get("inst_id") or str(item)
+        if key not in seen:
+            seen.add(key)
+            results.append({**item, "_route": "fallback"})
+    return results
+
+
+# ---------------- 规约4: 冲突比对单向闸门 ----------------
+
+def conflict_gate(inst_a: dict, inst_b: dict) -> dict:
+    """classify_and_link 入口的前置过滤器（在 entity/占位过滤器之前）。
+    单向拦截：
+      topic 不同（双端已定且不相等） → skip（落审计日志，不静默）
+      topic 相同（无论 entity）     → 放行，走完整级联（含演化链例外）
+      任一端 topic=null             → 放行（null 不拦截——hold 池记忆照常全流程）
+    返回 {"gate": "pass"|"skip", "topic_a": str|None, "topic_b": str|None}"""
+    c = _conn()
+    try:
+        def topic_of(inst):
+            if not inst:
+                return None
+            iid = inst.get("inst_id")
+            row = c.execute("SELECT topic_id FROM topic_links WHERE inst_id=?", (iid,)).fetchone()
+            return row["topic_id"] if row else None
+        ta, tb = topic_of(inst_a), topic_of(inst_b)
+    finally:
+        c.close()
+    if ta and tb and ta != tb:
+        _log("conflict_skip", {"a": inst_a.get("inst_id"), "b": inst_b.get("inst_id"),
+                               "topic_a": ta, "topic_b": tb})
+        return {"gate": "skip", "topic_a": ta, "topic_b": tb}
+    return {"gate": "pass", "topic_a": ta, "topic_b": tb}
+
+
+# ---------------- 建锚与存量回填（保守：只建高置信簇） ----------------
+
+def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None) -> str:
+    """显式建锚（人工/建锚脚本）。幂等：已存在则只更新 abstract/cues。"""
+    now = datetime.now().isoformat(timespec="seconds")
+    c = _conn()
+    try:
+        c.execute(
+            "INSERT INTO topic_abstraction "
+            "(topic_id, topic_abstract, topic_vector, cue_anchors, status, create_ts, update_ts) "
+            "VALUES (?,?,?,?, 'active', ?, ?) "
+            "ON CONFLICT(topic_id) DO UPDATE SET topic_abstract=?, cue_anchors=?, update_ts=?",
+            (topic_id, abstract, json.dumps(vector or []), json.dumps(cue_anchors), now, now,
+             abstract, json.dumps(cue_anchors), now))
+        c.commit()
+    finally:
+        c.close()
+    _log("seed", {"topic_id": topic_id, "abstract": abstract})
+    return topic_id
+
+
+def mount_batch(inst_ids: list, topic_id: str, method: str = "seed"):
+    """批量挂载（建锚脚本用）。只挂不合并不删卡不改 class（设计文档§四）。"""
+    now = datetime.now().isoformat(timespec="seconds")
+    c = _conn()
+    try:
+        for iid in inst_ids:
+            c.execute("INSERT OR IGNORE INTO topic_links VALUES (?,?,?,?)",
+                      (iid, topic_id, method, now))
+        c.execute("UPDATE topic_abstraction SET mount_count=mount_count+?, update_ts=? "
+                  "WHERE topic_id=?", (len(inst_ids), now, topic_id))
+        c.commit()
+    finally:
+        c.close()
+    _log("mount_batch", {"topic_id": topic_id, "n": len(inst_ids), "method": method})
+
+
+# ---------------- 规约6: 锚生命周期（E7 挂载） ----------------
+
+def refresh_topics(abstract_fn=None):
+    """高活跃锚重提炼 abstract（不换 topic_id）。abstract_fn(topic_id, old_abstract, mounted_summaries)
+    返回新抽象；None 则跳过。向量重算留给向量化基建（存 JSON 衍生物可重建）。"""
+    c = _conn()
+    rows = [dict(r) for r in c.execute(
+        "SELECT * FROM topic_abstraction WHERE status='active' AND mount_count > 0")]
+    c.close()
+    refreshed = []
+    for row in rows:
+        if not abstract_fn:
+            continue
+        new_abs = abstract_fn(row["topic_id"], row["topic_abstract"], None)
+        if new_abs and new_abs != row["topic_abstract"]:
+            c2 = _conn()
+            c2.execute("UPDATE topic_abstraction SET topic_abstract=?, update_ts=? WHERE topic_id=?",
+                       (new_abs, datetime.now().isoformat(timespec="seconds"), row["topic_id"]))
+            c2.commit()
+            c2.close()
+            refreshed.append(row["topic_id"])
+            _log("refresh", {"topic_id": row["topic_id"]})
+    return refreshed
+
+
+def archive_idle_topics(min_mounts: int = 3, idle_days: int = 30):
+    """低活跃锚归档（不删除，检索降权到不参与路由）。判据：挂载少 且 长期未更新。"""
+    from datetime import timedelta
+    cutoff = (datetime.now() - timedelta(days=idle_days)).isoformat(timespec="seconds")
+    c = _conn()
+    try:
+        c.execute("UPDATE topic_abstraction SET status='archived' "
+                  "WHERE status='active' AND mount_count < ? AND update_ts < ?",
+                  (min_mounts, cutoff))
+        n = c.total_changes
+        c.commit()
+    finally:
+        c.close()
+    if n:
+        _log("archive", {"min_mounts": min_mounts, "idle_days": idle_days})
+    return n
+
+
+# ---------------- 白名单开关（上线策略§五） ----------------
+
+def topic_enabled() -> bool:
+    """白名单总开关。默认关闭=全库走旧路径（fallback-only），零行为变化。"""
+    return os.environ.get("TOPIC_LAYER_ON") == "1"
+
+
+# ---------------- 查询/统计 ----------------
+
+def stats() -> dict:
+    c = _conn()
+    try:
+        anchors = c.execute("SELECT COUNT(*) n FROM topic_abstraction WHERE status='active'").fetchone()["n"]
+        archived = c.execute("SELECT COUNT(*) n FROM topic_abstraction WHERE status='archived'").fetchone()["n"]
+        links = c.execute("SELECT COUNT(*) n FROM topic_links").fetchone()["n"]
+        distinct = c.execute("SELECT COUNT(DISTINCT inst_id) n FROM topic_links").fetchone()["n"]
+    finally:
+        c.close()
+    hold = 0
+    if os.path.exists(HOLD_POOL_JSONL):
+        with open(HOLD_POOL_JSONL, encoding="utf-8") as f:
+            hold = sum(1 for _ in f)
+    return {"active_anchors": anchors, "archived": archived,
+            "links": links, "mounted_atoms": distinct, "hold_pool": hold}
+
+
+if __name__ == "__main__":
+    import argparse
+    p = argparse.ArgumentParser(description="Topic 锚层 CLI（只读统计/建锚脚本入口）")
+    p.add_argument("cmd", choices=["stats", "init"])
+    a = p.parse_args()
+    if a.cmd == "init":
+        init_topic_db()
+        print("topic 表已建（幂等）")
+    else:
+        init_topic_db()
+        print(json.dumps(stats(), ensure_ascii=False, indent=2))

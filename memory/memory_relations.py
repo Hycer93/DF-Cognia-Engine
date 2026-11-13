@@ -26,6 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import constants as C
 import embed_semantic
+import topic_layer          # Topic锚层（规约4单向闸门; 开关默认关, 零行为变化）
 from memory_organize import load_memories, MEM_DIR, append_jsonl
 
 RELATION_GRAPH_JSONL = os.path.join(MEM_DIR, "relation_graph.jsonl")   # 本体图谱（软层）
@@ -223,6 +224,14 @@ def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
         ent_latest[g["inst_id"]] = g.get("entity_id")
 
     scored = []
+    # 前置过滤⓪（Topic层单向闸门，规约4，2026-11-13 design_topic_layer.md）：
+    #   topic 不同（双端已定且不等）→ 跳过冲突比对（落审计日志不静默）
+    #   topic 相同（无论 entity）  → 照常全级联（含演化链例外——同主题演化对绝不能漏）
+    #   任一端 null               → 放行（hold 池记忆照常全流程）
+    # 顺序：topic → entity → 占位 → 级联。白名单开关关闭时零行为变化。
+    _topic_gate = None
+    if topic_layer.topic_enabled():
+        _topic_gate = topic_layer.conflict_gate
     for other in cands:
         # 前置过滤①（用户裁决2026-11-12）：同entity互撞折叠——
         # 双方已挂同一entity_id（图谱末值为准）→ 不参与冲突判定，留审计日志。
@@ -240,6 +249,11 @@ def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
                 "note": "同entity互撞折叠, 不进冲突判定(演化链例外见冲突时照常比对)",
             })
             continue
+        # 前置过滤⓪执行：topic 单向拦截（只拦不同topic；同topic/含null 一律放行）
+        if _topic_gate is not None:
+            _g = _topic_gate(me, other)
+            if _g["gate"] == "skip":
+                continue   # 审计日志已在 conflict_gate 内落盘（conflict_skip），不静默
         sim = _combined_sim(me, other, vec_me, _embed(other["summary"]))
         # 占位卡档位封顶+可疑分流标记（2026-11-12 终审次生发现+规约②）：
         # 占位对白送分通道有二——combined 的 dfcp_proximity（同域同标签占位对会被
