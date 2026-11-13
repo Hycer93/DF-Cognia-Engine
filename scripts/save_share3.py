@@ -1,8 +1,10 @@
 """落盘第三份分享对话（764轮，暮暮/蒸馏仔·银子蒸馏厂期）"""
-import sys, io, json
+import sys, io, json, os
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-p = r'C:\Users\uidq0280\AppData\Local\Temp\share3.json'
+p = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    os.environ.get("TEMP", "."), "share3.json")
 d = json.loads(open(p, 'rb').read().decode('utf-8'))
 msgs = d['data']['biz_data']['messages']
 
@@ -13,7 +15,7 @@ texts = [get_text(m).strip() for m in msgs]
 texts = [t for t in texts if t]
 pairs = [(texts[i], texts[i + 1]) for i in range(0, len(texts) - 1, 2)]
 
-out = r'D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\ds_share3_conversation.md'
+out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "logs", "ds_share3_conversation.md")
 lines = []
 for idx, (u, a) in enumerate(pairs, 1):
     block = '## round {} user\n\n{}\n\n## round {} ds\n\n'.format(idx, u, idx) + a + '\n'

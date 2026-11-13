@@ -19,3 +19,6 @@ memory/mem_index/
 # 本地杂项
 *.swp
 .DS_Store
+
+# 内部适配器（公司私有 API 协议，不入公开仓；本地保留使用）
+cgraph/llm_codechat.py

@@ -41,7 +41,8 @@ def repair_json(raw: str) -> dict:
 
 
 def main():
-    old = sys.argv[1] if len(sys.argv) > 1 else r"D:\uidq0280\Downloads\Agent\cognitive_engine\config\cognition_mapping.json"
+    old = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+        os.path.dirname(HERE), "cognitive_engine", "config", "cognition_mapping.json")
     out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "data", "mind_graph.json")
 
     raw = open(old, encoding="utf-8").read()

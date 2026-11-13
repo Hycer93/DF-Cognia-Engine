@@ -65,6 +65,6 @@ AUTHORS 脚注：
 ## 待办（明日用户过目后执行）
 
 1. 用户终裁本方案四点裁决（特别是修订 3 的"保守消歧"和修订 6 的三原则措辞）
-2. 落盘到 GitHub 仓库（dfcognia 本地克隆在 /d/uidq0280/Downloads/Agent/dfcognia）：修订 1/2 进 trees/行为树.md 与 annexes/仲裁器翻译手册.md，修订 3 进 annexes/记忆分级与进化管理规范.md，修订 4/6 进 spec/白皮书，修订 5 进 AUTHORS.md + 白皮书版本历史
+2. 落盘到 GitHub 仓库（dfcognia 本地克隆在本仓同级目录 `../dfcognia`）：修订 1/2 进 trees/行为树.md 与 annexes/仲裁器翻译手册.md，修订 3 进 annexes/记忆分级与进化管理规范.md，修订 4/6 进 spec/白皮书，修订 5 进 AUTHORS.md + 白皮书版本历史
 3. 按 GOVERNANCE 流程：属修订号级变更（文档勘误+示例补充，不动架构）→ v1.0.1
 4. 顺带：附录 C 情绪树同样空壳（3 值），可与修订 1 同批扩充（affect-vector v1.2 的友善度/秩序度/创造勇气/光谱强度四子维是现成素材，但需按"结构公开"边界裁剪）
