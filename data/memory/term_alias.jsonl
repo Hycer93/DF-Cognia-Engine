@@ -4,3 +4,6 @@
 {"term": "理想结果反向推导", "canonical": "逆向收敛推演", "origin": "judge", "note": "同义变体第二批: 用户描述式说法→体系标准术语", "status": "active", "hit_count": 0}
 {"op": "hit", "term": "理想结果反向推导", "ts": "2026-11-13T20:54:03.497021"}
 {"op": "hit", "term": "未来推演", "ts": "2026-11-13T20:54:03.648869"}
+{"op": "hit", "term": "未来推演", "ts": "2026-11-13T21:02:20.814426"}
+{"term": "数字蒸馏厂", "canonical": "数字熔炉", "origin": "judge", "note": "命名演变链回填: 旧名路由, 2026-11-13", "status": "active", "hit_count": 0}
+{"term": "银子蒸馏厂", "canonical": "数字熔炉", "origin": "judge", "note": "命名演变链回填: 旧名路由, 2026-11-13", "status": "active", "hit_count": 0}
