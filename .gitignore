@@ -22,3 +22,5 @@ memory/mem_index/
 
 # 内部适配器（公司私有 API 协议，不入公开仓；本地保留使用）
 cgraph/llm_codechat.py
+deploy_desay/
+data/memory/governor_pending.jsonl
