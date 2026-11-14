@@ -19,7 +19,7 @@ print("== Topic锚层回归（六规约验收） ==")
 # --- 用例1: 建锚+挂载(已由 seed_topics.py 完成, 此处验状态) ---
 tl.init_topic_db()
 s = tl.stats()
-check("锚表就绪(4 active)", s["active_anchors"] == 4, str(s))
+check("锚表就绪(5 active, 含1人工种子锚)", s["active_anchors"] == 5, str(s))
 check("挂载数>0", s["mounted_atoms"] > 0, str(s))
 
 # --- 用例2: 规约3 归一四档 — cue命中单锚→anchor; 多锚歧义→hold; 零命中→hold ---

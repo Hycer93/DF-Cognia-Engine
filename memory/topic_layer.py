@@ -42,7 +42,10 @@ CREATE TABLE IF NOT EXISTS topic_abstraction (
     create_ts     TEXT NOT NULL,
     update_ts     TEXT NOT NULL,
     mount_count   INTEGER NOT NULL DEFAULT 0,  -- 挂载计数（归档判据之一）
-    access_count  INTEGER NOT NULL DEFAULT 0   -- 检索命中计数（归档判据之一）
+    access_count  INTEGER NOT NULL DEFAULT 0,  -- 检索命中计数（归档判据之一）
+    manual_seed   INTEGER NOT NULL DEFAULT 0,  -- 人工种子锚标记(2026-11-14裁决): 特例破≥5门槛
+                                               -- 且不受规约6低访问归档(高频巡检人工管)
+    inspect_freq  TEXT NOT NULL DEFAULT 'normal'  -- 巡检频率: high(每日E7优先审)/normal
 );
 
 CREATE TABLE IF NOT EXISTS topic_links (
@@ -99,9 +102,33 @@ def classify_topic(summary: str, detail: str = "") -> dict:
             cues = json.loads(row["cue_anchors"])
             n = sum(1 for cue in cues if cue and cue in text)
             if n > 0:
-                hits.append((row["topic_id"], n))
+                hits.append((row["topic_id"], n, row["topic_id"]))
     finally:
         c.close()
+    # 引用性提及过滤（2026-11-14 用户裁决写入E7，mem_governor首跑发现）：
+    # cue 命中 ≠ 主题归属。复盘/事故总结/方法论卡常拿旧主题锚词当案例讲
+    # （如"伪演示基线法"卡 detail 讲'脑区簇误挂案例'——脑区是引用不是归属）。
+    # 判据（summary 是主题声明区，detail 可含案例）：锚词出现在 summary 里
+    # 才算核心讨论对象；仅 detail 命中的按引用性提及拒绝挂载，hold 交 E7 复审。
+    # 例外：summary 为空/极短的语料回填卡退化为全文判定（防漏挂新卡）。
+    if hits and (summary or "").strip():
+        s_only = summary or ""
+        # 锚词在 summary 中命中才算核心讨论对象；仅 detail 命中 → 引用性提及疑似
+        c2 = _conn()
+        try:
+            cue_map = {row2["topic_id"]: json.loads(row2["cue_anchors"])
+                       for row2 in c2.execute(
+                           "SELECT topic_id, cue_anchors FROM topic_abstraction WHERE status='active'")}
+        finally:
+            c2.close()
+        real_hits = [(tid, n) for tid, n, _ in hits
+                     if any(cue and cue in s_only for cue in cue_map.get(tid, []))]
+        if not real_hits:
+            return {"verdict": "hold", "topic_id": None,
+                    "evidence_gap": f"引用性提及疑似（cue 仅 detail 命中，非 summary 主题归属）: "
+                                     f"{[h[0] for h in hits]}——E7 复审裁语境",
+                    "reference_mention": True}
+        hits = real_hits
     if len(hits) == 1:
         return {"verdict": "anchor", "topic_id": hits[0][0]}
     if len(hits) > 1:
@@ -213,22 +240,34 @@ def conflict_gate(inst_a: dict, inst_b: dict) -> dict:
 
 # ---------------- 建锚与存量回填（保守：只建高置信簇） ----------------
 
-def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None) -> str:
-    """显式建锚（人工/建锚脚本）。幂等：已存在则只更新 abstract/cues。"""
+def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None,
+               manual_seed: bool = False, inspect_freq: str = "normal") -> str:
+    """显式建锚（人工/建锚脚本）。幂等：已存在则只更新 abstract/cues。
+
+    manual_seed=True（2026-11-14 用户裁决三条枷锁）：
+      ① 特殊标记人工种子锚，区别于自动生长锚——特例不成为先例，
+         其他主题仍严格遵守 ≥5 张才建锚；
+      ② inspect_freq='high'：每晚 E7 复审优先检查该簇，混入明显不属于
+         该主题的卡片优先上交 pending，不自动接纳；
+      ③ 不受低访问归档（规约6 豁免）：人工种子锚由人工管理生命周期。"""
     now = datetime.now().isoformat(timespec="seconds")
     c = _conn()
     try:
         c.execute(
             "INSERT INTO topic_abstraction "
-            "(topic_id, topic_abstract, topic_vector, cue_anchors, status, create_ts, update_ts) "
-            "VALUES (?,?,?,?, 'active', ?, ?) "
-            "ON CONFLICT(topic_id) DO UPDATE SET topic_abstract=?, cue_anchors=?, update_ts=?",
+            "(topic_id, topic_abstract, topic_vector, cue_anchors, status, create_ts, update_ts, "
+            " manual_seed, inspect_freq) "
+            "VALUES (?,?,?,?, 'active', ?, ?, ?, ?) "
+            "ON CONFLICT(topic_id) DO UPDATE SET topic_abstract=?, cue_anchors=?, update_ts=?, "
+            " manual_seed=?, inspect_freq=?",
             (topic_id, abstract, json.dumps(vector or []), json.dumps(cue_anchors), now, now,
-             abstract, json.dumps(cue_anchors), now))
+             1 if manual_seed else 0, inspect_freq,
+             abstract, json.dumps(cue_anchors), now, 1 if manual_seed else 0, inspect_freq))
         c.commit()
     finally:
         c.close()
-    _log("seed", {"topic_id": topic_id, "abstract": abstract})
+    _log("seed", {"topic_id": topic_id, "abstract": abstract,
+                  "manual_seed": manual_seed, "inspect_freq": inspect_freq})
     return topic_id
 
 
