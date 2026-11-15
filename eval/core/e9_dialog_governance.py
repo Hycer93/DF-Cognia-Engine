@@ -192,7 +192,42 @@ def main():
              report["dup_skipped"], len(report["miss_cases"]),
              len(report["risk_flag_e7"]),
              t.get("scanned", 0), t.get("stored", 0), t.get("dup_skipped", 0)))
+    _print_audit_detail(today, report)
     return 0
+
+
+def _print_audit_detail(today, report):
+    """人闸审计明细(2026-11-16 用户裁决: 计数式摘要无法审计, 必须逐条带内容)。"""
+    # 提案: 逐条给拟卡 summary + 来源段
+    if report["proposed"]:
+        print("\n— E9 提案明细 (%d条, 终审=人闸) —" % report["proposed"])
+        try:
+            for l in io.open(PENDING, encoding="utf-8"):
+                d = json.loads(l)
+                if d.get("source", "").startswith("E9夜间扫描 %s" % today):
+                    print("  拟卡: %s" % d["summary"][:90])
+                    print("    %s" % d["detail"][:150])
+        except FileNotFoundError:
+            pass
+    # 高价值段但旁路重复的: 展示跳过原因
+    if report["dup_skipped"]:
+        print("— 旁路重复跳过 %d 条(优先级规约①: 旁路已提, 夜间不重复) —" % report["dup_skipped"])
+    # transcript 兜底: 当日入库段的样例(前3条+时间范围)
+    tr = report.get("transcript", {})
+    if tr.get("stored"):
+        rows = cs.list_corpus(kind="session_dialog", tree_vol=today)
+        tsegs = [cs.get_corpus(r["id"]) for r in rows if ".tseg" in r["id"]]
+        print("— transcript 兜底入库 %d 段, 样例: —" % tr["stored"])
+        for s in tsegs[:3]:
+            print("  [%s] %s" % (s["id"][-6:], s["body"][:90]))
+    if report["miss_cases"]:
+        print("— miss_case 明细 (%d) —" % len(report["miss_cases"]))
+        for d in report["miss_cases"]:
+            print("  %s | hint: %s" % (d.get("ts", "?")[:16], str(d.get("hint", ""))[:70]))
+    if report["risk_flag_e7"]:
+        print("— probe 假阴性疑点 (%d, 攒 scar_case) —" % len(report["risk_flag_e7"]))
+        for d in report["risk_flag_e7"]:
+            print("  topic: %s — %s" % (d["topic"], d["note"]))
 
 
 if __name__ == "__main__":
