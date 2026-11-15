@@ -81,16 +81,23 @@ def _transcript_backfill(day, subs, report):
     todays = [cs.get_corpus(r["id"]) for r in
               cs.list_corpus(kind="session_dialog", tree_vol=day)]
     day_sh = [gate._simhash(s["body"]) for s in todays if s]
+    # 编号取当日段历史高水位(含 superseded), 防清重复后 id 复用撞 UNIQUE
+    import sqlite3 as _sq
+    _c = _sq.connect(cs.DB_PATH)
+    base_n = _c.execute("SELECT COUNT(*) FROM raw_corpus WHERE id LIKE 'dialog.%s.tseg%%'"
+                        % day).fetchone()[0]
+    _c.close()
     stored = 0
     dup = 0
     for hhmm, text in subs:
-        sh = gate._simhash(text)
+        # 判重与入库用同一形态(带前缀), 否则历史段(带前缀)与新段(裸文)hash错位漏判
+        body = "[用户提交-transcript兜底] %s" % text
+        sh = gate._simhash(body)
         if any(gate._hamming(sh, old) <= 6 for old in day_sh):
             dup += 1                       # 同源/相似段: 引用去重(规约四)
             continue
-        seg_n = len(todays) + stored + 1
+        seg_n = base_n + stored + 1
         cid = "dialog.%s.tseg%02d" % (day, seg_n)
-        body = "[用户提交-transcript兜底] %s" % text
         cs.upsert_corpus(cid, "session_dialog", body, tree_vol=day,
                          tree_ch="tseg%02d" % seg_n,
                          title="codechat-transcript",
