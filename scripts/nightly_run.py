@@ -354,6 +354,31 @@ def write_report(durations):
     except Exception as e:
         lines.append(f"(读取失败: {e})")
 
+    # 影子库指标看板（2026-11-15 P2-b：监控影子库增长是否正常，提前发现入库埋点/同步遗漏）
+    lines.append("\n## 影子库指标看板 (corpus_store.db 影子账本)\n")
+    try:
+        import sqlite3 as _sq
+        _db = os.path.join(HERE, "data", "memory", "corpus_store.db")
+        _c = _sq.connect(f"file:{_db}?mode=ro", uri=True)
+        _cards = _c.execute("SELECT COUNT(*) FROM core_memory_card WHERE status='active'").fetchone()[0]
+        _cards_all = _c.execute("SELECT COUNT(*) FROM core_memory_card").fetchone()[0]
+        _tp = _c.execute("SELECT COUNT(*) FROM core_thinking_paradigm WHERE status='active'").fetchone()[0]
+        _sp = _c.execute("SELECT COUNT(*) FROM core_skill_paradigm WHERE status='active'").fetchone()[0]
+        _trace = _c.execute("SELECT COUNT(*) FROM trace_cited").fetchone()[0]
+        _trace_max = (_c.execute("SELECT MAX(ts) FROM trace_cited").fetchone()[0] or "?")[:16]
+        _fts = _c.execute("SELECT COUNT(*) FROM fts_memory_card").fetchone()[0]
+        _pending = sum(_c.execute(f"SELECT COUNT(*) FROM {t} WHERE verdict IS NULL").fetchone()[0]
+                       for t in ("core_hold_pool", "core_conflict_queue", "core_alias_pending",
+                                 "core_governor_pending", "core_quarantine", "core_watchlist"))
+        _c.close()
+        lines.append(f"- 卡片: active {_cards} / 全部 {_cards_all}（jsonl 侧 {sum(1 for _ in open(os.path.join(HERE,'data','memory','memories.jsonl'), encoding='utf-8') if _.strip())}——差值=迁移漂移，切换前须归零）")
+        lines.append(f"- active 范式: thinking {_tp} + skill {_sp}")
+        lines.append(f"- trace 流水: {_trace} 条（最新 {_trace_max}）")
+        lines.append(f"- FTS 索引: {_fts} 条（应≈卡片全部数 {_cards_all}，缺口=索引待重建）")
+        lines.append(f"- 待审队列 (verdict IS NULL): hold/conflict/alias/governor/quarantine/watchlist 合计 {_pending}")
+    except Exception as e:
+        lines.append(f"(读取失败: {e})")
+
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print(f"\n[NIGHT] 晨间速读报告: {path}", flush=True)
