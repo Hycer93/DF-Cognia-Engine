@@ -153,9 +153,13 @@ def migrate():
 
     # ---------- ③ 治理队列 ----------
     for h in jl("topic_hold_pool.jsonl"):
+        # reference_mention 双保险: 显式字段 + reason 文本兜底(对账发现 2026-11-15:
+        # 旧记录无显式 flag 但 reason 明写'引用性提及', 迁移漏转)
+        ref = 1 if (h.get("reference_mention") or
+                     "引用性提及" in (h.get("reason") or h.get("evidence_gap") or "")) else 0
         c.execute("INSERT OR IGNORE INTO core_hold_pool VALUES (?,?,?,?,?,?,?)",
             (h.get("inst_id"), h.get("reason") or h.get("evidence_gap"),
-             1 if h.get("reference_mention") else 0,
+             ref,
              h.get("ts") or h.get("enqueued_ts") or now(), None, None, None))
     n = c.execute("SELECT COUNT(*) FROM core_hold_pool").fetchone()[0]
     rec("topic_hold_pool→core_hold_pool", len(jl("topic_hold_pool.jsonl")), n, True)
