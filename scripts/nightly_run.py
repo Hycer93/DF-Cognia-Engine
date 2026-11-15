@@ -32,6 +32,9 @@ STEPS = [
     # E8 影子对话（2026-11-11 用户裁决新增：DS仿人出题→本地检索回答→DS评分，
     # 实战检验记忆系统使用情况；按天播种幂等，题从库内真实条目抽）
     ("E8 影子对话实测", [PY, "eval/e8_shadow_dialog.py"], "logs/e8_shadow_dialog.jsonl"),
+    # E7 夜间治理（2026-11-15 用户指令#30：夜间提案/hold复审/范式标定/证据回写，
+    # 机器只提案不裁决，终裁=人闸门晨报）
+    ("E7 夜间治理", [PY, "eval/e7_nightly_governance.py"], "logs/e7_governance.json"),
 ]
 
 
@@ -325,6 +328,29 @@ def write_report(durations):
                          f"（均值 {avg:.1f}/次，{flag}）")
         else:
             lines.append("- 24h 无检索记录")
+    except Exception as e:
+        lines.append(f"(读取失败: {e})")
+
+    # E7 夜间治理提案（2026-11-15 #30：hold复审/高频簇巡检/范式标定/证据回写，全为提案待人终裁）
+    lines.append("\n## E7 夜间治理提案\n")
+    try:
+        e7 = json.load(open(os.path.join(LOGS, "e7_governance.json"), encoding="utf-8"))
+        p1 = e7.get("p1_hold", {})
+        lines.append(f"- hold池待复审 {p1.get('pending',0)} 条")
+        for p in p1.get("proposals", []):
+            if p["proposal"] != "propose_keep":
+                lines.append(f"  - ⚠ {p['proposal']}: {p['inst_id'][:16]} ({p['reason']})")
+        p2 = e7.get("p2_high_freq", {})
+        lines.append(f"- 高频簇巡检: {p2.get('cards_checked',0)} 卡, 可疑混入 {len(p2.get('suspicious',[]))}")
+        for s in p2.get("suspicious", [])[:5]:
+            lines.append(f"  - ⚠ {s['topic_id']}/{s['inst_id'][:16]}: {s['note']}")
+        p3 = e7.get("p3_calibration", {})
+        for p in p3.get("proposals", []):
+            lines.append(f"  - {'⚠' if p['proposal'] != 'propose_keep_pending' else '-'} [{p['proposal']}] "
+                         f"{p.get('table','').replace('core_','').replace('_paradigm','')}/{p['pid']}: {p['note']}")
+        p4 = e7.get("p4_evidence", {})
+        lines.append(f"- 维护案例 {p4.get('cases',0)} 条, 候选证据回写 {p4.get('written',0)} 条(proposed非实证)")
+        lines.append("  - 注: 以上全为机器提案, 无 verdict 变更; 终裁=人闸门")
     except Exception as e:
         lines.append(f"(读取失败: {e})")
 
