@@ -78,3 +78,15 @@ cd memory && python memory_hook.py query "<本次任务主题>" --top 5
 - 冻结清单六项不经用户终裁不可动
 - 架构无关决策（素材/清洗/账本级）AI 自决，事后报备
 - 任何"投降式封盘"结论需用户确认——AI 不自行宣布任务完成
+
+## 会话记忆门控纪律（2026-11-15 定稿，与 Jw 钩子同效力）
+1. **开工首轮工具**：涉及 DFCP/记忆/管线/E系/F系/图谱/推演/裁决的任务，先跑
+   `python memory/memory_gate.py probe --topic "<任务意图>"`，true 则按 query_hint
+   执行 `python memory/memory_hook.py query "<hint>" --top 5` 再开工；闲聊/纯编码任务跳过。
+2. **compact 前**：把当前段对话原文（裁决、教训、数字、结论）覆写到
+   `data/memory/dialog_last_segment.md`（PreCompact 钩子自动归档 raw_corpus）。
+3. **即时入库**：仅两类合法——用户显式说"入库/记下来"或 `/force-archive`；
+   不再依赖会话 AI 自主识别标记（自觉依赖已废除，明写风险清单）。
+4. **transcript 兜底**：未触发钩子的对话不会丢——E9 夜间只读扫平台 applog
+   提取当日用户提交原文入 raw_corpus；助手侧正文平台不落盘，关键结论仍需
+   遵守纪律 2 覆写 dialog_last_segment.md。

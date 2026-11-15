@@ -1,5 +1,12 @@
 """
-夜间总驱动：串联 E3(秒级) → E2(分钟级) → E1(小时级) → E1汇总。
+夜间总驱动（AGI 自维护底盘主链）：串联 E2(分钟级) → E1(小时级) → E4/E5/E6 → E7 治理 → T1 归档。
+
+2026-11-15 用户裁决重构（管线分级）:
+  eval/core/       常驻自维护底盘——本主链只串这些
+  eval/drill/     定期演习(E8 影子对话)——已摘出主链, 按需手动触发
+  eval/audit/      一次性/专项审计(E3 SFT体检/打分对账)——跑完即归档, 不常驻
+  eval/experiment/ F系推演原型——实验性质, 晋升需过四条固定门槛(见 README 管线分级)
+主链原则: 无人值守、纯本地、稳定闭环——依赖人工输入(标签)或外部资源的步骤一律不进主链。
 
 顺序理由：先跑零成本的静态体检拿即时结论；再跑反问门标定（纯本地嵌入，
 分钟级）；最后跑最贵的探针全链（123 题 × ~2-4 分钟 = 4-8 小时，正好覆盖一晚）。
@@ -21,20 +28,22 @@ PY = sys.executable
 ENV = {**os.environ, "NO_MEMORY": "1", "PYTHONIOENCODING": "utf-8"}
 
 STEPS = [
-    ("E3 SFT七池静态体检", [PY, "eval/e3_sft_audit_v2.py"], "logs/e3_sft_audit.json"),
-    ("E2 反问门标定扫描", [PY, "eval/e2_gate_calibration.py"], "logs/e2_gate_calibration.json"),
-    ("E1 探针触发率全链回归", [PY, "eval/e1_probe_trigger.py"], "logs/e1_probe_result.jsonl"),
+    # 2026-11-15 用户裁决: E3(一次性审计, 归 eval/audit/)与E8(影子演习, 归 eval/drill/)
+    # 均摘出主链; 主链=纯本地无人值守内务闭环, 只串 eval/core/ 六脚本
+    ("E2 反问门标定扫描", [PY, "eval/core/e2_gate_calibration.py"], "logs/e2_gate_calibration.json"),
+    ("E1 探针触发率全链回归", [PY, "eval/core/e1_probe_trigger.py"], "logs/e1_probe_result.jsonl"),
     # E4 维护巡逻（只读报警）+ E5 自动整理（幂等软层操作，只追加不删除）
-    ("E4 记忆库维护巡逻", [PY, "eval/e4_maintenance_patrol.py"], "logs/e4_maintenance.json"),
-    ("E5 记忆自动整理", [PY, "eval/e5_consolidation.py"], "logs/e5_consolidation.json"),
+    ("E4 记忆库维护巡逻", [PY, "eval/core/e4_maintenance_patrol.py"], "logs/e4_maintenance.json"),
+    ("E5 记忆自动整理", [PY, "eval/core/e5_consolidation.py"], "logs/e5_consolidation.json"),
     # E6 思维图巡逻（只读报警，2026-11-09 用户确认：记忆侧有E4/E5，思维侧专项体检）
-    ("E6 思维图巡逻", [PY, "eval/e6_mind_graph_patrol.py"], "logs/e6_mind_graph_patrol.json"),
-    # E8 影子对话（2026-11-11 用户裁决新增：DS仿人出题→本地检索回答→DS评分，
-    # 实战检验记忆系统使用情况；按天播种幂等，题从库内真实条目抽）
-    ("E8 影子对话实测", [PY, "eval/e8_shadow_dialog.py"], "logs/e8_shadow_dialog.jsonl"),
+    ("E6 思维图巡逻", [PY, "eval/core/e6_mind_graph_patrol.py"], "logs/e6_mind_graph_patrol.json"),
     # E7 夜间治理（2026-11-15 用户指令#30：夜间提案/hold复审/范式标定/证据回写，
     # 机器只提案不裁决，终裁=人闸门晨报）
-    ("E7 夜间治理", [PY, "eval/e7_nightly_governance.py"], "logs/e7_governance.json"),
+    ("E7 夜间治理", [PY, "eval/core/e7_nightly_governance.py"], "logs/e7_governance.json"),
+    # E9 夜间对话治理(2026-11-15 记忆门控定稿新增: 归档主通道——当日 session_dialog
+    # 复跑归档判定, 高价值拟卡送pending, 只提案绝不直写主库; probe假阴性攒scar_case;
+    # transcript兜底: 只读扫applog提取当日用户提交→simhash去重→复本隔离入raw_corpus)
+    ("E9 对话治理", [PY, "eval/core/e9_dialog_governance.py"], "logs/e9_dialog_governance.json"),
     # trace 月度归档（2026-11-15 #31 切换步骤④：主库流水开始灌入后归档能力直接就位；
     # 热窗30天, 归档前对账守恒, 切换读源后主库不再无限膨胀）
     ("T1 trace月度归档", [PY, "memory/trace_archive.py"], "logs/e7_governance.json"),
@@ -269,8 +278,10 @@ def write_report(durations):
     except Exception as e:
         lines.append(f"(案例层读取失败: {e})")
 
-    # E8 影子对话实测（2026-11-11：DS仿人出题→检索回答→DS评分，实战使用情况）
-    lines.append("\n## E8 影子对话（记忆系统实战演习）\n")
+    # E8 影子对话实测（2026-11-13 摘出主链, 用户裁决: 夜间主线=无人值守纯本地内务;
+    # E8 依赖人工喂标签+外部DS资源, 改为按需手动触发 eval/drill/e8_shadow_dialog.py。
+    # 晨报仍汇报最近一次演习落盘结果——只读 jsonl, 不跑不报错）
+    lines.append("\n## E8 影子对话（记忆系统实战演习, 已摘出主链）\n")
     try:
         last = None
         with open(os.path.join(LOGS, "e8_shadow_dialog.jsonl"), encoding="utf-8") as f:

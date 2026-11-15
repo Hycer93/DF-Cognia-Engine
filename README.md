@@ -93,13 +93,50 @@ scripts/
   migrate_memory.py     旧库三集合 → 新库
   nightly_run.py        夜间管线（探针 + 晨报）
   smoke_test.py         离线自测（MockLLM 全链路）
-eval/
-  ab_test.py     A/B 双路对比埋点
-  score.py       LLM 裁判盲评 + 验尸裁决
+eval/            # 2026-11-15 管线分级重构（四层）
+  core/          常驻自维护底盘——nightly 主链只串这些：
+                 E1 探针回归 / E2 闸门标定 / E4 维护巡逻(只读报警) /
+                 E5 软层自动整理 / E6 思维图巡逻 / E7 夜间治理 / E9 对话治理(归档主通道,只提案)
+  drill/         定期演习——E8 影子对话（人工喂标签+外部DS，按需手动触发）
+  audit/         一次性/专项审计——E3 SFT体检、打分对账、topic层回归等
+  experiment/    实验原型——F系推演冒烟、A/B、deepen 实验
 docs/            设计文档（affect vector / 记忆 v0.2 / 冲突级联 / 思维检查表）
 memory/          记忆模块：judge 管道 / corpus_store / 置信度动态
 data/ logs/      运行数据（gitignore，不入仓）
 ```
+
+## 管线分级（2026-11-15 用户裁决）
+
+**core 启动次序**：内核最先拉起 E4/E5/E6/E7（纯本地记忆内务）；
+E1/E2 依赖 cgraph + DS 评分链，启动次序后置。
+
+**主链原则**：nightly 主链 = 无人值守、纯本地、稳定闭环。
+依赖人工输入（标签）或外部资源的步骤（E8）一律不进主链。
+E3（一次性审计）已摘出主链；若改造为"新入库 SFT 样本准入预检"再迁移进 core，需单写晋升规约。
+
+**F 系晋升门槛**（experiment → core，四条同时满足）：
+1. 跨簇探索场景命中率稳定达标（阈值待定后固化）
+2. Ω、β、裁剪阈值全套消融收敛，参数不再频繁改动
+3. 图谱边覆盖率对结果的扰动被量化、有补偿机制——结果不再随库债务剧烈浮动
+4. 配套独立失败溯源与降级分支（边稀疏时返回低置信推演，不随机崩坏）
+
+**E8 独立演习**：`NO_MEMORY=1 python eval/drill/e8_shadow_dialog.py`
+（按周/按需手动调度；晨报仍会汇报最近一次演习的落盘结果）
+
+
+## 会话记忆门控（2026-11-15 用户定稿）
+
+**读取侧两级**：轻量基线(静态摘要快照)无条件加载；深度检索门 `memory_gate.py probe`
+只管向量检索，输出 `{deep_retrieve, query_hint[], reason}`，`/force-mem-on` 直通。
+**归档侧主通道**：E9 夜间扫描(时序可靠)为主，会话收尾仅快速旁路。优先级：
+同源hash跳过 / 旁路false+夜间true覆盖 / 旁路true+夜间false保留打风险标送E7。
+**即时归档合法触发**：仅用户显式指令(`/force-archive`、"这条入库")或脚本硬事件；
+模型自主标记=已废除的自觉依赖(明写风险清单)。
+**raw_corpus 治理**：段落 simhash 入库比对去重；热区90天全扫/冷区跳常规仅溯源；不删除。
+**transcript 兜底**：E9 只读扫 CodeChat applog 提取当日用户提交原文，simhash 去重后
+复本隔离入 raw_corpus（三规约：只读/复本隔离/来源指针 source_ref 指路径+时间窗）。
+**miss_case**：深度检索空结果记 hint+主题(gate_miss_case.jsonl)，卡片ID人工补，E9晨报列示。
+PreCompact 钩子: `python memory/memory_gate.py dialog --file <段文件> --session <标识>`。
 
 ## 关键设计文档
 
