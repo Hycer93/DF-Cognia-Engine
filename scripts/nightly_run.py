@@ -35,6 +35,9 @@ STEPS = [
     # E7 夜间治理（2026-11-15 用户指令#30：夜间提案/hold复审/范式标定/证据回写，
     # 机器只提案不裁决，终裁=人闸门晨报）
     ("E7 夜间治理", [PY, "eval/e7_nightly_governance.py"], "logs/e7_governance.json"),
+    # trace 月度归档（2026-11-15 #31 切换步骤④：主库流水开始灌入后归档能力直接就位；
+    # 热窗30天, 归档前对账守恒, 切换读源后主库不再无限膨胀）
+    ("T1 trace月度归档", [PY, "memory/trace_archive.py"], "logs/e7_governance.json"),
 ]
 
 

@@ -184,16 +184,18 @@ def query_by_tag(tag_key: str, tag_value: str) -> list:
 
 
 def add_anchor(phase: str, summary: str, detail: str, source_ref: str):
-    """人格锚：append-only，只增不改。每条必须可溯源。"""
+    """人格锚：append-only，只增不改。每条必须可溯源。
+    (2026-11-15 #31 切换: 写入改 core_persona_anchor 唯一真相;
+     旧 persona_anchor 表冻结保留, 不再写入)"""
     c = _conn()
     now = datetime.now().isoformat(timespec="seconds")
     c.execute(
-        "INSERT INTO persona_anchor (phase, summary, detail, source_ref, ts)"
+        "INSERT INTO core_persona_anchor (phase, summary, detail, source_ref, ts)"
         " VALUES (?,?,?,?,?)", (phase, summary, detail, source_ref, now))
     c.execute(
         "INSERT INTO iterations (corpus_id, action, what, why, ts) VALUES (?,?,?,?,?)",
         ("persona_anchor", "anchor", f"[{phase}] {summary[:60]}",
-         "人格锚表 append-only 收编", now))
+         "人格锚表 append-only 收编(core)", now))
     c.commit()
     c.close()
 
@@ -201,7 +203,7 @@ def add_anchor(phase: str, summary: str, detail: str, source_ref: str):
 def get_anchors() -> list:
     c = _conn()
     rows = c.execute(
-        "SELECT * FROM persona_anchor ORDER BY ts").fetchall()
+        "SELECT * FROM core_persona_anchor WHERE phase NOT LIKE '[已迁范式]%' ORDER BY ts").fetchall()
     c.close()
     return [dict(r) for r in rows]
 

@@ -191,21 +191,25 @@ def main():
     check_alias(con, checks)
     con.close()
     # 引用性提及判定口径: 旧侧等价物=governor_pending/topic_hold_pool
-    # 两个 jsonl 的 reason 含'引用性提及'条数; 新侧=reference_mention=1 flag。
-    # 旧计数是子集(hold_pool 双源合并), 判定口径: 新 flag 行的 reason 必须
-    # 全部确实含'引用性提及'(flag 与文本自洽), 且 flag 数 ≥ 旧文本数。
-    old_ref = sum(1 for r in _load_jsonl("governor_pending.jsonl")
-                  if "引用性提及" in (r.get("reason") or ""))
+    # 两个 jsonl 的 reason 含'引用性提及'条目——但旧 jsonl 是 append-only
+    # 多轮复审流水(同卡多行), 须按 inst_id 去重成卡数再比。
+    # 新侧=reference_mention=1 flag(按卡)。判定: flag 行 reason 自洽 + flag 卡集 ⊇ 旧去重卡集。
+    old_ref_cards = {r["inst_id"] for r in _load_jsonl("governor_pending.jsonl")
+                     if "引用性提及" in (r.get("reason") or "")}
+    old_ref = len(old_ref_cards)
     _con2 = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
     flag_rows = _con2.execute(
         "SELECT inst_id, reason FROM core_hold_pool WHERE reference_mention=1").fetchall()
     self_consistent = all("引用性提及" in (r[1] or "") for r in flag_rows)
-    new_ref = len(flag_rows)
+    new_cards = {r[0] for r in flag_rows}
+    new_ref = len(new_cards)
+    covered = old_ref_cards <= new_cards
     _con2.close()
     checks["reference_mention_parity"] = {
-        "old_text_count": old_ref, "new_flag_count": new_ref,
+        "old_distinct_cards": old_ref, "new_flag_count": new_ref,
         "flag_text_self_consistent": self_consistent,
-        "match": self_consistent and new_ref >= old_ref}
+        "old_cards_covered_by_new": covered,
+        "match": self_consistent and new_ref >= old_ref and covered}
     ok = all(c.get("match") for c in checks.values())
     report = {"ts": _ts(), "ok": ok, "checks": checks}
     # 落盘

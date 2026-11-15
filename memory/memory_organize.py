@@ -156,6 +156,33 @@ def atomic_store(
         "protected": False,
     }
     append_jsonl(MEMORIES_JSONL, entry)
+    # 双轨写(2026-11-15 #31 切换): core_memory_card 唯一真相主写;
+    # memories.jsonl 保留为审计导出流(应急回切读源可用)
+    try:
+        import sqlite3 as _sq
+        _db = os.path.join(MEM_DIR, "corpus_store.db")  # 库在 data/memory/ 下(不是上级!)
+        _wc = _sq.connect(_db, timeout=5)
+        _wc.execute(
+            "INSERT OR IGNORE INTO core_memory_card VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (entry["inst_id"], entry["ts"], entry["event_ts"], entry["full_hash"],
+             entry["asset_class"], entry["repro"], entry["confidence"],
+             json.dumps(entry["dfcp_tag"], ensure_ascii=False),
+             json.dumps(entry["affect_tags"], ensure_ascii=False) if entry["affect_tags"] else None,
+             entry["summary"], entry["summary_converged"], entry["detail"], entry["source_ref"],
+             json.dumps(entry["origin_ids"], ensure_ascii=False),
+             entry["entity_id"], entry["derived_from"], entry["tier"],
+             json.dumps(entry["weight"], ensure_ascii=False), entry["protected"],
+             None, "active", entry["memory_class"]))
+        _wc.commit()
+        _wc.close()
+    except Exception as _e:
+        # 写库失败不阻断返回(jsonl 已落, 下轮增量同步补)——但落审计可查
+        try:
+            append_jsonl(os.path.join(MEM_DIR, "dual_write_errors.jsonl"),
+                          {"ts": datetime.now().isoformat(), "inst_id": entry["inst_id"],
+                           "err": repr(_e)})
+        except Exception:
+            pass
     return "stored", f"{inst_id[:8]} 入库（repro={repro}）"
 
 

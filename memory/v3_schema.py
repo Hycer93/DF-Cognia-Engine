@@ -253,7 +253,7 @@ CREATE TABLE IF NOT EXISTS audit_paradigm_evidence (
 
 CREATE TABLE IF NOT EXISTS trace_cited (
   tid INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL,
-  query TEXT, inst_id TEXT, score REAL
+  query TEXT, inst_id TEXT, score REAL, source TEXT  -- source: human/e8(2026-11-15切换加列, E8演习防自肥)
 );
 CREATE INDEX IF NOT EXISTS idx_cited_ts ON trace_cited(ts);
 CREATE INDEX IF NOT EXISTS idx_cited_inst ON trace_cited(inst_id);

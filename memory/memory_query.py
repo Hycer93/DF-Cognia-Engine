@@ -15,12 +15,62 @@ from collections import Counter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import schema
 import constants as C
-from memory_organize import load_memories, MEM_DIR, append_jsonl
-from memory_relations import _embed, _cosine, load_graph, grams
+from memory_organize import load_memories as _load_memories_jsonl, MEM_DIR, append_jsonl
+from memory_relations import _embed, _cosine, load_graph as _load_graph_jsonl, grams
 import embed_semantic as _es
 import memory_alias as ma
 import topic_layer            # Topic锚层路由(规约2; 开关默认关, 零行为变化)
 from corpus_registry import load_registry
+
+# ---- 读源切换开关 (2026-11-15 用户批准切换, 闸门点 #31) ----
+# 默认读 SQLite 主库(corpus_store.db, 唯一真相); 应急回切:
+#   设 DF_MEMORY_SOURCE=jsonl 后进程重启即回 jsonl 链路(冻结快照仍在)。
+# 三道准入门(eval/shadow_regress|governance_reconcile|paradigm_read_regress)
+# 切换前已全 PASS; 双路 diff 报告见 logs/shadow_regress_report.md。
+import sqlite3 as _sq
+
+_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "data", "memory", "corpus_store.db")
+_MEMORY_SOURCE = os.environ.get("DF_MEMORY_SOURCE", "sqlite")
+
+
+def load_memories() -> list:
+    """读源分派: sqlite(新主库) / jsonl(应急回切)。口径对齐 shadow_regress 双路验证。"""
+    if _MEMORY_SOURCE == "jsonl":
+        return _load_memories_jsonl()
+    con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+    con.row_factory = _sq.Row
+    rows = con.execute("SELECT * FROM core_memory_card WHERE status='active'").fetchall()
+    con.close()
+    import json as _j
+    out = []
+    for r in rows:
+        d = dict(r)
+        for k in ("dfcp_tag", "affect_tags", "origin_ids", "weight"):
+            if isinstance(d.get(k), str):
+                try:
+                    d[k] = _j.loads(d[k])
+                except ValueError:
+                    pass
+        out.append(d)
+    return out
+
+
+def load_graph() -> list:
+    if _MEMORY_SOURCE == "jsonl":
+        return _load_graph_jsonl()
+    con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+    rows = con.execute("SELECT * FROM core_relation WHERE status='active'").fetchall()
+    con.close()
+    import json as _j
+    out = []
+    for r in rows:
+        # 列序: me_inst, other_inst, relation, judge_meta, ts, status
+        meta = _j.loads(r[3] or "{}")
+        out.append({"ts": r[4], "inst_id": r[0], "entity_id": meta.get("entity_id"),
+                    "relation": r[2], "best_match": r[1], "best_sim": meta.get("best_sim")})
+    return out
+
 
 # ---- 统一索引层·治理过滤（2026-11-12 用户裁决：DFCP 管召回打分，治理管后置过滤）----
 # 流水线：召回(DFCP) → 匹配打分(DFCP) → 治理规则过滤(registry/资产标签) → 返回
@@ -98,18 +148,51 @@ _recency_cache = {"mtime": 0.0, "table": {}}
 
 
 def _recency_table() -> dict:
-    """cited_log → {inst_id: score}，按日志文件 mtime 缓存（同一进程内 ask 复用）。
-    E8 自考自测的调用（source=e8）不计入——防影子对话把考过的题喂肥霸榜
-    （自我强化循环，2026-11-11 E8首跑发现）。"""
+    """引用流水 → {inst_id: score}。读源分派(2026-11-15 切换):
+    sqlite: trace_cited(主库, 按表行数+MAX(tid)缓存键);
+    jsonl:  cited_log.jsonl(应急回切, 按 mtime 缓存)。
+    E8 自考自测的调用（source=e8）不计入——防影子对话把考过的题喂肥霸榜。"""
+    cutoff = datetime.now().timestamp() - 7 * 86400
+    halflife = C.RECENCY_HALFLIFE_DAYS * 86400
+    now = datetime.now().timestamp()
+
+    def _score(ts_epoch):
+        decay = 0.5 ** (max(0, now - ts_epoch) / halflife)
+        return min(1.0, 0.5 + decay * 0.5)
+
+    if _MEMORY_SOURCE == "sqlite":
+        con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+        n, max_tid = con.execute("SELECT COUNT(*), COALESCE(MAX(tid),0) FROM trace_cited").fetchone()
+        key = (n, max_tid)
+        con.close()
+        if _recency_cache.get("sqlite_key") == key:
+            return _recency_cache["table"]
+        best = {}
+        con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+        for ts_str, inst, src in con.execute("SELECT ts, inst_id, source FROM trace_cited"):
+            if src == "e8":
+                continue
+            if not inst or not ts_str:
+                continue
+            try:
+                ts = datetime.fromisoformat(ts_str).timestamp()
+            except ValueError:
+                continue
+            if ts < cutoff:
+                continue
+            best[inst] = max(best.get(inst, 0.0), _score(ts))
+        con.close()
+        _recency_cache["sqlite_key"] = key
+        _recency_cache["table"] = best
+        return best
+
+    # jsonl 应急路径(原实现)
     path = os.path.join(MEM_DIR, "cited_log.jsonl")
     if not os.path.exists(path):
         return {}
     mt = os.path.getmtime(path)
     if _recency_cache["mtime"] == mt:
         return _recency_cache["table"]
-    cutoff = datetime.now().timestamp() - 7 * 86400
-    halflife = C.RECENCY_HALFLIFE_DAYS * 86400
-    now = datetime.now().timestamp()
     best = {}
     with io.open(path, encoding="utf-8") as f:
         for line in f:
@@ -129,8 +212,7 @@ def _recency_table() -> dict:
                 continue
             if ts < cutoff:
                 continue
-            decay = 0.5 ** (max(0, now - ts) / halflife)
-            best[inst] = max(best.get(inst, 0.0), min(1.0, 0.5 + decay * 0.5))
+            best[inst] = max(best.get(inst, 0.0), _score(ts))
     _recency_cache["mtime"] = mt
     _recency_cache["table"] = best
     return best
@@ -662,8 +744,21 @@ def ask(query: str, query_tag: dict = None, top_k: int = 5, include_corpus: bool
         if len(out) >= top_k:
             break
 
-    # 调用统计回写（cited 计数——投影层只记，不改主记录文件）
+    # 调用统计回写（cited 计数——投影层只记，不改主记录）
     # time_window 一并落日志（design_event_ts.md 风险1约束②：解析区间可排查）
+    # 双轨写入(2026-11-15 切换): sqlite 主写 trace_cited(唯一真相),
+    # cited_log.jsonl 同步保留(应急回切读源+既有审计消费方)
+    cite_rows = [(m["inst_id"], query[:100], cite_source) for _, m, _ in out]
+    if _MEMORY_SOURCE == "sqlite":
+        try:
+            _wc = _sq.connect(_DB_PATH, timeout=5)
+            _wc.executemany(
+                "INSERT INTO trace_cited (ts, query, inst_id, source) VALUES (?,?,?,?)",
+                [(datetime.now().isoformat(), q, iid, src) for iid, q, src in cite_rows])
+            _wc.commit()
+            _wc.close()
+        except Exception:
+            pass  # 写失败不阻断检索(流水容忍丢失)
     for _, m, _ in out:
         rec = {"ts": datetime.now().isoformat(), "inst_id": m["inst_id"],
                "query": query[:100], "source": cite_source}

@@ -182,8 +182,10 @@ def migrate():
     n = c.execute("SELECT COUNT(*) FROM core_conflict_queue").fetchone()[0]
     rec("conflict_queue→core_conflict_queue", len(jl("conflict_queue.jsonl")), n, True)
 
+    # 幂等: alias 无业务主键(id 自增), 清表重灌防翻倍(2026-11-15 增量重跑发现)
+    c.execute("DELETE FROM core_alias_pending")
     for a in jl("alias_pending.jsonl"):
-        c.execute("INSERT OR IGNORE INTO core_alias_pending VALUES (?,?,?,?,?,?,?)",
+        c.execute("INSERT INTO core_alias_pending VALUES (?,?,?,?,?,?,?)",
             (None, a.get("query"), _s(a.get("verdict") or a.get("match_eff")),
              a.get("ts") or now(), a.get("status") if a.get("status") != "pending" else None,
              a.get("paired_at") if a.get("status") != "pending" else None,
@@ -251,11 +253,18 @@ def migrate():
     counts = {t: c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in
               ("audit_judge","audit_distill","audit_confidence","audit_topic_log",
                "audit_iteration","audit_code_change","audit_maintenance","audit_pool")}
+    # 对账基线以 jsonl 实时行数为准(2026-11-15 修复: 原写死旧值,
+    # 增量重跑时 jsonl 已增长导致误报 FAIL)
+    src_map = {"audit_judge": len(jl("judge_log.jsonl")),
+               "audit_distill": len(jl("distill_log.jsonl")),
+               "audit_confidence": len(jl("confidence_dynamics.jsonl")),
+               "audit_topic_log": len(jl("topic_layer_log.jsonl")),
+               "audit_iteration": 124, "audit_code_change": len(jl("code_changelog.jsonl")),
+               "audit_maintenance": len(jl("maintenance_cases.jsonl")),
+               "audit_pool": len(jl("pool_audit.jsonl"))}
     for t, n in counts.items():
-        src = {"audit_judge": 163, "audit_distill": 236, "audit_confidence": 7,
-               "audit_topic_log": 31, "audit_iteration": 124, "audit_code_change": 1721,
-               "audit_maintenance": 15, "audit_pool": 2279}[t]
-        rec(f"jsonl→{t}", src, n, n >= src)
+        src = src_map[t]
+        rec(f"jsonl→{t}", src, n, n == src)
 
     # ---------- trace_cited（19446条，带ts列直接迁） ----------
     n_cited = 0
