@@ -25,6 +25,11 @@
 #   python eval/core/e10_semantic_outlier_patrol.py            # 增量(默认)
 #   python eval/core/e10_semantic_outlier_patrol.py --full     # 全量兜底
 #
+# 规约备注(2026-11-16 终审裁决): 本批 4 条解挂全部归类【引用性提及假阳性】
+# ——卡片正文仅举例引用簇关键词(版本史提'星型拓扑'/日记提'G22季报'),
+# 本体主题不属于该簇, cue 单命中+统计合格但语义离群。此类是 E10 的
+# 核心捕获对象(统计链路天然盲区), 已录回归用例14 固化防退化。
+#
 # 风险归档(用户裁决): embedding 语义有偏差(短文本/术语/代码), 告警永远
 # 是辅助参考非判定依据; 天然松散簇(杂项收集)会误报, 后续可加
 # skip_semantic_patrol 标记跳过。
@@ -41,7 +46,12 @@ sys.path.insert(0, HERE)
 
 # ---- 配置(用户裁决项) ----
 MIN_CLUSTER_SIZE = 5      # 小簇保护: <5卡跳过
-SIGMA_K = 2.0             # μ+kσ 动态阈值倍数(初始2.0, 可调)
+SIGMA_K = 2.0             # 默认 μ-kσ 倍数; 可被 TOPIC_SIGMA_K 覆盖
+# 每 topic 独立 k 系数(2026-11-16 用户终审裁决: patent簇k=2.5放宽离群阈值,
+# 抑制不同技术方向专利的持续擦边误告警; 登记须附裁决来源)
+TOPIC_SIGMA_K = {
+    "topic_patent_matrix": 2.5,   # 高内聚窄σ簇(μ=0.75 σ=0.045), 2.0擦边误报P13/P16/P19
+}
 MIN_COS_TO_CENTROID = 0.30  # 绝对下限: 即使σ很窄, 距质心低于此也报(防全簇同漂)
 STATE_FILE = os.path.join(HERE, "logs", "e10_semantic_state.json")
 LOG = os.path.join(HERE, "logs", "e10_semantic_audit.json")
@@ -104,7 +114,8 @@ def run(full=False):
             centroid = centroid / (np.linalg.norm(centroid) + 1e-12)
             dists = np.array([cosine(v, centroid) for v in vecs])
             mu, sd = float(dists.mean()), float(dists.std())
-            thr = max(mu - SIGMA_K * sd, MIN_COS_TO_CENTROID)  # 规约6: μ-kσ 动态+绝对下限
+            k = TOPIC_SIGMA_K.get(tid, SIGMA_K)                # per-topic k(用户裁决)
+            thr = max(mu - k * sd, MIN_COS_TO_CENTROID)        # 规约6: μ-kσ 动态+绝对下限
             checked += len(cards)
             for (iid, s, d), v, dist in zip(cards, vecs, dists):
                 if dist < thr:
@@ -115,7 +126,7 @@ def run(full=False):
                         "topic_id": tid, "inst_id": iid,
                         "summary": (s or "")[:80],
                         "dist_to_centroid": round(float(dist), 3),
-                        "cluster_mu": round(mu, 3), "cluster_sd": round(sd, 3),
+                        "cluster_mu": round(mu, 3), "cluster_sd": round(sd, 3), "sigma_k": k,
                         "threshold": round(float(thr), 3),
                         "nearest_neighbor": nn_summary,
                         "note": "语义离群疑似脏卡(到质心%.3f < 阈值%.3f)——只告警, 人工复审裁决"
@@ -138,9 +149,9 @@ def run(full=False):
     if alerts:
         print("— 语义离群告警明细(只告警不删改, 人闸裁决) —")
         for a in alerts:
-            print("  [%s] 簇: %s | dist=%.3f (μ=%.3f σ=%.3f 阈=%.3f)"
+            print("  [%s] 簇: %s | dist=%.3f (μ=%.3f σ=%.3f 阈=%.3f k=%.1f)"
                   % (a["inst_id"][:8], a["topic_id"], a["dist_to_centroid"],
-                     a["cluster_mu"], a["cluster_sd"], a["threshold"]))
+                     a["cluster_mu"], a["cluster_sd"], a["threshold"], a["sigma_k"]))
             print("    卡: %s" % a["summary"])
             print("    最近邻: %s" % a["nearest_neighbor"])
     return result

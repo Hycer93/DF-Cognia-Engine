@@ -236,8 +236,51 @@ try:
     _st13 = _os13.path.join(HERE, "logs", "e10_semantic_state.json")
     if _os13.path.exists(_st13):
         _os13.remove(_st13)
+
+
 except Exception as _e13:
     check("E10语义离群Mock: cue合格但语义错挂卡被抓(cue命中掩护无效)", False, repr(_e13)[:100])
+
+# 用例14: E10引用性提及假阳性(2026-11-16 终审裁决固化, 4条真实样本模式)
+# 模式: 卡正文仅举例引用簇关键词(cue单命中+统计合格), 本体主题不属于该簇
+# Mock: 星型拓扑簇6张真拓扑卡 + 1张'版本史中提到星型拓扑'的专利总账卡
+try:
+    _s14 = "星型拓扑%d号节点中心进化外围固化策略 P10联邦演进"
+    import sqlite3 as _sq14, datetime as _dt14, os as _os14
+    _rc14 = _sq14.connect(_os14.path.join(HERE, "data", "memory", "corpus_store.db"))
+    _now14 = _dt14.datetime.now().isoformat(timespec="seconds")
+    for _s in ["DELETE FROM topic_links WHERE inst_id LIKE 'ff%' OR topic_id='topic_ff_mock'",
+               "DELETE FROM core_memory_card WHERE inst_id LIKE 'ff%'",
+               "DELETE FROM topic_abstraction WHERE topic_id='topic_ff_mock'"]:
+        _rc14.execute(_s)
+    for _k in range(6):
+        _iid = "ff%031d" % _k
+        _rc14.execute("INSERT INTO core_memory_card (inst_id, ts, full_hash, asset_class, repro, confidence, dfcp_tag, summary) VALUES (?,?,?,?,?,?,?,?)",
+                      (_iid, _now14, "f%d" % _k, "runtime", "na", 0.5, "005-002", _s14 % _k))
+        _rc14.execute("INSERT INTO topic_links VALUES (?,?,?,?)", (_iid, "topic_ff_mock", "seed", _now14))
+    _iid_ref = "ff1" + "0" * 30 + "2"
+    _rc14.execute("INSERT INTO core_memory_card (inst_id, ts, full_hash, asset_class, repro, confidence, dfcp_tag, summary, detail) VALUES (?,?,?,?,?,?,?,?,?)",
+                  (_iid_ref, _now14, "fref", "runtime", "na", 0.5, "005-002",
+                   "专利矩阵版本总账(四版口径演变)", "r773表14件→r807十六件→origin2-r028十一项矩阵(P1-P11重编号+星型拓扑), 用户r807裁定专利布局暂停"))
+    _rc14.execute("INSERT INTO topic_links VALUES (?,?,?,?)", (_iid_ref, "topic_ff_mock", "seed", _now14))
+    _rc14.execute("INSERT INTO topic_abstraction (topic_id, topic_abstract, topic_vector, cue_anchors, status, create_ts, update_ts) VALUES (?,?,?,?, 'active', ?, ?)",
+                  ("topic_ff_mock", "mock", "[]", '["星型拓扑"]', _now14, _now14))
+    _rc14.commit()
+    import importlib.util as _ilu14
+    _spec14 = _ilu14.spec_from_file_location("e10_patrol14", _os14.path.join(HERE, "eval", "core", "e10_semantic_outlier_patrol.py"))
+    _e10m = _ilu14.module_from_spec(_spec14)
+    _spec14.loader.exec_module(_e10m)
+    _r14 = _e10m.run(full=True)
+    _ref_alerted = any(a["inst_id"] == _iid_ref for a in _r14["alerts"])
+    check("E10引用性提及假阳性: 版本史引用'星型拓扑'的专利卡被抓(本体不属于簇)",
+          _ref_alerted, str([a["summary"][:36] for a in _r14["alerts"] if a["inst_id"] == _iid_ref]))
+    for _s in ["DELETE FROM topic_links WHERE inst_id LIKE 'ff%' OR topic_id='topic_ff_mock'",
+               "DELETE FROM core_memory_card WHERE inst_id LIKE 'ff%'",
+               "DELETE FROM topic_abstraction WHERE topic_id='topic_ff_mock'"]:
+        _rc14.execute(_s)
+    _rc14.commit(); _rc14.close()
+except Exception as _e14:
+    check("E10引用性提及假阳性: 版本史引用'星型拓扑'的专利卡被抓(本体不属于簇)", False, repr(_e14)[:100])
 
 
 print(f"\n结果: {len(PASS)} PASS / {len(FAIL)} FAIL")
