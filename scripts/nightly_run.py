@@ -31,6 +31,9 @@ ENV = {**os.environ, "NO_MEMORY": "1", "PYTHONIOENCODING": "utf-8",
                                 # 零锚全部强制人工 hold, 不会自动放行/自动建锚
 
 STEPS = [
+    # E0 开关守卫(2026-11-16 用户指令: TOPIC_LAYER_ON 断层曾全程静默——本探针把
+    # "开关被意外关闭/锚管道断裂"变成硬 FAIL, 不再默默业务断层)
+    ("E0 topic锚开关守卫", [PY, "eval/core/e0_topic_gate_guard.py"], None),
     # 2026-11-15 用户裁决: E3(一次性审计, 归 eval/audit/)与E8(影子演习, 归 eval/drill/)
     # 均摘出主链; 主链=纯本地无人值守内务闭环, 只串 eval/core/ 六脚本
     ("E2 反问门标定扫描", [PY, "eval/core/e2_gate_calibration.py"], "logs/e2_gate_calibration.json"),
@@ -170,9 +173,12 @@ def write_report(durations):
                      f"({s['dirty_rate']:.1%})")
         for p in e3["pools"]:
             if p["total"] - p["clean"] > 0:
+                # bad_json 兼容两代产物: v1(e3_sft_audit)=int计数, v2=e3_sft_audit_v2=list
+                bj = p.get("bad_json", 0)
+                bj = bj if isinstance(bj, int) else len(bj)
                 detail = (f"占位{len(p.get('placeholder', []))} "
                           f"空内容{len(p.get('empty', []))} "
-                          f"坏JSON{len(p.get('bad_json', []))} "
+                          f"坏JSON{bj} "
                           f"缺src{len(p.get('bad_src', []))} "
                           f"坏骨架码{len(p.get('bad_skeleton', []))} "
                           f"重复{len(p.get('dup', []))}")
