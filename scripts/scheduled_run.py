@@ -47,7 +47,8 @@ def main():
 
     plan_ts = args.at or datetime.now().strftime("%H:%M")
     t0 = time.time()
-    env = {**os.environ, "NO_MEMORY": "1", "PYTHONIOENCODING": "utf-8"}
+    env = {**os.environ, "NO_MEMORY": "1", "PYTHONIOENCODING": "utf-8",
+           "TOPIC_LAYER_ON": "1"}   # 2026-11-16 用户裁决: 主题锚层全局开关启用(方案A)
     log = open(os.path.join(LOGS, "nightly_console.log"), "ab")
     r = subprocess.run([sys.executable, "scripts/nightly_run.py"], cwd=HERE, env=env,
                        stdout=log, stderr=subprocess.STDOUT)

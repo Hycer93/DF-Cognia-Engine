@@ -25,7 +25,10 @@ import time
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOGS = os.path.join(HERE, "logs")
 PY = sys.executable
-ENV = {**os.environ, "NO_MEMORY": "1", "PYTHONIOENCODING": "utf-8"}
+ENV = {**os.environ, "NO_MEMORY": "1", "PYTHONIOENCODING": "utf-8",
+       "TOPIC_LAYER_ON": "1"}   # 2026-11-16 用户裁决: 主题锚层全局开关正式启用
+                                # (方案A)——新入库卡片自动走 mount_topic 锚判定,
+                                # 零锚全部强制人工 hold, 不会自动放行/自动建锚
 
 STEPS = [
     # 2026-11-15 用户裁决: E3(一次性审计, 归 eval/audit/)与E8(影子演习, 归 eval/drill/)
