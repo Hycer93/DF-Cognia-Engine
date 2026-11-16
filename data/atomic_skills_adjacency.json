@@ -2,7 +2,7 @@
   "_schema": "atomic_meta_core_adjacency_v1",
   "_doc": "原子化元核·中心化邻接表(2026-11-16 用户定案)。规约: ①技能只能在 next_options 暴露逻辑连通后继, 禁止硬编码写死在技能内部; ②本文件是唯一权威源, 技能实现不得自带旁路连通表; ③加载时与文件变更时双触发校验(见 eval/experiment/adjacency_validator.py), 校验不过拒绝加载; ④v1 为地基试点版: 只登记骨架结构 + 首批试点技能(skill_anchor_target), 其余节点逐个讨论达成共识后登记(一次一个节点, 禁一次性批量定义)。",
   "version": 1,
-  "updated_ts": "2026-11-16T13:20:00",
+  "updated_ts": "2026-11-16T14:40:00",
   "global": {
     "max_steps": 24,
     "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)"
@@ -21,10 +21,10 @@
       "dfcp_link": "无(纯思考技能, 不读记忆库)"
     },
     "skill_scope_scan": {
-      "role": "任务空间平铺扫描(原 Aa/G00)",
+      "role": "任务空间平铺扫描(原 Aa/G00; 七段定稿 2026-11-16: v1 仅收编 behavior-1 任务空间扫描, 参数变更溯源/遗留问题回溯移出待跨任务技能)",
       "state_inputs": ["goal_anchored", "flags"],
-      "state_outputs": ["sub_questions", "summary"],
-      "result_fields": ["sub_questions", "key_parameters", "domains_touched", "summary"],
+      "state_outputs": ["sub_questions", "summary", "flags.scan_confidence"],
+      "result_fields": ["sub_questions", "key_parameters", "domains_touched", "summary", "confidence", "ambiguity_note"],
       "next_options": [
         {"skill": "skill_terminate", "gain": "扫描后任务空间已闭合, 无需深挖", "cost": "零"},
         {"skill": "__planned__", "gain": "深挖方向(source_intent/weakest_link 等)待逐节点讨论登记后开放——v1 地基版只保留终止通道, 保证可达性不撒谎", "cost": "待登记"}
