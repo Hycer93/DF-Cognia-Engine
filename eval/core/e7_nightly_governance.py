@@ -48,6 +48,9 @@ DECAY_DAYS = 90             # 与 design_paradigm_layer.md / render_persona.py �
 #   只回滚 resolved_by='e7-auto' 的治理动作(人工裁决永不被机器回滚)。
 EMERGENCY_STOP_FILE = os.path.join(_HERE, "data", "memory", "E7_EMERGENCY_STOP")
 
+# cue 区分度阈值: 与 topic_layer.CUE_DISCRIM_MIN 保持一致(单一来源, import 引用)
+from memory.topic_layer import CUE_DISCRIM_MIN as _CUE_DISCRIM_MIN_E7
+
 def emergency_stop_active():
     return os.path.exists(EMERGENCY_STOP_FILE)
 
@@ -208,6 +211,40 @@ def _check_type_of(r):
 
 
 # ---------- P2 高频簇巡检 ----------
+
+def p2b_cue_discrimination_recheck(con, result):
+    """P2b cue 区分度周期复检（2026-11-16 用户裁决 B 案: 只读告警, 不改配置）。
+    背景: cue 判别力自证规约(topic_layer._cue_discrimination)只在
+    seed_topic 创建/更新锚时校验一次; 随库演化他簇卡片增多, 达标 cue 会
+    慢慢变质跌破阈值成为高误吸源。本步每轮 E7 全量复检 active 锚 cue。
+    红线: 只产出告警写入审计日志+可疑清单——绝不自动修改/删除锚 cue
+    (锚属元配置, 变更必须人闸)。"""
+    from memory.topic_layer import _cue_discrimination
+    warnings = []
+    checked = 0
+    try:
+        anchors = con.execute(
+            "SELECT topic_id, cue_anchors FROM topic_abstraction WHERE status='active'").fetchall()
+        for tid, cues_json in anchors:
+            samples = [r[0] for r in con.execute(
+                "SELECT inst_id FROM topic_links WHERE topic_id=?", (tid,)).fetchall()]
+            for cu in json.loads(cues_json):
+                r = _cue_discrimination(cu, samples)
+                total = r["n_in"] + r["n_other"]
+                if total == 0:
+                    continue          # 前瞻零命中: 无现有数据危害, 跳过
+                checked += 1
+                if not r["ok"]:
+                    warnings.append({"topic_id": tid, "cue": cu,
+                                     "n_in": r["n_in"], "n_other": r["n_other"],
+                                     "disc": round(r["ratio"], 2),
+                                     "note": "cue区分度跌破阈值 %.2f——只告警不自动删改, 人工复审裁决" % _CUE_DISCRIM_MIN_E7})
+    except Exception as e:
+        result["p2b_cue_recheck"] = {"ok": False, "error": str(e), "warnings": []}
+        return
+    result["p2b_cue_recheck"] = {"ok": True, "checked": checked,
+                                 "warnings": warnings}
+
 
 def p2_high_freq_inspect(con, result):
     """inspect_freq='high' 簇逐卡核对锚词; 无关卡上交 pending 提案(不自动踢)"""
@@ -372,6 +409,7 @@ def main():
     try:
         p1_hold_review(con, result)
         p2_high_freq_inspect(con, result)
+        p2b_cue_discrimination_recheck(con, result)
         p3_paradigm_calibration(con, result)
     finally:
         con.close()
@@ -385,9 +423,11 @@ def main():
     if p1.get("emergency_stop") or p2.get("emergency_stop"):
         print(f"[E7] ⚠ 紧急总开关生效中 ({EMERGENCY_STOP_FILE}) — 自动治理全暂停, 仅输出观察提案")
     else:
+        p2b = result.get("p2b_cue_recheck", {})
         print(f"[E7] hold分流: 自动放行 {p1.get('auto_released',0)} | 自动留置 {p1.get('auto_kept',0)} "
               f"| 人工队列 {len(p1.get('manual_queue',[]))} | 高频簇可疑 {len(p2.get('suspicious',[]))} "
-              f"| 证据回写 {result['p4_evidence']['written']} 条")
+              f"| 证据回写 {result['p4_evidence']['written']} 条"
+              + (f" | cue复检 {p2b.get('checked',0)}项/告警{len(p2b.get('warnings',[]))}条" if p2b else ""))
     _print_audit_detail(result)   # 人闸审计明细(带卡摘要, 可读性规约 2026-11-16)
 
 
@@ -415,6 +455,15 @@ def _print_audit_detail(result):
                 print("    规则: %s | 裁决: %s@%s | 到期: %s"
                       % (a["rule_triggered"][:60], a["last_judge"]["by"], a["last_judge"]["at"][:16],
                          (a["expire_at"] or "?")[:10]))
+
+        p2b = result.get("p2b_cue_recheck", {})
+        p2b_warn = p2b.get("warnings", [])
+        if p2b_warn:
+            print("\n— P2b cue区分度变质告警 (%d条, 只告警不删改, 人工裁决) —" % len(p2b_warn))
+            for w in p2b_warn:
+                print("  [%s] cue: %s (簇内%d/他簇%d, 区分度%.2f < %.2f)"
+                      % (w["topic_id"], w["cue"], w["n_in"], w["n_other"], w["disc"], _CUE_DISCRIM_MIN_E7))
+                print("    %s" % w["note"])
 
         susp = result.get("p2_high_freq", {}).get("suspicious", [])
         if susp:
