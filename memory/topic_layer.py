@@ -267,38 +267,69 @@ def conflict_gate(inst_a: dict, inst_b: dict) -> dict:
 
 # ---------------- 建锚与存量回填（保守：只建高置信簇） ----------------
 
-# ---- 锚 cue 结构规约（2026-11-16 用户裁决: 动宾/名词复合才可成锚） ----
+# ---- 锚 cue 资格规约（2026-11-16 用户裁决: 判别力自证, 不养名单） ----
 # 背景: memory_ops 锚曾收孤立泛动词"推演", 误吸一切含"推演"的新卡造成
-# 多锚歧义——逐词删补丁打不完, 改为入口结构性拒绝。
-# 判据: cue 须动宾复合/名词短语(工程判据 len>=4); 孤立双字动词(如
-# "推演/复盘/挂载")一律拒绝; 专业专名登记 _CUE_EXEMPT_TERMS 豁免(须附理由)。
-# 泛动词黑名单: 跨主题误吸的孤立动词/泛词(2026-11-16 存量体检实发)
-_CUE_BANNED_TERMS = {"推演", "复盘", "挂载", "还债", "反思", "留痕", "伪演示"}
-# 专名豁免白名单: 领域专名虽短但语义专一(登记须附锚归属理由)
-_CUE_EXEMPT_TERMS = {
-    "P10", "P12", "P22", "p10vs", "G22", "F系",                 # 星型拓扑/G22决策/记忆运维编号专名
-    "脑区", "海马体", "前额叶", "杏仁核",                         # 脑科学专名
-    "非农", "金价", "ETF", "建仓", "挂单", "股价", "仓位", "季报",  # 金融专名
-    "溯零", "陈默", "林舟",                                       # 小说专名
-    "8397", "HVAC", "右舵",                                      # 车机专名
-    "归元仔", "暮暮",                                             # 用户关系专名
-    "元核", "七段", "邻接表", "交底书", "专利",                    # 元核/专利领域专名
-}
+# 多锚歧义。第一版黑/白名单方案被否(名单会无限生长, 兜不住)。
+# 结构性解: cue 的资格不由人判, 由数据判——区分度回测(IDF 思想):
+#   合法 cue 须能把本簇卡片从全库区分出来, 而非到处命中。
+# 判据(全本地零LLM零名单, v2.1):
+#   n_in    = cue 在本簇种子样本卡中的命中数 (须 >=1, 防拍脑袋词)
+#   n_other = cue 在已挂载他簇卡中的命中数   (跨簇误吸=唯一致命噪声)
+#   区分度 = n_in/(n_in+n_other) >= CUE_DISCRIM_MIN
+# 未挂载卡命中(召回目标)不计噪声; 纯前瞻词(n_in=n_other=0)放行。
+# 对未来任何新泛动词(哪怕4字复合"启动复盘")均因跨簇命中被拒——无需登记。
+CUE_DISCRIM_MIN = 0.5   # 簇内命中须占全库命中的一半以上
 
-def _cue_valid(cue) -> bool:
-    if not isinstance(cue, str) or not cue.strip():
-        return False
-    cue = cue.strip()
-    if cue in _CUE_BANNED_TERMS:      # 泛动词一律拒
-        return False
-    return len(cue) >= 4 or cue in _CUE_EXEMPT_TERMS
+
+def _cue_discrimination(cue: str, sample_ids: list) -> dict:
+    """回测单个 cue 的跨簇区分度。sample_ids=本簇种子样本卡(建锚底稿)。
+    v2.1 修正(2026-11-16 自测发现): cue 有双重角色——前瞻召回词(为未来
+    卡准备, 全库零命中合法)与簇内实词。真正的危险信号是**跨簇误吸**:
+    cue 命中了已挂载到其他主题的卡 → 会造成多锚歧义(推演死因)。
+      n_in    = cue 命中本簇样本卡数
+      n_other = cue 命中已挂载到其他主题的卡数(唯一致命噪声)
+      未挂载卡(hold/新卡)命中不算噪声——那正是召回目标
+    判据: n_in >= 1(防拍脑袋词) 且 n_in/(n_in+n_other) >= CUE_DISCRIM_MIN;
+    纯前瞻词(n_in=0 且 n_other=0)合法放行。
+    职责边界: 本判据挡增量(新建/更新cue时的资格), 不洗存量——若簇已被
+    泛动词污染(如9张含'推演'卡曾挂memory_ops), 污染词在污染样本下自证
+    通过属判据边界, 存量清洗归 E7 复审管辖。"""
+    samples = set(sample_ids or [])
+    c = _conn()
+    try:
+        rows = c.execute(
+            "SELECT inst_id, summary, detail FROM core_memory_card "
+            "WHERE status IS NULL OR status != 'superseded'").fetchall()
+        mounted = {}
+        for iid, tid in c.execute("SELECT inst_id, topic_id FROM topic_links"):
+            mounted.setdefault(iid, set()).add(tid)
+    finally:
+        c.close()
+    n_in = n_other = 0
+    for iid, s, d in rows:
+        if not (cue and cue in f"{s or ''} {d or ''}"):
+            continue
+        if iid in samples:
+            n_in += 1
+        else:
+            other_tids = mounted.get(iid, set())
+            if other_tids:          # 已挂他簇 → 跨簇噪声
+                n_other += 1
+            # 未挂载卡: 召回目标, 不计噪声
+    denom = n_in + n_other
+    ratio = (n_in / denom) if denom else 1.0
+    ok = (n_in >= 1 and ratio >= CUE_DISCRIM_MIN) or (n_in == 0 and n_other == 0)
+    return {"n_in": n_in, "n_other": n_other, "ratio": ratio, "ok": ok}
 
 
 def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None,
-               manual_seed: bool = False, inspect_freq: str = "normal") -> str:
+               manual_seed: bool = False, inspect_freq: str = "normal",
+               sample_ids: list = None) -> str:
     """显式建锚（人工/建锚脚本）。幂等：已存在则只更新 abstract/cues。
-    cue 结构规约(2026-11-16): 须动宾复合/名词短语(len>=4)或豁免专名;
-    孤立泛动词被拒——防泛动词锚误吸卡片(结构性解, 不打补丁)。
+    cue 资格规约(2026-11-16 判别力自证): 每个候选 cue 须在本簇种子样本
+    卡中真实命中且区分度 n_in/n_all >= 0.5(泛动词跨簇命中自动出局,
+    不养黑/白名单)。sample_ids=本簇种子卡(建锚底稿); 已存在锚更新时
+    默认取该锚现有挂载卡为样本。
 
     manual_seed=True（2026-11-14 用户裁决三条枷锁）：
       ① 特殊标记人工种子锚，区别于自动生长锚——特例不成为先例，
@@ -306,9 +337,21 @@ def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None,
       ② inspect_freq='high'：每晚 E7 复审优先检查该簇，混入明显不属于
          该主题的卡片优先上交 pending，不自动接纳；
       ③ 不受低访问归档（规约6 豁免）：人工种子锚由人工管理生命周期。"""
-    bad_cues = [cu for cu in (cue_anchors or []) if not _cue_valid(cu)]
+    # cue 判别力回测: 样本未显式给则用该锚现有挂载卡(幂等更新路径)
+    if sample_ids is None:
+        c0 = _conn()
+        try:
+            sample_ids = [r[0] for r in c0.execute(
+                "SELECT inst_id FROM topic_links WHERE topic_id=?", (topic_id,)).fetchall()]
+        finally:
+            c0.close()
+    bad_cues = []
+    for cu in cue_anchors or []:
+        r = _cue_discrimination(cu, sample_ids)
+        if not r["ok"]:
+                bad_cues.append("%s(簇内%d/他簇噪声%d, 区分度%.2f)" % (cu, r["n_in"], r["n_other"], r["ratio"]))
     if bad_cues:
-        raise ValueError("锚cue结构规约拒绝(须动宾复合/名词短语len>=4, 专名走豁免表): %s" % bad_cues)
+        raise ValueError("锚cue资格拒绝(判别力自证: 须簇内命中>=1且区分度>=0.5): %s" % bad_cues)
     now = datetime.now().isoformat(timespec="seconds")
     c = _conn()
     try:
