@@ -90,8 +90,9 @@ def _transcript_backfill(day, subs, report):
     stored = 0
     dup = 0
     for hhmm, text in subs:
-        # 判重与入库用同一形态(带前缀), 否则历史段(带前缀)与新段(裸文)hash错位漏判
-        body = "[用户提交-transcript兜底] %s" % text
+        # 2026-11-16 用户裁决①: 正文与来源前缀解耦——body 存纯净正文, simhash 只作用于
+        # 纯正文, 来源通道标签在 title 元字段。杜绝不同通道前缀导致的 hash 形态错位。
+        body = text
         sh = gate._simhash(body)
         if any(gate._hamming(sh, old) <= 6 for old in day_sh):
             dup += 1                       # 同源/相似段: 引用去重(规约四)
@@ -100,7 +101,7 @@ def _transcript_backfill(day, subs, report):
         cid = "dialog.%s.tseg%02d" % (day, seg_n)
         cs.upsert_corpus(cid, "session_dialog", body, tree_vol=day,
                          tree_ch="tseg%02d" % seg_n,
-                         title="codechat-transcript",
+                         title="codechat-transcript[用户提交]",
                          # 来源指针(规约③): 路径+当日窗口, 可追溯可剔除
                          source_ref="%s; window=%s %s" % (TRANSCRIPT, day, hhmm))
         day_sh.append(sh)
@@ -211,7 +212,7 @@ def _print_audit_detail(today, report):
         try:
             for l in io.open(PENDING, encoding="utf-8"):
                 d = json.loads(l)
-                if d.get("source", "").startswith("E9夜间扫描 %s" % today):
+                if (d.get("source") or "").startswith("E9夜间扫描 %s" % today):
                     print("  拟卡: %s" % d["summary"][:90])
                     print("    %s" % d["detail"][:150])
         except FileNotFoundError:
