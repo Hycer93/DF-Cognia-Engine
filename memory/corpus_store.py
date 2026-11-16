@@ -66,6 +66,14 @@ CREATE INDEX IF NOT EXISTS idx_raw_tree ON raw_corpus(tree_vol, tree_ch);
 CREATE INDEX IF NOT EXISTS idx_raw_kind ON raw_corpus(kind);
 CREATE INDEX IF NOT EXISTS idx_tags_key ON corpus_tags(tag_key, tag_value);
 CREATE INDEX IF NOT EXISTS idx_iter_corpus ON iterations(corpus_id);
+
+-- 2026-11-16 方案B(用户裁决): 对话段全局单调序列表。
+-- 纪律: 业务代码禁止 SELECT MAX+1, 只准经 next_dialog_seq() 事务内原子拿号。
+-- 新旧 id 共存: 历史段保留旧格式; 新段 = dialog.<date>.<ch>nnnn(尾号全局池)。
+CREATE TABLE IF NOT EXISTS dialog_seq (
+    seq_name TEXT PRIMARY KEY DEFAULT 'dialog',
+    last_seq INTEGER NOT NULL DEFAULT 0
+);
 """
 
 
@@ -85,6 +93,23 @@ def init_db():
 
 def _hash(body: str) -> str:
     return hashlib.sha256(body.encode("utf-8")).hexdigest()[:16]
+
+
+def next_dialog_seq() -> int:
+    """对话段全局序列原子取号(2026-11-16 方案B)。
+    事务内 UPDATE 自增返回, 并发安全; 所有入库通道(hook seg / transcript tseg)
+    共用同一池——规约: 业务代码禁止绕过本原语自行 SELECT MAX+1。"""
+    c = _conn()
+    try:
+        # 起跳水位: 首次初始化时抬到 10000, 高于现存所有旧格式单日尾号(历史峰值~252),
+        # 保证新旧 id 空间天然不重叠; 之后每次事务内 +1。
+        c.execute("INSERT OR IGNORE INTO dialog_seq (seq_name, last_seq) VALUES ('dialog', 10000)")
+        c.execute("UPDATE dialog_seq SET last_seq = last_seq + 1 WHERE seq_name='dialog'")
+        n = c.execute("SELECT last_seq FROM dialog_seq WHERE seq_name='dialog'").fetchone()[0]
+        c.commit()
+        return n
+    finally:
+        c.close()
 
 
 def upsert_corpus(id_: str, kind: str, body: str, *, tree_vol=None, tree_ch=None,

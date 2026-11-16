@@ -81,12 +81,6 @@ def _transcript_backfill(day, subs, report):
     todays = [cs.get_corpus(r["id"]) for r in
               cs.list_corpus(kind="session_dialog", tree_vol=day)]
     day_sh = [gate._simhash(s["body"]) for s in todays if s]
-    # 编号取当日段历史高水位(含 superseded), 防清重复后 id 复用撞 UNIQUE
-    import sqlite3 as _sq
-    _c = _sq.connect(cs.DB_PATH)
-    base_n = _c.execute("SELECT COUNT(*) FROM raw_corpus WHERE id LIKE 'dialog.%s.tseg%%'"
-                        % day).fetchone()[0]
-    _c.close()
     stored = 0
     dup = 0
     for hhmm, text in subs:
@@ -97,10 +91,12 @@ def _transcript_backfill(day, subs, report):
         if any(gate._hamming(sh, old) <= 6 for old in day_sh):
             dup += 1                       # 同源/相似段: 引用去重(规约四)
             continue
-        seg_n = base_n + stored + 1
-        cid = "dialog.%s.tseg%02d" % (day, seg_n)
+        # 2026-11-16 用户裁决②(方案B): 尾号取全局序列池原子分配, 不再当日计数。
+        # id = dialog.<date>.t<全局尾号>(t=transcript通道标识, 保留 seg/tseg 区分)
+        n = cs.next_dialog_seq()
+        cid = "dialog.%s.t%04d" % (day, n)
         cs.upsert_corpus(cid, "session_dialog", body, tree_vol=day,
-                         tree_ch="tseg%02d" % seg_n,
+                         tree_ch="t%04d" % n,
                          title="codechat-transcript[用户提交]",
                          # 来源指针(规约③): 路径+当日窗口, 可追溯可剔除
                          source_ref="%s; window=%s %s" % (TRANSCRIPT, day, hhmm))
@@ -224,7 +220,8 @@ def _print_audit_detail(today, report):
     tr = report.get("transcript", {})
     if tr.get("stored"):
         rows = cs.list_corpus(kind="session_dialog", tree_vol=today)
-        tsegs = [cs.get_corpus(r["id"]) for r in rows if ".tseg" in r["id"]]
+        tsegs = [cs.get_corpus(r["id"]) for r in rows
+                 if ".tseg" in r["id"] or ".t1" in r["id"] or ".t2" in r["id"]]
         print("— transcript 兜底入库 %d 段, 样例: —" % tr["stored"])
         for s in tsegs[:3]:
             print("  [%s] %s" % (s["id"][-6:], s["body"][:90]))
