@@ -81,8 +81,10 @@ def p1_hold_review(con, result):
         if r["reference_mention"]:
             # 引用性提及: 查此后同锚词是否出现核心讨论卡(summary 命中)
             # reason 字段存了 evidence_gap 描述, 锚词查 topic_links 该卡当前状态
+            # 2026-11-16 ID收口: 短id存量已全量迁移为32位全id(见 logs/id_seq_migration_20261116.json),
+            # LIKE 前缀兼容摘除——全id等值查询
             has_core = con.execute(
-                "SELECT COUNT(*) FROM topic_links WHERE inst_id=? OR inst_id LIKE ?", (r["inst_id"], r["inst_id"] + "%")).fetchone()[0]
+                "SELECT COUNT(*) FROM topic_links WHERE inst_id=?", (r["inst_id"],)).fetchone()[0]
             prop = {"inst_id": r["inst_id"], "proposal": "propose_release" if has_core else "propose_stale",
                     "reason": ("锚词已现核心讨论卡" if has_core else f"引用性提及滞留{age_days}d无核心讨论"),
                     "age_days": age_days}
@@ -233,8 +235,9 @@ def _print_audit_detail(result):
     con = _conn()
     try:
         def card_summary(iid):
-            r = con.execute("SELECT summary FROM core_memory_card WHERE inst_id=? OR inst_id LIKE ?",
-                            (iid, iid + "%")).fetchone()
+            # 2026-11-16 ID收口: LIKE 兼容摘除, 全id等值查询(短id存量已迁移)
+            r = con.execute("SELECT summary FROM core_memory_card WHERE inst_id=?",
+                            (iid,)).fetchone()
             return (r["summary"][:80] + "…") if r and len(r["summary"]) > 80 else (r["summary"] if r else "!!卡不存在")
 
         hold = result.get("p1_hold", {}).get("proposals", [])

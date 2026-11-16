@@ -141,7 +141,21 @@ def classify_topic(summary: str, detail: str = "") -> dict:
 
 def mount_topic(inst_id: str, summary: str, detail: str = "", *, method: str = "judge") -> dict:
     """挂载入口（memory_hook.add 管道新增步骤）。幂等。
-    verdict=hold → 写 hold 池（topic_id=null 等夜间）；anchor → 写 topic_links。"""
+    verdict=hold → 写 hold 池（topic_id=null 等夜间）；anchor → 写 topic_links。
+    2026-11-16 ID收口纪律(用户指令): enqueue 写入口强制 32 位全 id 形态校验,
+    短 id 一律拒绝——防历史 bug 复发(短/全混存曾致 E7 双 LIKE 兼容与伪 id)。
+    32 位形态通过后再验卡表真实存在——防抄错字符的伪全 id 幽灵挂载
+    (2026-11-16 实发: 7a499925d363436f 抄错一位照样挂进 topic_links)。"""
+    if not (isinstance(inst_id, str) and len(inst_id) == 32):
+        return {"verdict": "reject", "topic_id": None,
+                "evidence_gap": f"非法 id 形态(需32位hex全id, got len={len(inst_id) if isinstance(inst_id, str) else type(inst_id).__name__})"}
+    _c = _conn()
+    try:
+        if not _c.execute("SELECT 1 FROM core_memory_card WHERE inst_id=?", (inst_id,)).fetchone():
+            return {"verdict": "reject", "topic_id": None,
+                    "evidence_gap": "伪全id: 卡表不存在该 inst_id(拒幽灵挂载)"}
+    finally:
+        _c.close()
     v = classify_topic(summary, detail)
     now = datetime.now().isoformat(timespec="seconds")
     if v["verdict"] == "anchor":
@@ -272,7 +286,11 @@ def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None,
 
 
 def mount_batch(inst_ids: list, topic_id: str, method: str = "seed"):
-    """批量挂载（建锚脚本用）。只挂不合并不删卡不改 class（设计文档§四）。"""
+    """批量挂载（建锚脚本用）。只挂不合并不删卡不改 class（设计文档§四）。
+    2026-11-16 ID收口纪律: 同 mount_topic 强制 32 位全 id, 混入短 id 整批拒绝。"""
+    bad = [i for i in inst_ids if not (isinstance(i, str) and len(i) == 32)]
+    if bad:
+        raise ValueError(f"mount_batch 拒绝非法 id 形态(需32位hex全id): {bad[:3]}")
     now = datetime.now().isoformat(timespec="seconds")
     c = _conn()
     try:
