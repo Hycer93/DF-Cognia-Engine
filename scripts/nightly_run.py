@@ -47,6 +47,11 @@ STEPS = [
     # trace 月度归档（2026-11-15 #31 切换步骤④：主库流水开始灌入后归档能力直接就位；
     # 热窗30天, 归档前对账守恒, 切换读源后主库不再无限膨胀）
     ("T1 trace月度归档", [PY, "memory/trace_archive.py"], "logs/e7_governance.json"),
+    # F20 夜间守卫（2026-11-16 用户裁决：挂主链尾部, 归属 experiment 不升级进 core;
+    # 仅跑 baseline β=1.0 守卫基线, 保守/激进档位只在手动消融启用; PASS/FAIL 翻转→
+    # 晨报高亮告警但不阻塞 E 系 core 主链; 完整快照独立 logs/f20/nightly_<date>/,
+    # 晨报只放摘要。守卫自身吞错恒退出 0——experiment 层不惊扰主链步骤状态）
+    ("F20 基线守卫(experiment)", [PY, "eval/experiment/f20_nightly_guard.py"], "logs/f20/guard_latest.json"),
 ]
 
 
@@ -277,6 +282,33 @@ def write_report(durations):
             lines.append("- 无 ≥3 同型候选（范式=3案起步，两案定势太险）")
     except Exception as e:
         lines.append(f"(案例层读取失败: {e})")
+
+    # F20 基线守卫摘要（2026-11-16 用户裁决：experiment 层, 挂主链尾部,
+    # 翻转晨报高亮但不阻塞 E 系 core; 摘要来自 guard_latest.json,
+    # 完整链路快照在 logs/f20/nightly_<date>/）
+    # 夜间回归规约: 只校验链路可达性(判定)与排序相对位次稳定; 权重具体
+    # 数值允许小幅浮动(F 因子 90d 半衰逐晚衰减属正常), 链路出局(判定翻转)
+    # 或座次颠倒(top-k 位次变化)才判故障。λ_debt=0.5 锁定(用户裁决)。
+    lines.append("\n## F20 基线守卫（experiment, 不阻塞 core）\n")
+    try:
+        with open(os.path.join(LOGS, "f20", "guard_latest.json"), encoding="utf-8") as f:
+            g = json.load(f)
+        if g.get("flipped") or g.get("rank_shifted"):
+            lines.append("**⚠️ F20 基线异常（高亮告警，不阻塞 E 系 core 主链）**")
+        else:
+            lines.append("基线稳定：五场景判定与排序位次全部一致（λ_debt=0.5, β=baseline）")
+        for s in g.get("scenarios", []):
+            mark = (" ⚠️翻转" if s.get("flip") else "") + \
+                   ("" if s.get("rank_ok") else " ⚠️位次移动")
+            lines.append(f"- {s['name']}: {s['verdict']}（基线 {s['expected']}）{mark}")
+        if g.get("errors"):
+            lines.append(f"- 执行异常 {len(g['errors'])} 场景（吞错不阻塞）: "
+                         + "; ".join(e["name"] for e in g["errors"]))
+        lines.append(f"- 完整快照: `{g.get('snapshot_dir', 'logs/f20/nightly_?')}/`")
+    except FileNotFoundError:
+        lines.append("(守卫尚未跑过——首晚挂载后自动生成)")
+    except Exception as e:
+        lines.append(f"(guard_latest.json 读取失败: {e})")
 
     # E8 影子对话实测（2026-11-13 摘出主链, 用户裁决: 夜间主线=无人值守纯本地内务;
     # E8 依赖人工喂标签+外部DS资源, 改为按需手动触发 eval/drill/e8_shadow_dialog.py。

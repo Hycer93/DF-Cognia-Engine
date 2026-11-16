@@ -359,7 +359,9 @@ def main():
         w2, fac = f20.score_branch(_con, b, step=1, profile=_profile)
         _scored.append({**b, "w_uniform": b["weight"], "weight": w2, "f20_factors": fac})
     _con.close()
-    _scored.sort(key=lambda x: -x["weight"])
+    # 次级键 inst_id: 权重并列(如同簇同因子兄弟卡)时定序确定化,
+    # 否则 DB 行序漂移会让守卫的"位次稳定"校验在同权并列处抖动
+    _scored.sort(key=lambda x: (-x["weight"], x["to"] or ""))
     branches = _scored[:CONFIG["K"]]
     all_branches = _scored
     # F40

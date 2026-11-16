@@ -80,7 +80,9 @@ def factor_fresh(con, iid, now=None):
         t = datetime.fromisoformat((s or "")[:19])
     except ValueError:
         t = now - timedelta(days=365)
-    age = max(0.0, (now - t).days)
+    # 连续 age(秒级/86400): 不用 .days 整数截断——同日 ts 相差数分钟的卡
+    # 会在跨午夜后跳 1 天档, 造成同权并列簇内位次抖动(2026-11-16 守卫实测)
+    age = max(0.0, (now - t).total_seconds() / 86400.0)
     return 0.5 ** (age / FRESH_HALFLIFE_DAYS)
 
 
