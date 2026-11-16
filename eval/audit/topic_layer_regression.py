@@ -17,11 +17,11 @@ def check(name, cond, detail=""):
 print("== Topic锚层回归（六规约验收） ==")
 
 # --- 用例1: 建锚+挂载(已由 seed_topics.py 完成, 此处验状态) ---
-# 基线: 2026-11-15图谱还债专项后 11 active锚 = 原簇5 + 还债簇6(全manual_seed)
+# 基线: 2026-11-16元核锚评审后 12 active锚 = 原5 + 还债簇6(全manual_seed) + topic_atomic_metacore(manual_seed)
 seed_n = tl._conn().execute("SELECT COUNT(*) FROM topic_abstraction WHERE status='active' AND manual_seed=1").fetchone()[0]
 tl.init_topic_db()
 s = tl.stats()
-check(f"锚表就绪(11 active, 含{seed_n}人工种子锚)", s["active_anchors"] == 11, str(s))
+check(f"锚表就绪(12 active, 含{seed_n}人工种子锚)", s["active_anchors"] == 12, str(s))
 check("挂载数>0", s["mounted_atoms"] > 0, str(s))
 
 # --- 用例2: 规约3 归一四档 — cue命中单锚→anchor; 多锚歧义→hold; 零命中→hold ---
