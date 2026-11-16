@@ -162,10 +162,17 @@ def run_task(llm: CodeChatLLM, adjacency: dict, task_id: str, spec: dict,
             "wall_secs": wall, "state_snapshot": snap_state(state),
         })
 
+        # 分歧⑧C案配套(2026-11-16 skill_terminate七段): trail条目携带
+        # step_summary(≤60截断)+result字段名清单——terminate汇编素材源;
+        # 完整原始载荷在 steps.jsonl, trail只存汇编视图, 防体积膨胀
+        _adj_fields = adjacency["entries"].get(skill_id, {}).get("result_fields", [])
         state.trail.append({
             "skill_id": skill_id, "chosen": skill_id,
             "candidates": [o.get("skill") for o in sr.next_options],
             "reason": "probe固定路线", "ts": datetime.now().isoformat(timespec="seconds"),
+            "step_summary": str(sr.result.get("summary", "") or "")[:60],
+            "result_fields": _adj_fields,
+            "degraded": bool(sr.result.get("_degraded")),
         })
 
         if sr.terminate_suggest:
