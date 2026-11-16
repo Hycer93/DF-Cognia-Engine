@@ -175,6 +175,19 @@ def mount_topic(inst_id: str, summary: str, detail: str = "", *, method: str = "
                                 "summary": (summary or "")[:200],
                                 "evidence_gap": v.get("evidence_gap", "")},
                                ensure_ascii=False) + "\n")
+        # 2026-11-16 管道裂缝修复(用户裁决): hold 触发时 jsonl + core_hold_pool db
+        # 双写——此前仅写 jsonl 而 E7 只消费 db 表, hold 行落不了库,
+        # 历史均靠人工 INSERT 补行。源头双写保证两份存储一致。
+        hc = _conn()
+        try:
+            hc.execute(
+                "INSERT OR IGNORE INTO core_hold_pool "
+                "(inst_id, reason, reference_mention, enqueued_ts) VALUES (?,?,?,?)",
+                (inst_id, v.get("evidence_gap", ""),
+                 1 if v.get("reference_mention") else 0, now))
+            hc.commit()
+        finally:
+            hc.close()
         _log("hold", {"inst_id": inst_id, "why": v.get("evidence_gap", "")})
     return v
 
@@ -254,9 +267,38 @@ def conflict_gate(inst_a: dict, inst_b: dict) -> dict:
 
 # ---------------- 建锚与存量回填（保守：只建高置信簇） ----------------
 
+# ---- 锚 cue 结构规约（2026-11-16 用户裁决: 动宾/名词复合才可成锚） ----
+# 背景: memory_ops 锚曾收孤立泛动词"推演", 误吸一切含"推演"的新卡造成
+# 多锚歧义——逐词删补丁打不完, 改为入口结构性拒绝。
+# 判据: cue 须动宾复合/名词短语(工程判据 len>=4); 孤立双字动词(如
+# "推演/复盘/挂载")一律拒绝; 专业专名登记 _CUE_EXEMPT_TERMS 豁免(须附理由)。
+# 泛动词黑名单: 跨主题误吸的孤立动词/泛词(2026-11-16 存量体检实发)
+_CUE_BANNED_TERMS = {"推演", "复盘", "挂载", "还债", "反思", "留痕", "伪演示"}
+# 专名豁免白名单: 领域专名虽短但语义专一(登记须附锚归属理由)
+_CUE_EXEMPT_TERMS = {
+    "P10", "P12", "P22", "p10vs", "G22", "F系",                 # 星型拓扑/G22决策/记忆运维编号专名
+    "脑区", "海马体", "前额叶", "杏仁核",                         # 脑科学专名
+    "非农", "金价", "ETF", "建仓", "挂单", "股价", "仓位", "季报",  # 金融专名
+    "溯零", "陈默", "林舟",                                       # 小说专名
+    "8397", "HVAC", "右舵",                                      # 车机专名
+    "归元仔", "暮暮",                                             # 用户关系专名
+    "元核", "七段", "邻接表", "交底书", "专利",                    # 元核/专利领域专名
+}
+
+def _cue_valid(cue) -> bool:
+    if not isinstance(cue, str) or not cue.strip():
+        return False
+    cue = cue.strip()
+    if cue in _CUE_BANNED_TERMS:      # 泛动词一律拒
+        return False
+    return len(cue) >= 4 or cue in _CUE_EXEMPT_TERMS
+
+
 def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None,
                manual_seed: bool = False, inspect_freq: str = "normal") -> str:
     """显式建锚（人工/建锚脚本）。幂等：已存在则只更新 abstract/cues。
+    cue 结构规约(2026-11-16): 须动宾复合/名词短语(len>=4)或豁免专名;
+    孤立泛动词被拒——防泛动词锚误吸卡片(结构性解, 不打补丁)。
 
     manual_seed=True（2026-11-14 用户裁决三条枷锁）：
       ① 特殊标记人工种子锚，区别于自动生长锚——特例不成为先例，
@@ -264,6 +306,9 @@ def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None,
       ② inspect_freq='high'：每晚 E7 复审优先检查该簇，混入明显不属于
          该主题的卡片优先上交 pending，不自动接纳；
       ③ 不受低访问归档（规约6 豁免）：人工种子锚由人工管理生命周期。"""
+    bad_cues = [cu for cu in (cue_anchors or []) if not _cue_valid(cu)]
+    if bad_cues:
+        raise ValueError("锚cue结构规约拒绝(须动宾复合/名词短语len>=4, 专名走豁免表): %s" % bad_cues)
     now = datetime.now().isoformat(timespec="seconds")
     c = _conn()
     try:
