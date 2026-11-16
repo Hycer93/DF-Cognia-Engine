@@ -46,6 +46,11 @@ STEPS = [
     # E7 夜间治理（2026-11-15 用户指令#30：夜间提案/hold复审/范式标定/证据回写，
     # 机器只提案不裁决，终裁=人闸门晨报）
     ("E7 夜间治理", [PY, "eval/core/e7_nightly_governance.py"], "logs/e7_governance.json"),
+    # E10 语义离群巡检(2026-11-16 用户裁决独立立项: 本地bge embedding审卡片
+    # 语义归属, 补v2.2统计链路看不见的"cue命中+统计合格但语义错挂"脏卡;
+    # 与E7故障隔离(embedding异常不拖垮统计巡检); 增量触发默认+全量兜底;
+    # 只读告警人闸终审; 独立E10不并E7)
+    ("E10 语义离群巡检", [PY, "eval/core/e10_semantic_outlier_patrol.py"], "logs/e10_semantic_audit.json"),
     # E9 夜间对话治理(2026-11-15 记忆门控定稿新增: 归档主通道——当日 session_dialog
     # 复跑归档判定, 高价值拟卡送pending, 只提案绝不直写主库; probe假阴性攒scar_case;
     # transcript兜底: 只读扫applog提取当日用户提交→simhash去重→复本隔离入raw_corpus)
