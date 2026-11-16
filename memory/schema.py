@@ -92,6 +92,9 @@ REPRO_TIERS = {
 # behavior 软先验参考（judge Q3 可疑提示用，非硬约束）：
 #   scar_case→Dl/Bc | skill_refine→Jw/Cf | strategy_evolve→Jw/Ht（Ht=决策整合更贴顶层裁决）
 #   relation_milestone→Em/Eo | key_pact→Ht/Iv
+# 导入侧防御备注(2026-11-16 终审裁决): 一次性语料导入脚本曾硬编码
+# entity_history 类名导致 10 条拒收(11-13, 源头脚本已消亡零命中); 后续任何
+# 批量导入必须先用 MEMORY_CLASS_ENUM/REPRO_TIERS 校验标签, 禁止自造枚举值。
 MEMORY_CLASS_ENUM = {
     "strategy_evolve", "skill_refine", "scar_case",
     "relation_milestone", "key_pact",
