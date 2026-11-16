@@ -102,12 +102,12 @@ def factor_density(con, iid):
     if not rows:
         return 1.0                      # 无簇: 不惩罚(孤立卡天然由其他因子降权)
     members = [r["inst_id"] for r in rows]
-    # 债务①: hold 留置卡占比(池内 id 短/全形态混存, Python 侧前缀匹配聚合)
-    held_n = 0
-    for r in con.execute("SELECT DISTINCT inst_id FROM core_hold_pool WHERE verdict IS NULL"):
-        short = r["inst_id"]
-        if short in members or any(m.startswith(short) for m in members):
-            held_n += 1
+    # 债务①: hold 留置卡占比(2026-11-16 ID收口: 池内已全 32 位全 id,
+    # 前缀匹配兼容聚合摘除——SQL 集合等值匹配)
+    members_set = set(members)
+    held_n = sum(1 for (i,) in con.execute(
+        "SELECT DISTINCT inst_id FROM core_hold_pool WHERE verdict IS NULL")
+        if i in members_set)
     # 债务②: 簇内无 relation 边的孤立节点占比(连通性)
     linked = {r["me_inst"] for r in con.execute(
         "SELECT me_inst FROM core_relation WHERE status='active'")}

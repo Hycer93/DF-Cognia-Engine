@@ -41,6 +41,16 @@ HOLD_STALE_DAYS = 14        # [先验-业务设定] hold 老化上交阈值
 PARADIGM_MIN = 3            # 与 maintenance_ledger.PARADIGM_MIN 对齐
 DECAY_DAYS = 90             # 与 design_paradigm_layer.md / render_persona.py 对齐
 
+# ---------- 紧急总开关(2026-11-16 用户裁决⑤) ----------
+# 触发态文件 data/memory/E7_EMERGENCY_STOP(存在即停); 支持一键暂停:
+#   自动挂载(P2 不上交)/自动治理消池(P1 不自动放行)。
+# 回滚通道: python eval/core/e7_nightly_governance.py --rollback <card_id|all> [--since YYYY-MM-DD]
+#   只回滚 resolved_by='e7-auto' 的治理动作(人工裁决永不被机器回滚)。
+EMERGENCY_STOP_FILE = os.path.join(_HERE, "data", "memory", "E7_EMERGENCY_STOP")
+
+def emergency_stop_active():
+    return os.path.exists(EMERGENCY_STOP_FILE)
+
 
 def _ts():
     return datetime.now().isoformat(timespec="seconds")
@@ -66,42 +76,146 @@ def _log(op, payload):
         con.close()
 
 
-# ---------- P1 hold 池夜间复审 ----------
+# ---------- P1 hold 池夜间复审(2026-11-16 自治闸门三路分流) ----------
+# 用户裁决的前置约束(写死在代码, 非补丁——分流逻辑重构为单入口 classify_hold):
+#   ① 清晰可判案例自动 release/keep(E7 直写 verdict, resolved_by='e7-auto')
+#   ② zero_anchor / multi_anchor_ambiguity / cluster_conflict 强制送人工复审队列
+#      (只提案不改 verdict, 终裁=人闸门)
+#   ③ user-retain-* 豁免标记(p2_exempt 同机制)正常生效, 不重复提案
+#   ④ 审计字段完整: 裁决主体(resolved_by)/时间(verdict_ts)/理由(reason)
+#   ⑤ ID 层解耦: 全部 32 位全 id 等值查询, 零 LIKE 兼容
+# 放行比例纪律(用户): 先连续多晚观察 hold 池流入流出, 不急于放大自动放行。
+AUTO_RELEASE_MAX_AGE = 14   # 自动 release 上限年龄: 超龄转人工(老化案例边界不清)
+
+# 强制人工的进池原因分类(check_type 口径, 晨报固定字段对齐)
+MANUAL_REASONS = ("零锚命中", "多锚歧义", "cluster_conflict")
+
+
+def classify_hold(con, r, age_days):
+    """单卡分流裁决: 返回 (route, action, reason)。
+    route ∈ {auto, manual}: auto=E7 可直接执行; manual=强制人闸。
+    分流判据=进池原因(reason 头部) + reference_mention + 豁免标记, 全部客观可审计。"""
+    reason = r["reason"] or ""
+    # 豁免标记优先: 人工留置卡(若池行 resolved_by=user-retain-* 但 verdict 仍 NULL 的历史态)
+    if (r["resolved_by"] or "").startswith("user-retain"):
+        return "auto", "keep", "豁免标记生效(user-retain), 不再提案"
+    # 强制人工三类(2026-11-16 用户裁决): 建新锚资格/锚二义性/簇冲突都不是机器可判
+    if any(reason.startswith(k) for k in MANUAL_REASONS):
+        return "manual", "propose_review", f"强制人工: {reason.split('；')[0]}"
+    # 引用性提及: 查该卡此后是否已挂锚(核心讨论出现)
+    if r["reference_mention"]:
+        has_core = con.execute(
+            "SELECT COUNT(*) FROM topic_links WHERE inst_id=?", (r["inst_id"],)).fetchone()[0]
+        if has_core:
+            return "auto", "release", "锚词已现核心讨论卡(挂载在簇), 引用性提及自动放行"
+        if age_days > HOLD_STALE_DAYS:
+            return "manual", "propose_stale", f"引用性提及滞留{age_days}d无核心讨论, 老化上交人裁"
+        return "manual", "propose_review", f"引用性提及滞留{age_days}d, 语境裁断需人闸"
+    # 其余(reference_mention=0 且非三类疑难): 清晰可判
+    if age_days > AUTO_RELEASE_MAX_AGE:
+        return "manual", "propose_review", f"非引用hold滞留{age_days}d超自动放行上限, 边界老化转人裁"
+    return "auto", "keep", f"非引用hold, 年龄{age_days}d, 维持留置观察"
+
 
 def p1_hold_review(con, result):
+    if emergency_stop_active():
+        result["p1_hold"] = {"emergency_stop": True,
+                             "note": "紧急总开关触发: P1 自动放行暂停, 全部转人工提案"}
+        _log("e7_p1_hold_review", {"emergency_stop": True})
+        return
     rows = con.execute(
         "SELECT * FROM core_hold_pool WHERE verdict IS NULL ORDER BY enqueued_ts").fetchall()
-    proposals = []
+    auto_released, auto_kept, manual_q, audit_rows = 0, 0, [], []
     for r in rows:
         enq = r["enqueued_ts"]
         try:
             age_days = (datetime.now() - datetime.fromisoformat(enq[:19])).days
         except ValueError:
             age_days = 0
-        if r["reference_mention"]:
-            # 引用性提及: 查此后同锚词是否出现核心讨论卡(summary 命中)
-            # reason 字段存了 evidence_gap 描述, 锚词查 topic_links 该卡当前状态
-            # 2026-11-16 ID收口: 短id存量已全量迁移为32位全id(见 logs/id_seq_migration_20261116.json),
-            # LIKE 前缀兼容摘除——全id等值查询
-            has_core = con.execute(
-                "SELECT COUNT(*) FROM topic_links WHERE inst_id=?", (r["inst_id"],)).fetchone()[0]
-            prop = {"inst_id": r["inst_id"], "proposal": "propose_release" if has_core else "propose_stale",
-                    "reason": ("锚词已现核心讨论卡" if has_core else f"引用性提及滞留{age_days}d无核心讨论"),
-                    "age_days": age_days}
+        route, action, why = classify_hold(con, r, age_days)
+        rec = {"inst_id": r["inst_id"], "route": route, "action": action,
+               "reason": why, "age_days": age_days,
+               "check_type": _check_type_of(r)}
+        if route == "auto":
+            if action == "release":
+                # 自动放行: 直写 verdict(裁决主体/时间/理由三字段全记)
+                con.execute(
+                    "UPDATE core_hold_pool SET verdict='released', verdict_ts=?, resolved_by='e7-auto', "
+                    "reason=reason || ' | e7-auto-release: ' || ? WHERE inst_id=? AND verdict IS NULL",
+                    (_ts(), why, r["inst_id"]))
+                # 放行即挂锚? 不——release 只出池, 挂载走 classify_topic 正常管道(解耦)
+                auto_released += 1
+                rec["state"] = "released"
+            else:
+                auto_kept += 1
+                rec["state"] = "kept"
         else:
-            prop = {"inst_id": r["inst_id"],
-                    "proposal": "propose_stale" if age_days > HOLD_STALE_DAYS else "propose_keep",
-                    "reason": f"非引用hold, 年龄{age_days}d", "age_days": age_days}
-        proposals.append(prop)
-    result["p1_hold"] = {"pending": len(rows), "proposals": proposals}
-    _log("e7_p1_hold_review", {"pending": len(rows),
-                              "propose_stale": sum(1 for p in proposals if p["proposal"] == "propose_stale")})
+            manual_q.append(rec)
+            rec["state"] = "pending_review"
+        audit_rows.append(rec)
+    con.commit()
+    # 标准化审计记录在数据源头生成(不依赖打印阶段), 落盘进 e7_governance.json
+    # 字段契约(2026-11-16 用户约定, 不随意增删):
+    # card_id/summary/check_type/rule_triggered/state/last_judge/expire_at/evidence/next_action
+    result["p1_hold"] = {
+        "pending": len(rows), "auto_released": auto_released,
+        "auto_kept": auto_kept, "manual_queue": manual_q, "audit": audit_rows,
+        "audit_records": [_standard_audit_record(con, r_audit) for r_audit in audit_rows]}
+    _log("e7_p1_hold_review", {"pending": len(rows), "auto_released": auto_released,
+                               "auto_kept": auto_kept, "manual": len(manual_q)})
+
+
+def _standard_audit_record(con, p):
+    """单卡标准化审计记录——供晨报渲染与导出复盘(字段契约见调用方注释)"""
+    hr = con.execute(
+        "SELECT reason, enqueued_ts, verdict, verdict_ts, resolved_by, reference_mention FROM core_hold_pool "
+        "WHERE inst_id=? ORDER BY enqueued_ts DESC LIMIT 1",
+        (p["inst_id"],)).fetchone()
+    r = con.execute("SELECT summary FROM core_memory_card WHERE inst_id=?",
+                    (p["inst_id"],)).fetchone()
+    cs = r["summary"] if r else "!!卡不存在"
+    cs = (cs[:80] + "…") if len(cs) > 80 else cs
+    return {
+        "card_id": p["inst_id"],
+        "summary": cs,
+        "check_type": p.get("check_type", "unclassified"),
+        "rule_triggered": p.get("reason", "?"),
+        "state": p.get("state", "?"),
+        "last_judge": {"by": (hr["resolved_by"] if hr else None) or p.get("route", "pending"),
+                       "at": (hr["verdict_ts"] if hr and hr["verdict_ts"] else None) or _ts(),
+                       "action": p.get("action", "?")},
+        "expire_at": ((datetime.fromisoformat(hr["enqueued_ts"][:19]) + timedelta(days=HOLD_STALE_DAYS)
+                       ).isoformat(timespec="seconds") if hr else None),
+        "evidence": {"enqueued_ts": hr["enqueued_ts"] if hr else None,
+                     "age_days": p.get("age_days"),
+                     "reference_mention": 1 if hr and hr["reference_mention"] else 0},
+        "next_action": p.get("action", "?"),
+    }
+
+
+def _check_type_of(r):
+    """进池原因 → check_type 标准枚举(晨报固定字段, 不随意增删)"""
+    reason = r["reason"] or ""
+    if reason.startswith("零锚命中"):
+        return "zero_anchor"
+    if reason.startswith("多锚歧义"):
+        return "multi_anchor_ambiguity"
+    if "cluster_conflict" in reason:
+        return "cluster_conflict"
+    if reason.startswith("引用性提及"):
+        return "reference_mention"
+    return "unclassified"
 
 
 # ---------- P2 高频簇巡检 ----------
 
 def p2_high_freq_inspect(con, result):
     """inspect_freq='high' 簇逐卡核对锚词; 无关卡上交 pending 提案(不自动踢)"""
+    if emergency_stop_active():
+        result["p2_high_freq"] = {"emergency_stop": True,
+                                  "note": "紧急总开关触发: 自动挂载巡检暂停"}
+        _log("e7_p2_high_freq", {"emergency_stop": True})
+        return
     high_topics = con.execute(
         "SELECT topic_id, cue_anchors FROM topic_abstraction WHERE inspect_freq='high' AND status='active'").fetchall()
     suspicious = []
@@ -209,8 +323,51 @@ def p4_evidence_writeback(result):
     _log("e7_p4_evidence", {"written": written})
 
 
+def rollback_governance(target, since=None):
+    """批量回滚治理动作(2026-11-16 用户裁决⑤)。
+    target: card_id(全 id) 或 'all'; since: YYYY-MM-DD 时间窗下限(可选)。
+    只回滚 resolved_by='e7-auto' 的行——人工裁决(user-*)永不被机器回滚。
+    回滚动作: verdict/verdict_ts/resolved_by 置回 NULL(回 hold 待审态)。
+    回滚记录写 audit_topic_log, 不删任何数据。"""
+    con = _conn()
+    try:
+        q = "SELECT inst_id, verdict_ts, resolved_by FROM core_hold_pool " \
+            "WHERE verdict='released' AND resolved_by='e7-auto'"
+        args = []
+        if target != "all":
+            q += " AND inst_id=?"
+            args.append(target)
+        if since:
+            q += " AND verdict_ts>=?"
+            args.append(since)
+        rows = con.execute(q, args).fetchall()
+        con.execute("BEGIN")
+        for r in rows:
+            con.execute(
+                "UPDATE core_hold_pool SET verdict=NULL, verdict_ts=NULL, resolved_by=NULL "
+                "WHERE inst_id=? AND resolved_by='e7-auto'", (r["inst_id"],))
+        con.commit()
+        _log("e7_rollback", {"target": target, "since": since, "rolled_back": len(rows),
+                             "cards": [r["inst_id"] for r in rows]})
+        return len(rows)
+    finally:
+        con.close()
+
+
 def main():
-    result = {"ts": _ts(), "ok": True}
+    # 回滚子命令: 优先于夜间主流程
+    args = sys.argv[1:]
+    if args and args[0] == "--rollback":
+        if len(args) < 2:
+            print("用法: --rollback <card_id|all> [--since YYYY-MM-DD]")
+            return 2
+        target = args[1]
+        since = args[args.index("--since") + 1] if "--since" in args else None
+        n = rollback_governance(target, since)
+        print(f"[E7-rollback] 回滚 {n} 条 e7-auto 治理动作 (人工裁决不动)")
+        return 0
+    result = {"ts": _ts(), "ok": True,
+              "emergency_stop": emergency_stop_active()}
     con = _conn()
     try:
         p1_hold_review(con, result)
@@ -223,9 +380,14 @@ def main():
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with io.open(LOG, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
-    n_prop = sum(len(result[k].get("proposals", [])) for k in ("p1_hold", "p3_calibration"))
-    print(f"[E7] 提案 {n_prop} 条 | 高频簇可疑 {len(result['p2_high_freq']['suspicious'])} | "
-          f"证据回写 {result['p4_evidence']['written']} 条 (全为提案, 终裁=人闸门)")
+    p1 = result.get("p1_hold", {})
+    p2 = result.get("p2_high_freq", {})
+    if p1.get("emergency_stop") or p2.get("emergency_stop"):
+        print(f"[E7] ⚠ 紧急总开关生效中 ({EMERGENCY_STOP_FILE}) — 自动治理全暂停, 仅输出观察提案")
+    else:
+        print(f"[E7] hold分流: 自动放行 {p1.get('auto_released',0)} | 自动留置 {p1.get('auto_kept',0)} "
+              f"| 人工队列 {len(p1.get('manual_queue',[]))} | 高频簇可疑 {len(p2.get('suspicious',[]))} "
+              f"| 证据回写 {result['p4_evidence']['written']} 条")
     _print_audit_detail(result)   # 人闸审计明细(带卡摘要, 可读性规约 2026-11-16)
 
 
@@ -240,21 +402,19 @@ def _print_audit_detail(result):
                             (iid,)).fetchone()
             return (r["summary"][:80] + "…") if r and len(r["summary"]) > 80 else (r["summary"] if r else "!!卡不存在")
 
-        hold = result.get("p1_hold", {}).get("proposals", [])
-        if hold:
-            print("\n— P1 hold池复审明细 (%d条) —" % len(hold))
-            for p in hold:
-                # 进池原因+时间(取该卡最新一条池记录)
-                hr = con.execute(
-                    "SELECT reason, enqueued_ts, reference_mention FROM core_hold_pool "
-                    "WHERE inst_id=? ORDER BY enqueued_ts DESC LIMIT 1",
-                    (p["inst_id"],)).fetchone()
-                print("  [%s] %s" % (p["inst_id"][:8], p["proposal"]))
-                print("    卡: %s" % card_summary(p["inst_id"]))
-                print("    因: %s | 入池: %s | 年龄: %sd"
-                      % ((hr["reason"][:70] + "…") if hr and len(hr["reason"]) > 70 else (hr["reason"] if hr else "?"),
-                         hr["enqueued_ts"][:16] if hr else "?", p.get("age_days", "?")))
-                print("    提案理由: %s" % p["reason"])
+        p1 = result.get("p1_hold", {})
+        hold_audit = p1.get("audit", [])
+        if hold_audit:
+            print("\n— P1 hold池自治分流明细 (待审%d | 自动放行%d | 自动留置%d | 人工队列%d) —"
+                  % (p1.get("pending", 0), p1.get("auto_released", 0),
+                     p1.get("auto_kept", 0), len(p1.get("manual_queue", []))))
+            for p in hold_audit:
+                a = _standard_audit_record(con, p)
+                print("  [%s] %s/%s → %s" % (a["card_id"][:8], a["check_type"], a["state"], a["next_action"]))
+                print("    卡: %s" % a["summary"])
+                print("    规则: %s | 裁决: %s@%s | 到期: %s"
+                      % (a["rule_triggered"][:60], a["last_judge"]["by"], a["last_judge"]["at"][:16],
+                         (a["expire_at"] or "?")[:10]))
 
         susp = result.get("p2_high_freq", {}).get("suspicious", [])
         if susp:

@@ -377,26 +377,43 @@ def write_report(durations):
     except Exception as e:
         lines.append(f"(读取失败: {e})")
 
-    # E7 夜间治理提案（2026-11-15 #30：hold复审/高频簇巡检/范式标定/证据回写，全为提案待人终裁）
-    lines.append("\n## E7 夜间治理提案\n")
+    # E7 夜间治理提案（2026-11-16 自治闸门升级: 三路分流——清晰可判自动 release/keep,
+    # zero_anchor/multi_anchor_ambiguity/cluster_conflict 强制人工; 标准字段对齐约定:
+    # card_id/summary/check_type/rule_triggered/state/last_judge/expire_at/evidence/next_action,
+    # 不随意增删; 紧急总开关 data/memory/E7_EMERGENCY_STOP 一键暂停自动挂载与消池;
+    # 回滚: e7_nightly_governance.py --rollback <card_id|all> [--since 日期]）
+    lines.append("\n## E7 夜间治理（自治闸门三路分流）\n")
     try:
         e7 = json.load(open(os.path.join(LOGS, "e7_governance.json"), encoding="utf-8"))
+        if e7.get("emergency_stop"):
+            lines.append("**⚠ 紧急总开关生效中——自动治理全暂停（file: data/memory/E7_EMERGENCY_STOP）**")
         p1 = e7.get("p1_hold", {})
-        lines.append(f"- hold池待复审 {p1.get('pending',0)} 条")
-        for p in p1.get("proposals", []):
-            if p["proposal"] != "propose_keep":
-                lines.append(f"  - ⚠ {p['proposal']}: {p['inst_id'][:16]} ({p['reason']})")
+        if p1.get("emergency_stop"):
+            lines.append("- P1: 总开关暂停自动放行, 全部转人工提案")
+        else:
+            lines.append(f"- hold池分流: 待审 {p1.get('pending',0)} | **自动放行 {p1.get('auto_released',0)}** "
+                         f"| 自动留置 {p1.get('auto_kept',0)} | 人工队列 {len(p1.get('manual_queue',[]))}")
+        # 标准化审计明细表(固定 9 字段, 支持告警/导出复盘)
+        for a in p1.get("audit_records", []):
+            flag = "⚠" if a["check_type"] in ("zero_anchor", "multi_anchor_ambiguity", "cluster_conflict") else "-"
+            lines.append(f"  - {flag} `{a['card_id'][:12]}…` [{a['check_type']}] {a['state']} → {a['next_action']}")
+            lines.append(f"    - 卡: {a['summary'][:60]}")
+            lines.append(f"    - 规则: {a['rule_triggered'][:60]} | 裁决: {a['last_judge']['by']}@{a['last_judge']['at'][:16]} | 到期: {(a['expire_at'] or '?')[:10]}")
         p2 = e7.get("p2_high_freq", {})
-        lines.append(f"- 高频簇巡检: {p2.get('cards_checked',0)} 卡, 可疑混入 {len(p2.get('suspicious',[]))}")
-        for s in p2.get("suspicious", [])[:5]:
-            lines.append(f"  - ⚠ {s['topic_id']}/{s['inst_id'][:16]}: {s['note']}")
+        if p2.get("emergency_stop"):
+            lines.append("- P2: 总开关暂停高频簇巡检")
+        else:
+            lines.append(f"- 高频簇巡检: {p2.get('cards_checked',0)} 卡, 可疑混入 {len(p2.get('suspicious',[]))}"
+                         "（p2_exempt 豁免标记正常生效）")
+            for s in p2.get("suspicious", [])[:5]:
+                lines.append(f"  - ⚠ {s['topic_id']}/{s['inst_id'][:12]}…: {s['note']}")
         p3 = e7.get("p3_calibration", {})
         for p in p3.get("proposals", []):
             lines.append(f"  - {'⚠' if p['proposal'] != 'propose_keep_pending' else '-'} [{p['proposal']}] "
                          f"{p.get('table','').replace('core_','').replace('_paradigm','')}/{p['pid']}: {p['note']}")
         p4 = e7.get("p4_evidence", {})
         lines.append(f"- 维护案例 {p4.get('cases',0)} 条, 候选证据回写 {p4.get('written',0)} 条(proposed非实证)")
-        lines.append("  - 注: 以上全为机器提案, 无 verdict 变更; 终裁=人闸门")
+        lines.append("  - 注: 自动放行仅 resolved_by='e7-auto' 可被 --rollback 回滚; 人工裁决(user-*)永不回滚")
     except Exception as e:
         lines.append(f"(读取失败: {e})")
 
