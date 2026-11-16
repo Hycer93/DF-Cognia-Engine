@@ -147,8 +147,9 @@ except PermissionError:
     check("未声明键 goal 读取被拒", True)
 
 # --- 菜单取自邻接表 ---
-check("next_options ⊇ terminate + __planned__(禁自环, 模型不可生成)",
-      {o.get("skill") for o in r.next_options} >= {"skill_terminate", "__planned__"})
+check("next_options ⊇ terminate + skill_f_reason 实边(禁自环, 模型不可生成)",
+      # f_reason 登记后 __planned__ 换成实边(2026-11-16), 菜单随邻接表演进
+      {o.get("skill") for o in r.next_options} >= {"skill_terminate", "skill_f_reason"})
 check("scope_scan 菜单已扩展(试点④登记后含 weakest_link)",
       "skill_weakest_link" in {o.get("skill") for o in ADJ["entries"]["skill_scope_scan"]["next_options"]})
 
