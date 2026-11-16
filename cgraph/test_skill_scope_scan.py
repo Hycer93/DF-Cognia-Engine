@@ -109,7 +109,8 @@ except PermissionError:
 
 # --- 菜单取自邻接表 ---
 check("next_options 含 skill_terminate 与 __planned__ 占位(模型不可生成)",
-      {o.get("skill") for o in r.next_options} == {"skill_terminate", "__planned__"})
+      {o.get("skill") for o in r.next_options} >= {"skill_terminate", "__planned__"}
+      and "skill_source_intent" in {o.get("skill") for o in r.next_options})  # 分歧④: 试点③登记后三项化
 
 # --- 审计落库 ---
 con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
