@@ -191,6 +191,55 @@ for _s12 in ["DELETE FROM topic_links WHERE inst_id LIKE 'dd%' OR topic_id='topi
     _rc12.execute(_s12)
 _rc12.commit(); _rc12.close()
 
+# 用例13: E10语义离群Mock(用户收口裁决固化, 防E10能力退化)
+# 场景: 簇内6张同主题卡 + 1张cue命中(统计合格)但语义完全无关的错挂卡
+# 期望: 错挂卡被E10告警(dist<μ-2σ), 同主题卡不告警
+try:
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location("e10_patrol", os.path.join(HERE, "eval", "core", "e10_semantic_outlier_patrol.py"))
+    _e10 = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_e10)
+    _s13, _d13 = "语义离群回归簇: 记忆系统运维与入库断档复盘卡片%d", "hook钩子 judge管道 检索排序 F系推演细节%d"
+    _rc13 = _rc  if False else None
+    import sqlite3 as _sq13, datetime as _dt13, os as _os13
+    _dbp13 = _os13.path.join(HERE, "data", "memory", "corpus_store.db")
+    _rc13 = _sq13.connect(_dbp13)
+    _now13 = _dt13.datetime.now().isoformat(timespec="seconds")
+    for _s in ["DELETE FROM topic_links WHERE inst_id LIKE 'ee%' OR topic_id='topic_ee_mock'",
+               "DELETE FROM core_memory_card WHERE inst_id LIKE 'ee%'",
+               "DELETE FROM topic_abstraction WHERE topic_id='topic_ee_mock'"]:
+        _rc13.execute(_s)
+    for _k in range(6):
+        _iid = "ee%031d" % _k
+        _rc13.execute("INSERT INTO core_memory_card (inst_id, ts, full_hash, asset_class, repro, confidence, dfcp_tag, summary, detail) VALUES (?,?,?,?,?,?,?,?,?)",
+                      (_iid, _now13, "e%d" % _k, "runtime", "na", 0.5, "005-002", _s13 % _k, _d13 % _k))
+        _rc13.execute("INSERT INTO topic_links VALUES (?,?,?,?)", (_iid, "topic_ee_mock", "seed", _now13))
+    _iid_bad = "ee1" + "0" * 30 + "1"
+    _rc13.execute("INSERT INTO core_memory_card (inst_id, ts, full_hash, asset_class, repro, confidence, dfcp_tag, summary, detail) VALUES (?,?,?,?,?,?,?,?,?)",
+                  (_iid_bad, _now13, "ebad", "runtime", "na", 0.5, "005-002",
+                   "烹饪食谱: 红烧肉的做法记忆系统(hook钩子cue命中掩护)", ""))
+    _rc13.execute("INSERT INTO topic_links VALUES (?,?,?,?)", (_iid_bad, "topic_ee_mock", "seed", _now13))
+    _rc13.execute("INSERT INTO topic_abstraction (topic_id, topic_abstract, topic_vector, cue_anchors, status, create_ts, update_ts) VALUES (?,?,?,?, 'active', ?, ?)",
+                  ("topic_ee_mock", "mock", "[]", '["hook钩子"]', _now13, _now13))
+    _rc13.commit()
+    _r13 = _e10.run(full=True)   # full重算含mock簇
+    _bad_alerted = any(a["inst_id"] == _iid_bad for a in _r13["alerts"])
+    _clean_alerted = [a["inst_id"] for a in _r13["alerts"] if a["inst_id"] != _iid_bad and a["inst_id"].startswith("ee")]
+    check("E10语义离群Mock: cue合格但语义错挂卡被抓(cue命中掩护无效)",
+          _bad_alerted, str([a["summary"][:40] for a in _r13["alerts"] if a["inst_id"] == _iid_bad]))
+    check("E10语义离群Mock: 同主题6卡零误报", not _clean_alerted, str(_clean_alerted))
+    for _s in ["DELETE FROM topic_links WHERE inst_id LIKE 'ee%' OR topic_id='topic_ee_mock'",
+               "DELETE FROM core_memory_card WHERE inst_id LIKE 'ee%'",
+               "DELETE FROM topic_abstraction WHERE topic_id='topic_ee_mock'"]:
+        _rc13.execute(_s)
+    _rc13.commit(); _rc13.close()
+    _st13 = _os13.path.join(HERE, "logs", "e10_semantic_state.json")
+    if _os13.path.exists(_st13):
+        _os13.remove(_st13)
+except Exception as _e13:
+    check("E10语义离群Mock: cue合格但语义错挂卡被抓(cue命中掩护无效)", False, repr(_e13)[:100])
+
+
 print(f"\n结果: {len(PASS)} PASS / {len(FAIL)} FAIL")
 if FAIL:
     for n, d in FAIL: print(f"  FAIL: {n} | {d}")
