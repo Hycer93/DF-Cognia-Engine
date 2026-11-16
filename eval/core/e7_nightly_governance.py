@@ -106,10 +106,18 @@ def p2_high_freq_inspect(con, result):
     for t in high_topics:
         cues = json.loads(t["cue_anchors"] or "[]")
         cards = con.execute(
-            "SELECT l.inst_id, m.summary FROM topic_links l "
+            "SELECT l.inst_id, m.summary, m.dfcp_tag FROM topic_links l "
             "JOIN core_memory_card m ON m.inst_id = l.inst_id WHERE l.topic_id=?",
             (t["topic_id"],)).fetchall()
         for c in cards:
+            # p2_exempt 豁免(2026-11-16 用户裁决): 人工裁决留簇的边界卡
+            # (正文核心=入库判定规则但摘要无锚), dfcp_tag.p2_exempt=user-retain-<date>
+            try:
+                tag = json.loads(c["dfcp_tag"] or "{}")
+            except (TypeError, ValueError):
+                tag = {}
+            if tag.get("p2_exempt"):
+                continue
             if not any(cue in (c["summary"] or "") for cue in cues):
                 suspicious.append({"topic_id": t["topic_id"], "inst_id": c["inst_id"],
                                    "note": "summary无锚词命中, 疑似混入"})
