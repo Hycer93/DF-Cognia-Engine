@@ -338,8 +338,32 @@ def main():
             seen.add(o); dq.append((o, p + [o]))
     truth = truth or [anchor0, goal_full]
     con.close()
+    # F20 接线(纪律④: 叠加层不改发散主干, 回滚=删本块):
+    # 对 all_branches 复合权重重排, top-K 用 F20 排序替代均匀 w; 原分支数据保留
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # 同目录 f20_weight
+    import f20_weight as f20
+    _profile = CONFIG.get("beta_profile", f20.BASELINE_PROFILE)   # 纪律①: 默认 baseline
+    _con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    _scored = []
+    for b in all_branches:
+        w2, fac = f20.score_branch(_con, b, step=1, profile=_profile)
+        _scored.append({**b, "w_uniform": b["weight"], "weight": w2, "f20_factors": fac})
+    _con.close()
+    _scored.sort(key=lambda x: -x["weight"])
+    branches = _scored[:CONFIG["K"]]
+    all_branches = _scored
     # F40
     path, note = f40_backward(CONFIG["goal_prefix"], [c["inst_id"] for c in snapshot["anchor_cards"][:1]])
+    # 纪律③: 失败归因四枚举(与权重并行)——失败时必打标签, 成功链也记录归因=空
+    failure_attr = None
+    if path is None:
+        _con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+        _con.row_factory = sqlite3.Row
+        fa_code, fa_note = f20.attribute_failure(
+            _con, CONFIG["goal_prefix"],
+            [c["inst_id"] for c in snapshot["anchor_cards"][:1]], CONFIG["max_steps"])
+        _con.close()
+        failure_attr = {"code": fa_code, "note": fa_note}
     # 校验 + 报告(相交口径: 对照裁剪后存活的全部 F10 分支, top-K 仅作发散展示)
     md = ["# F系最小闭环冒烟报告", f"生成: {_ts()}",
           "性质声明: 真值集冒烟=可行性预实验, 非泛化能力验证(对全新无预置边场景的逆向推演能力不在本考题范围)", "",
@@ -347,14 +371,21 @@ def main():
           "## F00 冻结快照", f"- 快照已序列化: {os.path.basename(OUT_SNAP)}(全程不复检)",
           f"- 锚定: {snapshot['anchor_state_features']}", ""]
     md.append("## F10 分支发散")
-    md.append(f"- 可用分支 {n_avail} 条, 裁剪后取 top-{CONFIG['K']}:")
+    md.append(f"- F20 权重层: profile={_profile} (叠加排序, 均匀权重保留于 w_uniform)")
+    md.append(f"- 可用分支 {n_avail} 条, F20 排序后取 top-{CONFIG['K']}:")
     for b in branches:
+        fac = b.get("f20_factors", {})
         md.append(f"  - {_short(b['from']) if b['from'] else '(锚簇)'} → {_short(b['to'])} "
-                  f"[{b['rel']}] δ={b['delta']} w={b['weight']} | {b['to_summary'][:40]}")
+                  f"[{b['rel']}] w={b['weight']} (旧均匀={b.get('w_uniform')}) "
+                  f"C={fac.get('C_conf')} F={fac.get('F_fresh')} D={fac.get('D_density')} "
+                  f"| {b['to_summary'][:40]}")
     md.append("")
     md.append("## F40 逆向回溯")
     if path is None:
         md.append(f"- **失败**: {note}")
+        # 纪律③: 失败归因四枚举入报告与审计
+        if failure_attr:
+            md.append(f"- **归因**: `{failure_attr['code']}` — {failure_attr['note']}")
         md.append("- 判定: 本次逆向求解失败(可达性未达成, 不做语言解释)")
         verdict = "FAIL"
     else:
@@ -371,6 +402,14 @@ def main():
         verdict = v["verdict"]
     md.append("")
     md.append(f"## 总判定: {verdict}")
+    if failure_attr:
+        md.append(f"失败归因: {failure_attr['code']} (审计元信息已同步 snapshot json)")
+    # 纪律③: 归因与因子写进 snapshot 审计元信息(晨报/置信度修正输入)
+    snapshot["f20_meta"] = {"beta_profile": _profile,
+                            "failure_attr": failure_attr,
+                            "top_k_factors": [b.get("f20_factors") for b in branches]}
+    with io.open(OUT_SNAP, "w", encoding="utf-8") as f:
+        json.dump(snapshot, f, ensure_ascii=False, indent=1)
     md.append("记忆红线: 本链路只读, 未新增卡/主题/范式; 快照与报告为唯一落盘物")
     os.makedirs(os.path.dirname(OUT_MD), exist_ok=True)
     with io.open(OUT_MD, "w", encoding="utf-8") as f:
