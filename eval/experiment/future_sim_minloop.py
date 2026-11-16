@@ -314,6 +314,16 @@ def main():
         elif args[i] == "--out":
             global OUT_MD
             OUT_MD = os.path.join(_HERE, "logs", args[i+1]); i += 2
+        elif args[i] == "--profile":
+            # β 档位(纪律②: 命名档位, 只认 f20.BETA_PROFILES 三档; baseline=回归锚点)
+            pv = args[i+1]
+            import sys as _s, os as _o
+            _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+            import f20_weight as _f20
+            if pv not in _f20.BETA_PROFILES:
+                print("非法档位: %s (合法: %s)" % (pv, "/".join(_f20.BETA_PROFILES)))
+                return 2
+            CONFIG["beta_profile"] = pv; i += 2
         else:
             i += 1
     # F00(全程一次, 冻结)
