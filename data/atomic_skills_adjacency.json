@@ -2,7 +2,7 @@
   "_schema": "atomic_meta_core_adjacency_v1",
   "_doc": "原子化元核·中心化邻接表(2026-11-16 用户定案)。规约: ①技能只能在 next_options 暴露逻辑连通后继, 禁止硬编码写死在技能内部; ②本文件是唯一权威源, 技能实现不得自带旁路连通表; ③加载时与文件变更时双触发校验(见 eval/experiment/adjacency_validator.py), 校验不过拒绝加载; ④v1 为地基试点版: 只登记骨架结构 + 首批试点技能(skill_anchor_target), 其余节点逐个讨论达成共识后登记(一次一个节点, 禁一次性批量定义)。",
   "version": 1,
-  "updated_ts": "2026-11-16T15:06:00",
+  "updated_ts": "2026-11-16T15:28:00",
   "global": {
     "max_steps": 24,
     "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)"
@@ -28,7 +28,8 @@
       "next_options": [
         {"skill": "skill_terminate", "gain": "扫描后任务空间已闭合, 无需深挖", "cost": "零"},
         {"skill": "skill_source_intent", "gain": "对任务涉及外部信息源做主体、动机意图画像", "cost": "中等: LLM语义挖掘, 无DFCP调用"},
-        {"skill": "__planned__", "gain": "其余深挖方向(weakest_link 等)待逐节点讨论登记后开放", "cost": "待登记"}
+        {"skill": "skill_weakest_link", "gain": "对系统/方案/论证做脆弱面扫描, 定位最弱环节", "cost": "中等: LLM语义评分, 聚合Python化"},
+        {"skill": "__planned__", "gain": "其余深挖方向(f_reason 等)待逐节点讨论登记后开放", "cost": "待登记"}
       ],
       "terminate_suggest": "sub_questions 为空(任务空间单点闭合)",
       "dfcp_link": "无"
@@ -40,7 +41,20 @@
       "result_fields": ["source_intents", "applicable", "summary", "confidence", "ambiguity_note"],
       "next_options": [
         {"skill": "skill_terminate", "gain": "本轮深挖完成, 直接收敛输出", "cost": "零"},
-        {"skill": "__planned__", "gain": "后续深挖节点(skill_weakest_link 等)待讨论登记开放", "cost": "待登记"}
+        {"skill": "skill_weakest_link", "gain": "切换到系统脆弱面扫描(源画像与薄弱点互补)", "cost": "中等: LLM语义评分, 聚合Python化"},
+        {"skill": "__planned__", "gain": "后续深挖节点(skill_f_reason 等)待讨论登记开放", "cost": "待登记"}
+      ],
+      "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 终止仅来自菜单显式选择 skill_terminate)",
+      "dfcp_link": "无"
+    },
+    "skill_weakest_link": {
+      "role": "最弱环节定位(原 Bc/G02; 七段定稿 2026-11-16: behavior-1 全局扫描+behavior-3 定位合并收编, behavior-2 评分聚合Python化; 只画像+评分不处置; weakest_point 单点语义)",
+      "state_inputs": ["goal_anchored", "sub_questions", "summary"],
+      "state_outputs": ["weakest_link", "summary"],
+      "result_fields": ["weakest_point", "others", "dimension_scores", "risk_level", "applicable", "summary", "confidence", "ambiguity_note"],
+      "next_options": [
+        {"skill": "skill_terminate", "gain": "本轮深挖完成, 直接收敛输出", "cost": "零"},
+        {"skill": "__planned__", "gain": "后续深挖节点(skill_f_reason 等)待讨论登记开放", "cost": "待登记"}
       ],
       "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 终止仅来自菜单显式选择 skill_terminate)",
       "dfcp_link": "无"
@@ -67,6 +81,6 @@
   },
   "_reserved": {
     "_doc": "预留位: 后续逐节点讨论登记(顺序按用户裁决: 试点稳定后逐个开启, 一次一个)。skill_f_reason(F系推演封装)在试点期后登记, DFCP 属可选外部技能。",
-    "planned": ["skill_weakest_link(Bc/G02)", "skill_f_reason(F20封装, 高成本项)", "skill_source_trust(信源可信度, Bb behavior-3 移出项, 需重分歧③)"]
+    "planned": ["skill_f_reason(F20封装, 高成本项)", "skill_source_trust(信源可信度, Bb behavior-3 移出项, 需重分歧③)"]
   }
 }
