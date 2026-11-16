@@ -278,22 +278,31 @@ def conflict_gate(inst_a: dict, inst_b: dict) -> dict:
 #   区分度 = n_in/(n_in+n_other) >= CUE_DISCRIM_MIN
 # 未挂载卡命中(召回目标)不计噪声; 纯前瞻词(n_in=n_other=0)放行。
 # 对未来任何新泛动词(哪怕4字复合"启动复盘")均因跨簇命中被拒——无需登记。
-CUE_DISCRIM_MIN = 0.5   # 簇内命中须占全库命中的一半以上
+CUE_DISCRIM_MIN = 0.5   # 区分度阈值: 簇内命中须占(命中+争议)一半以上
+CUE_MIN_OBS = 3         # 最小观测数: 低于此 disc 无判别效力(v2.2 漏洞③)
 
 
-def _cue_discrimination(cue: str, sample_ids: list) -> dict:
-    """回测单个 cue 的跨簇区分度。sample_ids=本簇种子样本卡(建锚底稿)。
-    v2.1 修正(2026-11-16 自测发现): cue 有双重角色——前瞻召回词(为未来
-    卡准备, 全库零命中合法)与簇内实词。真正的危险信号是**跨簇误吸**:
-    cue 命中了已挂载到其他主题的卡 → 会造成多锚歧义(推演死因)。
-      n_in    = cue 命中本簇样本卡数
-      n_other = cue 命中已挂载到其他主题的卡数(唯一致命噪声)
-      未挂载卡(hold/新卡)命中不算噪声——那正是召回目标
-    判据: n_in >= 1(防拍脑袋词) 且 n_in/(n_in+n_other) >= CUE_DISCRIM_MIN;
-    纯前瞻词(n_in=0 且 n_other=0)合法放行。
-    职责边界: 本判据挡增量(新建/更新cue时的资格), 不洗存量——若簇已被
-    泛动词污染(如9张含'推演'卡曾挂memory_ops), 污染词在污染样本下自证
-    通过属判据边界, 存量清洗归 E7 复审管辖。"""
+def _cue_discrimination(cue: str, sample_ids: list, topic_id: str = None) -> dict:
+    """回测单个 cue 的争抢歧义风险(v2.2)。
+    sample_ids=本簇种子样本卡; topic_id=本锚ID(n_dispute 归属判定必需,
+    E7 复检/seed 校验均应传入)。
+    v2.2 修订(2026-11-16 用户漏洞评审): v2.1 只度量"与历史挂载的一致性",
+    三漏洞——①hold盲区: 多锚歧义进 hold 的卡不计噪声, 贪婪 cue 可 disc=1.0
+    洗白; ②正反馈: 错抢挂进本簇的卡变 n_in 抬 disc, 越错越好看; ③小样本
+    骰子: 2个观测点的 disc 无判别效力。
+    v2.2 口径:
+      n_in     = cue 命中已挂载为本簇的卡数
+      n_other  = cue 命中已挂载他簇的卡数
+      n_dispute= hold 池多锚歧义事件中本 topic 参与的、且卡文含本 cue
+                 的争议数(evidence_gap 含本 topic_id 且 reason 为多锚歧义)
+      total_obs = 三者之和; disc = n_in/(n_in+n_other+n_dispute)
+    判据:
+      total_obs == 0        → 前瞻词放行(零观测, 无现有危害)
+      total_obs < MIN_OBS   → insufficient_data: seed 放行+观察标记,
+                              disc 不作拦截依据(小样本不当法官)
+      total_obs >= MIN_OBS  → 须 n_in>=1 且 disc>=CUE_DISCRIM_MIN
+    残留局限: 错挂脏卡仍贡献 n_in(本地统计无法核内容真伪), 靠后续 hold
+    冲突 n_dispute 上涨间接抑制; 彻底核验归人闸/远期 LLM。"""
     samples = set(sample_ids or [])
     c = _conn()
     try:
@@ -303,6 +312,14 @@ def _cue_discrimination(cue: str, sample_ids: list) -> dict:
         mounted = {}
         for iid, tid in c.execute("SELECT inst_id, topic_id FROM topic_links"):
             mounted.setdefault(iid, set()).add(tid)
+        hold_disputes = [] if topic_id is None else [
+            r[0] for r in c.execute(
+                "SELECT reason, inst_id FROM core_hold_pool "
+                "WHERE verdict IS NULL AND reason LIKE '%多锚歧义%'")]
+        hold_cards = {} if topic_id is None else {
+            r[0]: r[1] for r in c.execute(
+                "SELECT inst_id, reason FROM core_hold_pool "
+                "WHERE verdict IS NULL AND reason LIKE '%多锚歧义%'")}
     finally:
         c.close()
     n_in = n_other = 0
@@ -311,15 +328,30 @@ def _cue_discrimination(cue: str, sample_ids: list) -> dict:
             continue
         if iid in samples:
             n_in += 1
-        else:
-            other_tids = mounted.get(iid, set())
-            if other_tids:          # 已挂他簇 → 跨簇噪声
-                n_other += 1
-            # 未挂载卡: 召回目标, 不计噪声
-    denom = n_in + n_other
-    ratio = (n_in / denom) if denom else 1.0
-    ok = (n_in >= 1 and ratio >= CUE_DISCRIM_MIN) or (n_in == 0 and n_other == 0)
-    return {"n_in": n_in, "n_other": n_other, "ratio": ratio, "ok": ok}
+        elif mounted.get(iid):
+            n_other += 1         # 已挂他簇 → 跨簇噪声
+        # 未挂载非 hold 卡: 召回目标, 不计噪声
+    # n_dispute: hold 多锚歧义行中, 本 topic 参与争抢 且 卡文含本 cue
+    n_dispute = 0
+    if topic_id:
+        card_text = {iid: (f"{s or ''} {d or ''}") for iid, s, d in rows}
+        for iid, reason in hold_cards.items():
+            if topic_id in (reason or "") and cue and cue in card_text.get(iid, ""):
+                n_dispute += 1
+    total_obs = n_in + n_other + n_dispute
+    noise = n_other + n_dispute
+    ratio = (n_in / (n_in + noise)) if (n_in + noise) else 1.0
+    insufficient = total_obs < CUE_MIN_OBS
+    if total_obs == 0:
+        ok = True                 # 前瞻词: 零观测零危害
+    elif insufficient:
+        ok = True                 # 观察标记, 不拦截; P2b 报 insufficient
+    else:
+        ok = n_in >= 1 and ratio >= CUE_DISCRIM_MIN
+    return {"n_in": n_in, "n_other": n_other, "n_dispute": n_dispute,
+            "total_obs": total_obs, "ratio": ratio,
+            "insufficient_data": insufficient and total_obs > 0,
+            "no_observation": total_obs == 0, "ok": ok}
 
 
 def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None,
@@ -346,12 +378,20 @@ def seed_topic(topic_id: str, abstract: str, cue_anchors: list, vector=None,
         finally:
             c0.close()
     bad_cues = []
+    watch_cues = []   # v2.2: 观察名单(insufficient_data 放行但显性标记)
     for cu in cue_anchors or []:
-        r = _cue_discrimination(cu, sample_ids)
+        r = _cue_discrimination(cu, sample_ids, topic_id)
         if not r["ok"]:
-                bad_cues.append("%s(簇内%d/他簇噪声%d, 区分度%.2f)" % (cu, r["n_in"], r["n_other"], r["ratio"]))
+                bad_cues.append("%s(簇内%d/他簇%d/争议%d, disc=%.2f)"
+                                % (cu, r["n_in"], r["n_other"], r["n_dispute"], r["ratio"]))
+        elif r["insufficient_data"]:
+                watch_cues.append("%s(total_obs=%d<%d, 小样本观察名单)"
+                                  % (cu, r["total_obs"], CUE_MIN_OBS))
     if bad_cues:
-        raise ValueError("锚cue资格拒绝(判别力自证: 须簇内命中>=1且区分度>=0.5): %s" % bad_cues)
+        raise ValueError("锚cue资格拒绝(v2.2: 须n_in>=1且disc>=%.2f, 观测数>=%d): %s"
+                         % (CUE_DISCRIM_MIN, CUE_MIN_OBS, bad_cues))
+    if watch_cues:
+        _log("cue_watch", {"topic_id": topic_id, "cues": watch_cues})
     now = datetime.now().isoformat(timespec="seconds")
     c = _conn()
     try:
