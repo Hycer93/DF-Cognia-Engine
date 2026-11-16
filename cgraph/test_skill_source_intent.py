@@ -100,7 +100,11 @@ check("纯计算: 默认摘要生成, 非降级", "不适用" in r2.result["summ
 # --- 风险1: 推测超限截断 ---
 r3, st3 = run_skill(ALL_INFER)
 check("风险1: 纯推测3条全截断(显式线索0条)", len(st3.source_intents) == 0)
-check("风险1: 超限写入 ambiguity_note", "推测条目超限截断" in r3.result["ambiguity_note"])
+# O2 修复(2026-11-16)后口径: 纯推测全截光=清洗后空画像且 applicable=true
+# → 不再放行+note, 直接强制降级(试点③规约收紧, 原断言随之更新)
+check("风险1(O2收紧): 纯推测全截光 → 强制降级不放行",
+      bool(r3.result.get("_degraded")) and len(st3.source_intents) == 0,
+      str(r3.result.get("_degraded")))
 
 r4, st4 = run_skill(OVER_INFER)
 n_infer = sum(1 for x in st4.source_intents if x["is_inference"])
@@ -147,6 +151,39 @@ check("next_options ⊇ terminate + __planned__(禁自环, 模型不可生成)",
       {o.get("skill") for o in r.next_options} >= {"skill_terminate", "__planned__"})
 check("scope_scan 菜单已扩展(试点④登记后含 weakest_link)",
       "skill_weakest_link" in {o.get("skill") for o in ADJ["entries"]["skill_scope_scan"]["next_options"]})
+
+# --- O2 修复回归(2026-11-16 探针T1实测: applicable=true+清洗后空画像被summary豁免) ---
+# 用例①: LLM 直接声称适用但 source_intents 空数组 + 带 summary → 必须降级
+EMPTY_WITH_SUMMARY = '''{"applicable": true, "source_intents": [],
+ "summary": "任务信息源仅为内部工具链无第三方信源", "confidence": 0.35, "ambiguity_note": ""}'''
+sk2 = SkillSourceIntent(adjacency=ADJ)
+sk2.llm = MockLLM(EMPTY_WITH_SUMMARY)
+r2 = sk2.run(ThinkState(goal="g", goal_anchored="a", sub_questions=[], summary="s"))
+check("O2① applicable=true+空数组+有summary → 强制降级",
+      bool(r2.result.get("_degraded")) and "画像全空" in str(r2.result.get("_degraded")),
+      str(r2.result.get("_degraded")))
+
+# 用例②: 推测条目全被防脑补截光(explicit_n=0) → 清洗后空 → 同样降级(探针T1原场景)
+ALL_INFER_CUT = '''{"applicable": true,
+ "source_intents": [{"source": "E7晨报", "actor": "系统", "timing_motive": "推测", "is_inference": true}],
+ "summary": "全为推测无显式线索", "confidence": 0.3, "ambiguity_note": ""}'''
+sk3 = SkillSourceIntent(adjacency=ADJ)
+sk3.llm = MockLLM(ALL_INFER_CUT)
+r3 = sk3.run(ThinkState(goal="g", goal_anchored="a", sub_questions=[], summary="s"))
+check("O2② 推测条目全截光(explicit=0) → 清洗后空画像 → 强制降级",
+      bool(r3.result.get("_degraded")),
+      str(r3.result.get("_degraded")))
+
+# 用例③: 正常路径不误伤——applicable=true+有效显式条目照常通过(防过度拦截)
+GOOD_ONE = '''{"applicable": true,
+ "source_intents": [{"source": "官方文档", "actor": "厂商", "timing_motive": "发布", "is_inference": false}],
+ "summary": "1显式信源", "confidence": 0.8, "ambiguity_note": ""}'''
+sk4 = SkillSourceIntent(adjacency=ADJ)
+sk4.llm = MockLLM(GOOD_ONE)
+r4 = sk4.run(ThinkState(goal="g", goal_anchored="a", sub_questions=[], summary="s"))
+check("O2③ 有效显式条目不误伤(正常通过非降级)",
+      not r4.result.get("_degraded") and len(r4.result.get("source_intents", [])) == 1,
+      str(r4.result.get("_degraded")))
 
 # --- 审计落库 ---
 con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))

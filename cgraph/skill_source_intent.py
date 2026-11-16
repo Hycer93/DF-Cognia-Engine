@@ -165,6 +165,11 @@ class SkillSourceIntent(BaseAtomicSkill):
             summary = "无外部信息源, 技能不适用(语义正常路径)"
         if applicable and not items and not j.get("summary"):
             return self._degraded("声称有信源但画像全空")
+        # O2 修复(2026-11-16 探针 T1 实测): 清洗/截断后 items 为空(如推测条目
+        # 全被防脑补截光)而 applicable 仍为 True 时, 无论有无 summary 一律降级
+        # ——试点③规约"声称适用但全空→降级"不允许被 summary 文本豁免。
+        if applicable and not items:
+            return self._degraded(f"声称适用但画像全空(清洗后0条; 原始{len(raw_src)}项)")
         return {
             "source_intents": items,
             "applicable": applicable,
