@@ -15,7 +15,7 @@ import sys
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
-from cgraph.atomic_skill import ThinkState, load_table
+from cgraph.atomic_skill import ThinkState, load_table, extract_json
 from cgraph.skill_scope_scan import SkillScopeScan, MAX_SUB_QUESTIONS
 
 PASS, FAIL = [], []
@@ -124,6 +124,30 @@ spec = ADJ["entries"]["skill_scope_scan"]
 check("邻接表条目与本实现键名一致(state_outputs 含 flags.scan_confidence)",
       "flags.scan_confidence" in spec.get("state_outputs", [])
       and spec.get("dfcp_link") == "无")
+
+# --- 真题回归: C2 JSON字符串值内裸换行(2026-11-16 真题三跑实录) ---
+# 现象: LLM 在 ambiguity_note 值内输出未转义的真实换行字节(0x0A), json.loads 默认
+#       strict 抛 "Invalid control character", JSON 主体合法却被判 _degraded="JSON解析失败"
+# 修复: extract_json 两级容错(strict 失败后降级 strict=False), 见 cgraph/atomic_skill.py
+# 注意: Mock 必须用真实换行 chr(10), 不能用字面量"\n"两字符(那是合法转义, strict也能过)
+_NL = chr(10)  # 真实换行字节
+_raw_c2 = ('{"sub_questions": [{"q": "评估topic锚挂载质量?", "type": "factual"}], '
+           '"key_parameters": [], "domains_touched": [], "summary": "ok", '
+           '"confidence": 0.5, "ambiguity_note": "未明确'
+           + chr(39) + _NL + '记忆库' + chr(39) + _NL + '的具体载体"}')
+import json as _json
+try:
+    _json.loads(_raw_c2); _strict_ok = True
+except ValueError:
+    _strict_ok = False
+check("真题C2前置: 复现材料确实触发strict报错(Invalid control character)",
+      not _strict_ok, "Mock构造失败,未复现原现象")
+_res_c2 = extract_json(_raw_c2)
+check("真题C2: 字符串值内裸换行不再触发解析降级(strict=False 二级容错)",
+      _res_c2 is not None and _res_c2.get("sub_questions")
+      and _NL in _res_c2.get("ambiguity_note", ""))
+check("真题C2: 解析结果保留裸换行原文(不做转义改写, 2处)",
+      isinstance(_res_c2, dict) and _res_c2["ambiguity_note"].count(_NL) == 2)
 
 print(f"\n结果: {len(PASS)} PASS / {len(FAIL)} FAIL")
 if FAIL:

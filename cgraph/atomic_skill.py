@@ -210,8 +210,13 @@ def extract_json(text: str) -> dict | None:
         t = re.sub(r"\n?```\s*$", "", t)
     s, e = t.find("{"), t.rfind("}")
     if s >= 0 and e > s:
-        try:
-            return json.loads(t[s:e + 1])
-        except Exception:
-            return None
+        # 两级容错: strict失败后降级 strict=False, 容忍LLM在字符串值内输出裸换行/控制字符
+        # (真题案例C2: ambiguity_note值内裸换行, 主体合法但json.loads默认strict抛
+        #  "Invalid control character"); 二次失败才返回None走调用方_degraded降级
+        for kwargs in ({}, {"strict": False}):
+            try:
+                return json.loads(t[s:e + 1], **kwargs)
+            except Exception:
+                continue
+        return None
     return None

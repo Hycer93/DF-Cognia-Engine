@@ -43,6 +43,8 @@ from cgraph.skill_anchor_target import SkillAnchorTarget
 from cgraph.skill_scope_scan import SkillScopeScan
 from cgraph.skill_source_intent import SkillSourceIntent
 from cgraph.skill_weakest_link import SkillWeakestLink
+from cgraph.skill_f_reason import SkillFReason
+from cgraph.skill_terminate import SkillTerminate
 from cgraph.llm_codechat import CodeChatLLM
 
 ADJACENCY_PATH = os.path.join(HERE, "data", "atomic_skills_adjacency.json")
@@ -55,6 +57,9 @@ SKILL_REGISTRY = {
     "skill_scope_scan": SkillScopeScan,
     "skill_source_intent": SkillSourceIntent,
     "skill_weakest_link": SkillWeakestLink,
+    # 2026-11-16 语料真题组补注册(当日七段定稿落地技能, 此前探针只覆盖四试点)
+    "skill_f_reason": SkillFReason,
+    "skill_terminate": SkillTerminate,
 }
 
 # ---------------- 探索任务集(2026-11-16 用户评审确认) ----------------
@@ -81,6 +86,37 @@ TASKS = {
         "intent": "指代缺失模糊问句: 压测歧义识别/低置信分支; 「答非所问」属预期观测目标非缺陷",
     },
 }
+
+# ---- 语料真题组(2026-11-16 用户指令: 用语料中的问题测元核技能包) ----
+# 来源: 各锚簇真实卡片改写为问题形态, 验证元核链在真实业务问题上的行为
+CORPUS_TASKS = {
+    "C1": {   # 运维复盘类(memory_ops簇 10764d3b断档事故)
+        "goal": "为什么11-13全天多条用户裁决零入库, 直到次日人工盘点才发现?",
+        "route": ["skill_anchor_target", "skill_scope_scan", "skill_weakest_link"],
+        "intent": "语料真题(断档事故复盘): 最弱环节应定位到入库管道",
+    },
+    "C2": {   # 评估类(9簇挂载质量, 今日E10刚处理过)
+        "goal": "记忆库topic锚挂载质量的最弱环节在哪, 该怎么补?",
+        "route": ["skill_anchor_target", "skill_scope_scan", "skill_weakest_link", "skill_terminate"],
+        "intent": "语料真题(图谱还债/E10场景): 弱点评估+收敛全链",
+    },
+    "C3": {   # 信源画像类(13fd5b53错误命名幻觉样本)
+        "goal": "8397认知引擎和DF-Cognia是什么关系, 为什么会被纠正?",
+        "route": ["skill_anchor_target", "skill_scope_scan", "skill_source_intent"],
+        "intent": "语料真题(命名幻觉scar): 源意图画像应识别主职项目vs个人项目分界",
+    },
+    "C4": {   # 不确定推演类(F系公式硬伤)
+        "goal": "F系推演公式v1的R^β清零现状分支是什么问题, 修法对吗?",
+        "route": ["skill_anchor_target", "skill_scope_scan", "skill_f_reason"],
+        "intent": "语料真题(F系硬伤裁决): f_reason应生成竞争假设谱(清零bug/互斥造假/线性平均)",
+    },
+    "C5": {   # 歧义模糊类(7ee56837双AI对峙)
+        "goal": "紫光国微该不该按71-72元被动挂单建仓?",
+        "route": ["skill_anchor_target", "skill_scope_scan", "skill_f_reason"],
+        "intent": "语料真题(建仓分歧): 开放决策类, f_reason假设谱质量观测",
+    },
+}
+TASKS.update(CORPUS_TASKS)
 
 ROUTE_ALIASES = {
     "scan_si": ["skill_anchor_target", "skill_scope_scan", "skill_source_intent"],
@@ -204,7 +240,8 @@ def main():
     adjacency = load_table(ADJACENCY_PATH)
 
     if args.tasks.strip():
-        wanted = {f"T{x.strip()}" for x in args.tasks.split(",") if x.strip()}
+        wanted = {x.strip() if x.strip()[:1] in "TC" else f"T{x.strip()}"
+                  for x in args.tasks.split(",") if x.strip()}
         unknown = wanted - set(TASKS)
         if unknown:
             print(f"未知任务: {unknown} (可用: {list(TASKS)})"); return
