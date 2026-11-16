@@ -1,0 +1,59 @@
+{
+  "_schema": "atomic_meta_core_adjacency_v1",
+  "_doc": "原子化元核·中心化邻接表(2026-11-16 用户定案)。规约: ①技能只能在 next_options 暴露逻辑连通后继, 禁止硬编码写死在技能内部; ②本文件是唯一权威源, 技能实现不得自带旁路连通表; ③加载时与文件变更时双触发校验(见 eval/experiment/adjacency_validator.py), 校验不过拒绝加载; ④v1 为地基试点版: 只登记骨架结构 + 首批试点技能(skill_anchor_target), 其余节点逐个讨论达成共识后登记(一次一个节点, 禁一次性批量定义)。",
+  "version": 1,
+  "updated_ts": "2026-11-16T13:20:00",
+  "global": {
+    "max_steps": 24,
+    "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)"
+  },
+  "entries": {
+    "skill_anchor_target": {
+      "role": "目标锚定(试点①: 原元核无独立对应节点——路由器前置职责的原子化收编; 从原始任务文本锚定顶层目标)",
+      "state_inputs": ["goal"],
+      "state_outputs": ["goal_anchored", "flags.confidence", "flags.sensitive"],
+      "result_fields": ["anchored_goal", "goal_type", "ambiguity_note", "summary"],
+      "next_options": [
+        {"skill": "skill_scope_scan", "gain": "任务空间平铺, 展开子问题面", "cost": "低: 单脚本, 无LLM"},
+        {"skill": "skill_terminate", "gain": "目标已清晰且无需推理, 直接收敛", "cost": "零"}
+      ],
+      "terminate_suggest": "goal 已唯一锚定且为简单查询型任务(无衍生子问题)",
+      "dfcp_link": "无(纯思考技能, 不读记忆库)"
+    },
+    "skill_scope_scan": {
+      "role": "任务空间平铺扫描(原 Aa/G00)",
+      "state_inputs": ["goal_anchored", "flags"],
+      "state_outputs": ["sub_questions", "summary"],
+      "result_fields": ["sub_questions", "key_parameters", "domains_touched", "summary"],
+      "next_options": [
+        {"skill": "skill_terminate", "gain": "扫描后任务空间已闭合, 无需深挖", "cost": "零"},
+        {"skill": "__planned__", "gain": "深挖方向(source_intent/weakest_link 等)待逐节点讨论登记后开放——v1 地基版只保留终止通道, 保证可达性不撒谎", "cost": "待登记"}
+      ],
+      "terminate_suggest": "sub_questions 为空(任务空间单点闭合)",
+      "dfcp_link": "无"
+    },
+    "skill_terminate": {
+      "role": "终止收敛(链路出口; 原元核无对应——旧体系由固定拓扑终点隐式承担, 现显式化为原子技能保证可达性校验有明确终止节点)",
+      "is_exit": true,
+      "state_inputs": ["goal", "summary", "trail"],
+      "state_outputs": [],
+      "result_fields": ["final_output", "termination_reason", "steps_used"],
+      "next_options": [],
+      "terminate_suggest": "恒真(本技能即终止)",
+      "dfcp_link": "无"
+    },
+    "__planned__": {
+      "role": "占位通道(非技能): 登记未来逐节点讨论达成的后继方向; 讨论共识落地时以真实技能 id 替换本占位并同步增补该技能 entries 条目——禁止提前批量登记未讨论节点(用户裁决: 一次只聊一个)",
+      "state_inputs": [],
+      "state_outputs": [],
+      "result_fields": [],
+      "next_options": [],
+      "terminate_suggest": "不可执行(占位符, 编排器跳过并告警)",
+      "dfcp_link": "无"
+    }
+  },
+  "_reserved": {
+    "_doc": "预留位: 后续逐节点讨论登记(顺序按用户裁决: 试点稳定后逐个开启, 一次一个)。skill_f_reason(F系推演封装)在试点期后登记, DFCP 属可选外部技能。",
+    "planned": ["skill_source_intent(Bb/G01)", "skill_weakest_link(Bc/G02)", "skill_f_reason(F20封装, 高成本项)"]
+  }
+}
