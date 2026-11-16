@@ -147,6 +147,50 @@ except ValueError as _e:
     check("mount_batch拒混入短id整批", "32位" in str(_e), str(_e)[:80])
 _rc.close()
 
+
+# 用例12: cue判别力 v2.2 — hold盲区Mock(用户裁决T1固化, 后续迭代不得退化)
+# 场景: 贪婪cue 2张卡单命中挂本簇 + 3张多锚歧义进hold
+# v2.1口径 disc=2/(2+0)=1.0 满分洗白; v2.2 disc=2/(2+0+3)=0.4 判死
+import sqlite3 as _sq, datetime as _dt
+_rc12 = _sq.connect(os.path.join(HERE, "data/memory/corpus_store.db"))
+_now12 = _dt.datetime.now().isoformat(timespec="seconds")
+for _s12 in ["DELETE FROM topic_links WHERE inst_id LIKE 'dd%' OR topic_id='topic_dd_mock'",
+             "DELETE FROM core_hold_pool WHERE inst_id LIKE 'dd%'",
+             "DELETE FROM core_memory_card WHERE inst_id LIKE 'dd%'",
+             "DELETE FROM topic_abstraction WHERE topic_id='topic_dd_mock'"]:
+    _rc12.execute(_s12)
+for _k in range(2):
+    _iid = "dd%031d" % _k
+    _rc12.execute("INSERT INTO core_memory_card (inst_id, ts, full_hash, asset_class, repro, confidence, dfcp_tag, summary) VALUES (?,?,?,?,?,?,?,?)",
+                  (_iid, _now12, "h%d" % _k, "runtime", "na", 0.5, "005-002", "共享推演场景卡%d" % _k))
+    _rc12.execute("INSERT INTO topic_links VALUES (?,?,?,?)", (_iid, "topic_dd_mock", "seed", _now12))
+for _k in range(3):
+    _iid = "dd1%030d" % _k
+    _rc12.execute("INSERT INTO core_memory_card (inst_id, ts, full_hash, asset_class, repro, confidence, dfcp_tag, summary) VALUES (?,?,?,?,?,?,?,?)",
+                  (_iid, _now12, "h1%d" % _k, "runtime", "na", 0.5, "005-002", "共享推演歧义卡%d" % _k))
+    _rc12.execute("INSERT INTO core_hold_pool (inst_id, reason, reference_mention, enqueued_ts) VALUES (?,?,0,?)",
+                  (_iid, "多锚歧义命中: ['topic_dd_mock', 'topic_other'], 交 E7 复审", _now12))
+_rc12.commit()
+_r12 = tl._cue_discrimination("共享推演", ["dd%031d" % _k for _k in range(2)], "topic_dd_mock")
+check("v2.2 hold盲区Mock: n_dispute=3计入噪声(贪婪cue不洗白)",
+      _r12["n_dispute"] == 3 and abs(_r12["ratio"] - 0.4) < 1e-9 and _r12["ok"] is False, str(_r12))
+check("v2.2 小样本观察: total_obs<3不拦截打标记",
+      (lambda rr: rr["insufficient_data"] is True and rr["ok"] is True)(tl._cue_discrimination("入库断档",
+          [r[0] for r in _rc12.execute("SELECT inst_id FROM topic_links WHERE topic_id='topic_memory_ops'")], "topic_memory_ops")))
+check("v2.2 前瞻词: total_obs=0放行",
+      tl._cue_discrimination("前瞻零观测词qqq", ["dd%031d" % _k for _k in range(2)], "topic_dd_mock")["ok"] is True)
+try:
+    tl.seed_topic("topic_dd_mock", "mock", ["共享推演"])
+    check("v2.2 seed入口拒绝贪婪cue", False, "未抛异常")
+except ValueError as _e12:
+    check("v2.2 seed入口拒绝贪婪cue", "争议" in str(_e12) or "disc" in str(_e12), str(_e12)[:80])
+for _s12 in ["DELETE FROM topic_links WHERE inst_id LIKE 'dd%' OR topic_id='topic_dd_mock'",
+             "DELETE FROM core_hold_pool WHERE inst_id LIKE 'dd%'",
+             "DELETE FROM core_memory_card WHERE inst_id LIKE 'dd%'",
+             "DELETE FROM topic_abstraction WHERE topic_id='topic_dd_mock'"]:
+    _rc12.execute(_s12)
+_rc12.commit(); _rc12.close()
+
 print(f"\n结果: {len(PASS)} PASS / {len(FAIL)} FAIL")
 if FAIL:
     for n, d in FAIL: print(f"  FAIL: {n} | {d}")
