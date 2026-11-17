@@ -2,7 +2,7 @@
 """
 ref_retrieval.py — P-C4 参考素材简易检索(2026-11-17 段二2.4 契约定稿)
 
-定位: 长材料(>REF_INLINE_THRESHOLD 2000字符)消费侧片段检索——不塞全文进
+定位: 长材料(>REF_INLINE_THRESHOLD 8000字符, P-C6 段二裁决)消费侧片段检索——不塞全文进
   每轮 prompt, 只拉取与当前子问题相关的片段。素材本体永远完整保留在
   ThinkState.ref_material, 检索只是 prompt 输入层面裁剪, 原始数据不丢失。
 

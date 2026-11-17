@@ -590,10 +590,10 @@ class _SpecSkill:                     # R6/R7 共用: 消费技能视角
 
 
 class R6_ThresholdInline(unittest.TestCase):
-    """R6: 材料 ≤2000 → 直塞完整材料"""
+    """R6: 材料 ≤8000(P-C6 阈值上调后) → 直塞完整材料"""
     def test(self):
         sk = _SpecSkill()
-        mat = "短材料" * 300            # 900字符 < 2000
+        mat = "短材料" * 300            # 900字符 < 8000
         st = ThinkState(goal="g", goal_anchored="任务", ref_material=mat)
         blk = _ref_material_block(st, sk)
         self.assertIn("参考素材(完整)", blk)
@@ -601,10 +601,11 @@ class R6_ThresholdInline(unittest.TestCase):
 
 
 class R7_ThresholdRetrieve(unittest.TestCase):
-    """R7: 材料 >2000 → 检索片段入prompt(素材本体完整保留)"""
+    """R7: 材料 >8000 → 检索片段入prompt(素材本体完整保留)
+    段三执行备注: 样本扩至 >8000 永久保留检索分支回归覆盖, 不因阈值上调变冷分支"""
     def test(self):
         sk = _SpecSkill()
-        mat = "可复现性判定是核心创新点。\n\n" + "填充内容。" * 600      # >2000
+        mat = "可复现性判定是核心创新点。\n\n" + "填充内容。" * 2500     # >8000
         st = ThinkState(goal="g", goal_anchored="评估可复现判定方案", ref_material=mat)
         blk = _ref_material_block(st, sk)
         self.assertIn("超直塞阈值", blk)
@@ -636,6 +637,26 @@ class R9_UsageMissing(RouterTestBase):
             self.assertIn("token_in", s)
             self.assertIn("token_out", s)
             self.assertTrue(s["token_in"] is None or isinstance(s["token_in"], int))
+
+
+class R10_CippInline6401(unittest.TestCase):
+    """R10(P-C6): 6401字P24级材料 ≤8000 → 直塞完整材料含'反规避撰写加固'标记词。
+    段三执行备注: 只做结构断言(prompt 收到完整材料非片段)+直塞确认;
+    '能否读到后半段'的语义校验交给段四 A/B 对拍, 单测不包揽 LLM 语义校验。"""
+    def test(self):
+        sk = _SpecSkill()
+        # 模拟 P24 规模: 6401字, 前段业务内容+后段'反规避撰写加固补充'章节
+        head = "二进制指令帧操作码寻址扩展接口CIPP协议。" * 150      # ≈3300字 前段
+        mid = "填充论述段落。" * 600                                # ≈4200字 中段, 累计≈7500≤8000
+        tail = "反规避撰写加固补充: 独立权利要求防御性布局。" * 1     # 后段标记章节
+        mat = head + mid + tail
+        self.assertLessEqual(len(mat), 8000)
+        self.assertIn("反规避撰写加固", mat)
+        st = ThinkState(goal="g", goal_anchored="评估CIPP协议", ref_material=mat)
+        blk = _ref_material_block(st, sk)
+        self.assertIn("参考素材(完整)", blk)          # 直塞(非"超直塞阈值")
+        self.assertNotIn("超直塞阈值", blk)
+        self.assertIn("反规避撰写加固", blk)           # 后段章节完整可见(结构级)
 
 
 class R0_RetrieveContract(unittest.TestCase):
@@ -739,7 +760,7 @@ class S3_WlUnaddressed(unittest.TestCase):
 class S4_RetrievalDependent(unittest.TestCase):
     """S4: 检索分支+结论命中素材→retrieval_dependent=True+盲区陈述"""
     def test(self):
-        mat = "评估方案素材全文。" * 300                          # >2000 走检索分支
+        mat = "评估方案素材全文。" * 1200                         # >8000 走检索分支(P-C6 阈值上调后仍测检索)
         subs = [{"q": "评估方案"}]
         sk = _mk_suff(None)
         st = ThinkState(goal="评估方案", goal_anchored="评估方案质量",

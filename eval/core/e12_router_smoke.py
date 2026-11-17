@@ -44,20 +44,36 @@ P4_COMMON = ("评估专利P1《一种基于可复现性判定的AI记忆分级�
              "核心创新点与现有技术区分度/最薄弱环节/可落地性")
 
 def _smoke_s_samples():
-    """S1/S2/S3 由专利正文构造; 文件缺失时返回空列表(跳过并 warn)。"""
+    """S1/S2/S3 由专利正文构造; 文件缺失时返回空列表(跳过并 warn)。
+    P-C6 注: 阈值已上调 8000(R14-a), S1 仍测直塞, S2 扩充至 >8000 永久保留检索分支
+    回归覆盖(不能因阈值上调导致检索通道变成无测试冷分支, 段三执行备注);
+    S4 为 6401 字 P24 CIPP 直塞用例(指标2: retrieval_dependent 不触发)。"""
     try:
         with io.open(PATENT_PATH, encoding="utf-8", errors="replace") as f:
             patent = f.read()
     except OSError:
         return None
-    s1_mat = patent[:1500]                                    # ≤2000 直塞分支
-    s2_mat = patent + "\n\n背景补充: " + ("相关论述。" * 300)   # >2000 检索分支
+    s1_mat = patent[:1500]                                    # ≤8000 直塞分支
+    s2_mat = patent + "\n\n背景补充: " + ("相关论述。" * 1200)  # >8000 检索分支(样本永久保留检索覆盖)
     s3_mat = patent[:1000] + ("扩展段落内容。\n\n" * 20000)     # >200K 截断分支
-    return [
+    samples = [
         ("S1-短材料直塞", f"{P4_COMMON}{P4_MARK}\n{s1_mat}", "inline"),
         ("S2-长材料检索", f"{P4_COMMON}{P4_MARK}\n{s2_mat}", "retrieve"),
         ("S3-超大截断", f"{P4_COMMON}{P4_MARK}\n{s3_mat}", "oversize"),
     ]
+    # S4: P24 CIPP 6401字 直塞(P-C6 指标2 样本)——仅断言链路+告警消除, 语义对拍归段四 A/B
+    cipp_path = os.path.join(HERE, "data", "patent_evidence",
+                             "基于结构化二进制指令帧的AI模型协同通信协议.txt")
+    try:
+        with io.open(cipp_path, encoding="utf-8", errors="replace") as f:
+            cipp = f.read()
+        samples.append(("S4-CIPP直塞6401",
+                        f"评估专利P24《基于结构化二进制指令帧的AI模型协同通信协议》(CIPP)交底书方案质量: "
+                        f"核心创新点与现有技术区分度/最薄弱环节/可落地性{P4_MARK}\n{cipp}",
+                        "cipp_inline"))
+    except OSError:
+        pass
+    return samples
 
 EXIT_CHANNELS = ("terminate_suggest", "llm_terminate", "collapse", "max_steps")
 MAX_VISITS = 2
@@ -161,6 +177,19 @@ def main():
                     hard_fail = True
                 print(f"[E12] {tag} {'PASS' if sr['ok'] else 'FAIL'} ({secs}s) mode={mode} "
                       f"mat={sr['material_len']}chars exit={sr['exit_channel']} 词表命中={len(hits)}/{len(P4_KEYWORDS)} {hits}")
+            elif mode == "cipp_inline":
+                # S4(P-C6 指标1/2): CIPP 词表命中 + 直塞确认(6401≤8000 材料应完整入 prompt)。
+                # retrieval_dependent 告警消除属 run_atomic 后置链行为, 归段四 A/B 对拍,
+                # 本处仅结构+词表断言(段三执行备注: 单测不包揽 LLM 语义校验)。
+                cipp_kws = ["二进制", "操作码", "寻址", "扩展接口", "CIPP"]
+                cipp_hits = [k for k in cipp_kws if k in final_txt]
+                sr["ok"] = (report.ok and report.exit_channel in EXIT_CHANNELS
+                            and len(cipp_hits) >= 2
+                            and len(ref_mat) <= REF_INLINE_THRESHOLD)
+                if not sr["ok"]:
+                    hard_fail = True
+                print(f"[E12] {tag} {'PASS' if sr['ok'] else 'FAIL'} ({secs}s) mode={mode} "
+                      f"mat={sr['material_len']}chars exit={sr['exit_channel']} CIPP词表命中={len(cipp_hits)}/5 {cipp_hits}")
             else:
                 # S1/S2: 词表硬断言——命中>=2 个专利关键词(从 0 到 1 引用材料为本轮 KPI)
                 sr["ok"] = report.ok and len(hits) >= 2

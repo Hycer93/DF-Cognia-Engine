@@ -83,11 +83,13 @@ class ThinkState:
 
 # ---------------- P-C4 参考素材消费侧阈值分流(段二2.4/2.5 契约) ----------------
 
-# REF_INLINE_THRESHOLD(段四4.1定值, R14 封闭): 消费分流阈值——
-#   ≤2000字符: 完整直塞进技能 prompt;
-#   >2000字符: 调 ref_retrieval.retrieve() 只拉相关片段(素材本体完整保留在 state)。
-# 与 REF_MAX_CHARS=200_000(入口写入硬上限, 见 executor.run_atomic)是两套独立参数。
-REF_INLINE_THRESHOLD = 2000
+# REF_INLINE_THRESHOLD(P-C6 段二裁决 2000→8000, R14 封闭): 消费分流阈值——
+#   ≤8000字符: 完整直塞进技能 prompt;
+#   >8000字符: 调 ref_retrieval.retrieve() 只拉相关片段(素材本体完整保留在 state)。
+# 与 REF_MAX_CHARS=200_000(入口写入硬上限, 见 executor.run_atomic)是两套独立参数(R14-c 职责隔离)。
+# R14-a: 取值依据真实分布 P1≈4045/P24≈6401 核心业务样本全落于 2000~8000 区间, 禁止裸拍;
+#        旧值 2000 为 P-C4 时期无真实样本的保守初值, 防爆职责已由 token 埋点+200K 硬限替代。
+REF_INLINE_THRESHOLD = 8000
 
 
 def _ref_material_block(state: "ThinkState", skill) -> str:
