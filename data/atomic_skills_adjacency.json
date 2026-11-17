@@ -5,7 +5,12 @@
  "updated_ts": "2026-11-16T20:10:00",
  "global": {
   "max_steps": 24,
-  "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)"
+  "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)",
+  "router": {
+   "component": "cgraph/router_atomic.py",
+   "note": "编排层组件, 消费邻接表非被调度节点, 不进entries(段一①a); 冷启动=ENTRY_HINT硬编码, 四通道退出(terminate_suggest|llm_terminate|collapse|max_steps), 乒乓软防护(禁连跳+单技能≤2次), 异常审计op=orchestrate:skill_router仅4 kind",
+   "entry_hint": "skill_anchor_target"
+  }
  },
  "entries": {
   "skill_anchor_target": {
