@@ -189,7 +189,7 @@ class SkillSufficiencyCheck(BaseAtomicSkill):
         # 7) material_unmapped: 素材存在但全链产出零命中素材关键词
         material_unmapped = False
         if mat:
-            mt2 = set(x for x in _tokens(mat[:5000]) if len(x) >= 3)     # 3-gram级词降低通用词误判
+            mt2 = set(x for x in _tokens(mat[:5000]) if len(str(x)) >= 2)
             out_t = _tokens(all_text)
             if mt2 and not (mt2 & out_t):
                 material_unmapped = True

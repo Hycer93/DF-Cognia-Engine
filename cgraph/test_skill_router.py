@@ -649,5 +649,193 @@ class R0_RetrieveContract(unittest.TestCase):
         self.assertEqual(retrieve(None, mat), [])
 
 
+# ---------------- P-C5 新增 10 项(S1-S10, 段四4.1 冻结清单) ----------------
+# 机械层不 mock(可复现即真值); S2-S5/S7-S9 真实技能类+mock spec 注入(同 R3-R5 先例)
+
+from cgraph.skill_sufficiency_check import SkillSufficiencyCheck
+
+_SUFF_SPEC = {"state_inputs": ["goal", "goal_anchored", "sub_questions", "summary", "trail", "ref_material"],
+              "state_outputs": [], "result_fields": [], "next_options": [], "terminate_suggest": "恒真"}
+
+
+def _mk_suff(llm=None):
+    sk = SkillSufficiencyCheck.__new__(SkillSufficiencyCheck)
+    sk.skill_id = "skill_sufficiency_check"; sk.spec = dict(_SUFF_SPEC)
+    sk.adjacency = {"entries": {"skill_sufficiency_check": _SUFF_SPEC}}; sk.llm = llm
+    return sk
+
+
+class _SuffLLM:
+    """mock: 记录调用; 可编程回复"""
+    last_usage = None
+    def __init__(self, reply=None):
+        self.reply = reply; self.calls = []
+    def chat(self, msgs):
+        self.calls.append(msgs)
+        return self.reply
+
+
+def _trail(hypo_text=None, wl_point=None, subqs=None, with_terminate=False, goal_type="analysis"):
+    t = [{"skill_id": "skill_anchor_target", "step_summary": "锚定",
+          "result_fields": {"goal_type": goal_type}},
+         {"skill_id": "skill_scope_scan", "step_summary": "扫描",
+          "result_fields": {"sub_questions": subqs or []}}]
+    if wl_point is not None:
+        t.append({"skill_id": "skill_weakest_link", "step_summary": "薄弱点",
+                  "result_fields": {"weakest_point": wl_point}})
+    if hypo_text is not None:
+        t.append({"skill_id": "skill_f_reason", "step_summary": "假设",
+                  "result_fields": {"hypotheses": [{"hypothesis": hypo_text, "supporting": "s"}]}})
+    if with_terminate:
+        t.append({"skill_id": "skill_terminate", "step_summary": "汇编",
+                  "result_fields": {"final_output": "汇编产出"}})
+    return t
+
+
+class S1_HealthyZeroLLM(unittest.TestCase):
+    """S1: 健康链→指标全绿+alerts空+LLM零调用"""
+    def test(self):
+        subs = [{"q": "评估区分度"}, {"q": "落地技术债"}]
+        llm = _SuffLLM()
+        sk = _mk_suff(llm)
+        st = ThinkState(goal="g", goal_anchored="评估方案", sub_questions=subs,
+                        trail=_trail(hypo_text="区分度论证与落地技术债均有回应假设",
+                                     wl_point="区分度论证最薄弱", subqs=subs, with_terminate=True), steps=4)
+        res = sk.parse_result("", st)
+        self.assertEqual(res["alerts"], [])
+        self.assertTrue(res["applicable"])
+        self.assertEqual(llm.calls, [])                 # R16: 无疑点零LLM
+        self.assertTrue(res["coverage_metrics"]["final_assembly_present"])
+
+
+class S2_SubqLowTriggersReview(unittest.TestCase):
+    """S2: subq_coverage低→触发LLM复核→alerts含机械疑点+复核陈述"""
+    def test(self):
+        subs = [{"q": "q1甲问"}, {"q": "q2乙问"}, {"q": "q3丙问"}, {"q": "q4丁问"}]
+        import json as _j
+        llm = _SuffLLM(_j.dumps({"reviewed_alerts": ["覆盖缺口陈述存在"], "new_concerns": [],
+                                 "evidence_insufficient": [], "summary": "s", "confidence": 0.8}))
+        sk = _mk_suff(llm)
+        st = ThinkState(goal="g", goal_anchored="t", sub_questions=subs,
+                        trail=_trail(hypo_text="完全无关假设内容", wl_point="无关薄弱点", subqs=subs), steps=4)
+        res = sk.parse_result("", st)
+        self.assertLess(res["coverage_metrics"]["subq_coverage"], 0.6)
+        self.assertTrue(any("subq_coverage" in a for a in res["alerts"]))
+        self.assertTrue(any("覆盖缺口" in a for a in res["alerts"]))  # 复核陈述入列
+        self.assertEqual(len(llm.calls), 1)
+
+
+class S3_WlUnaddressed(unittest.TestCase):
+    """S3: wl疑点零回应→触发+告警"""
+    def test(self):
+        subs = [{"q": "x甲"}]
+        sk = _mk_suff(None)
+        st = ThinkState(goal="g", goal_anchored="t", sub_questions=subs,
+                        trail=_trail(hypo_text="x甲假设完全无关", wl_point="甲乙丙丁薄弱", subqs=subs), steps=4)
+        res = sk.parse_result("", st)
+        self.assertTrue(any("wl_addressed" in a for a in res["alerts"]))
+
+
+class S4_RetrievalDependent(unittest.TestCase):
+    """S4: 检索分支+结论命中素材→retrieval_dependent=True+盲区陈述"""
+    def test(self):
+        mat = "评估方案素材全文。" * 300                          # >2000 走检索分支
+        subs = [{"q": "评估方案"}]
+        sk = _mk_suff(None)
+        st = ThinkState(goal="评估方案", goal_anchored="评估方案质量",
+                        ref_material=mat, sub_questions=subs,
+                        trail=_trail(hypo_text="评估方案假设", wl_point="评估方案薄弱", subqs=subs,
+                                     with_terminate=True), steps=4)
+        res = sk.parse_result("", st)
+        self.assertTrue(res["coverage_metrics"]["retrieval_dependent"])
+        self.assertTrue(any("retrieval_dependent" in a for a in res["alerts"]))
+        self.assertIn("未遍历", res["coverage_note"])           # 盲区双处留痕(段三)
+
+
+class S5_MaterialUnmapped(unittest.TestCase):
+    """S5: 素材存在+全链零命中→文档未遍历告警"""
+    def test(self):
+        mat = "奇异主题素材独占词汇" * 100                        # 全链不出现
+        subs = [{"q": "无关问题"}]
+        sk = _mk_suff(None)
+        st = ThinkState(goal="g", goal_anchored="无关目标", ref_material=mat,
+                        sub_questions=subs,
+                        trail=_trail(hypo_text="无关假设", subqs=subs), steps=3)
+        res = sk.parse_result("", st)
+        self.assertTrue(res["coverage_metrics"]["material_unmapped"])
+        self.assertTrue(any("material_unmapped" in a for a in res["alerts"]))
+
+
+class S6_ShortChainNA(unittest.TestCase):
+    """S6: 空链/直收口→applicable=False 合法非降级"""
+    def test(self):
+        sk = _mk_suff(None)
+        st = ThinkState(goal="问日期", goal_anchored="问日期",
+                        trail=[{"skill_id": "skill_anchor_target", "step_summary": "锚定",
+                                "result_fields": {"goal_type": "simple_query"}}], steps=1)
+        res = sk.parse_result("", st)
+        self.assertFalse(res["applicable"])
+        self.assertEqual(res["alerts"], [])
+        self.assertNotIn("_degraded", res)
+
+
+class S7_ReviewFailSilent(unittest.TestCase):
+    """S7: LLM复核失败(空返回)→静默跳过+固定告警+机械alerts保留"""
+    def test(self):
+        subs = [{"q": "q甲"}, {"q": "q乙"}, {"q": "q丙"}]
+        llm = _SuffLLM(None)                                    # 空返回
+        sk = _mk_suff(llm)
+        st = ThinkState(goal="g", goal_anchored="t", sub_questions=subs,
+                        trail=_trail(hypo_text="完全无关", subqs=subs), steps=3)
+        res = sk.parse_result("", st)
+        self.assertTrue(any("复核失败" in a for a in res["alerts"]))
+        self.assertTrue(any("subq_coverage" in a for a in res["alerts"]))  # 机械保留
+
+
+class S8_WordingViolationFiltered(unittest.TestCase):
+    """S8: 复核回"建议补跑"→措辞违规过滤+原文保留"""
+    def test(self):
+        import json as _j
+        subs = [{"q": "q甲"}, {"q": "q乙"}, {"q": "q丙"}]
+        llm = _SuffLLM(_j.dumps({"reviewed_alerts": ["建议补跑扫描以覆盖子问题"],
+                                 "new_concerns": [], "evidence_insufficient": [],
+                                 "summary": "s", "confidence": 0.8}))
+        sk = _mk_suff(llm)
+        st = ThinkState(goal="g", goal_anchored="t", sub_questions=subs,
+                        trail=_trail(hypo_text="无关", subqs=subs), steps=3)
+        res = sk.parse_result("", st)
+        self.assertTrue(any("措辞违规已过滤" in a and "建议补跑" in a for a in res["alerts"]))
+
+
+class S9_NewConcernsTagged(unittest.TestCase):
+    """S9: LLM新疑点打[LLM新发现]前缀; 机械疑点无前缀"""
+    def test(self):
+        import json as _j
+        subs = [{"q": "q甲"}, {"q": "q乙"}, {"q": "q丙"}]
+        llm = _SuffLLM(_j.dumps({"reviewed_alerts": ["支撑关系存在缺口"],
+                                 "new_concerns": ["证据链跨步缺失风险"],
+                                 "evidence_insufficient": [], "summary": "s", "confidence": 0.8}))
+        sk = _mk_suff(llm)
+        st = ThinkState(goal="g", goal_anchored="t", sub_questions=subs,
+                        trail=_trail(hypo_text="无关", subqs=subs), steps=3)
+        res = sk.parse_result("", st)
+        self.assertTrue(any(a.startswith("[LLM新发现]") for a in res["alerts"]))
+        self.assertTrue(any("支撑关系存在缺口" in a and not a.startswith("[LLM新发现]") for a in res["alerts"]))
+
+
+class S10_AssemblyBackfill(RouterTestBase):
+    """S10: 病灶A——llm_terminate退出后run_atomic补跑汇编, final_assembly_present=True"""
+    def test(self):
+        # 主链: anchor→scan→terminate(LLM选), 无terminate_suggest → 走llm_terminate通道
+        llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "扫"}',
+                       '{"chosen": "skill_terminate", "reason": "收"}'])
+        from cgraph.executor import ChainExecutor
+        ex = ChainExecutor.__new__(ChainExecutor); ex.llm = llm
+        report, state, gate = ex.run_atomic("分析一下两步就够的问题")
+        ids = [e["skill_id"] for e in state.trail]
+        self.assertIn("skill_terminate", ids)            # 补跑汇编条目入trail
+        # 哨兵指标由技能计算; 此处直接断言terminate条目存在(病灶A修复)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

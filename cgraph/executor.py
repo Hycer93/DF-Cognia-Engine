@@ -231,12 +231,22 @@ class ChainExecutor:
             has_terminate = any(isinstance(e, dict) and e.get("skill_id") == "skill_terminate"
                                 for e in state.trail)
             if not has_terminate:
+                import time as _tm2
                 from cgraph.skill_terminate import SkillTerminate
                 from cgraph.router_atomic import SKILL_REGISTRY
                 _saved_reg = dict(SKILL_REGISTRY)
                 try:
                     SKILL_REGISTRY["skill_terminate"] = SkillTerminate
-                    SkillTerminate(llm=self.llm, adjacency=adjacency).run(state)
+                    _t0 = _tm2.time()
+                    _sr_t = SkillTerminate(llm=self.llm, adjacency=adjacency).run(state)
+                    # 补跑条目入trail(段二C: 后置技能readable; 与router _exec_skill
+                    # trail条目形态对齐; skill_terminate的run内部state.steps+=1属
+                    # 汇编计步——此处回滚, 汇编不占主链步数(段四B同源裁决))
+                    state.steps -= 1
+                    state.trail.append({"skill_id": "skill_terminate", "chosen": "skill_terminate",
+                                        "candidates": [], "reason": "llm_terminate后编排器补跑汇编(病灶A修复)",
+                                        "step_summary": str(_sr_t.result.get("summary") or "链路汇编")[:120],
+                                        "result_fields": _sr_t.result, "ts": _tm2.strftime("%Y-%m-%dT%H:%M:%S")})
                 finally:
                     SKILL_REGISTRY.clear(); SKILL_REGISTRY.update(_saved_reg)
             # sufficiency: 后置参谋, 不占步数不进steps_log(段四B), 审计独立op
@@ -257,17 +267,18 @@ class ChainExecutor:
         """P-C5 后置触发(POST_EXIT_HINT 同 memory_gate 先例): 只告警不裁决(R15);
         审计独立 op=sufficiency:alert; 任何异常静默(机械层内部已有降级)。"""
         try:
-            import sqlite3 as _sq, time as _tm
+            import sqlite3 as _sq, time as _tm, json as _js
+            from cgraph.atomic_skill import AUDIT_DB
             from cgraph.skill_sufficiency_check import SkillSufficiencyCheck
             sk = SkillSufficiencyCheck(llm=self.llm, adjacency=adjacency)
             sr = sk.run(state)
             r = sr.result or {}
             # 审计载荷(段五5.3): 独立 op=sufficiency:alert(非 atomic_skill:* 归属,
             # 段二2.5裁决); metrics全量+alerts清单+复核标记; 不进steps_log(段四B)
-            con = _sq.connect(_os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), "data", "memory", "corpus_store.db"))
+            con = _sq.connect(AUDIT_DB)
             con.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
                         (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "sufficiency:alert",
-                         _json.dumps({
+                         _js.dumps({
                              "coverage_metrics": r.get("coverage_metrics"),
                              "alerts": r.get("alerts", []),
                              "applicable": r.get("applicable"),
