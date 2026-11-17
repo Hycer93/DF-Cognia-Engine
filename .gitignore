@@ -24,3 +24,4 @@ memory/mem_index/
 cgraph/llm_codechat.py
 deploy_desay/
 data/memory/governor_pending.jsonl
+!tools/can-tools/can_protocol.db
