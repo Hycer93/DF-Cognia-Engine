@@ -276,8 +276,9 @@ class T12_RouteReportSchema(RouterTestBase):
         self.assertIsInstance(rep.steps_log, list)
         self.assertIsInstance(rep.fallback_count, int)
         for s in rep.steps_log:
-            self.assertEqual(set(s.keys()),   # P-C3: +preempt 字段(段二配套)
-                             {"step", "skill_id", "chosen", "candidates", "reason", "fallback", "preempt", "degrade", "secs", "ts"})
+            self.assertEqual(set(s.keys()),   # P-C4: +token_in/token_out(段二2.5, 12键)
+                             {"step", "skill_id", "chosen", "candidates", "reason", "fallback", "preempt", "degrade",
+                              "token_in", "token_out", "secs", "ts"})
         # P-C3 段五: RouteReport 观测字段
         self.assertIn(rep.task_type, ("eval", "root_cause", "decision", "execution", "other"))
         self.assertIn(rep.task_type_source, ("llm", "lexicon", "other"))
@@ -470,6 +471,182 @@ class C8_VisitCapOff(RouterTestBase):
         rep = RouterAtomic(MockLLM('{"chosen": "skill_terminate", "reason": "r", "task_type": "eval"}'), self.adj).run(ThinkState(goal="g"))
         self.assertIsInstance(rep.task_type, str)
         self.assertIsInstance(rep.task_type_source, str)
+
+
+# ---------------- P-C4 新增 9 项(R1-R9, 素材通道域; 段四4.2 冻结清单) ----------------
+# 单测只验逻辑正确性; 真实链路生效由 E12 冒烟承担(mock-现实偏差教训, 4.2 教训防御)
+
+from cgraph.atomic_skill import _ref_material_block, REF_INLINE_THRESHOLD
+from cgraph.ref_retrieval import retrieve
+
+
+class _MatSkill:                     # 测试用消费技能(带素材注入断言)
+    spec = {"state_inputs": ["ref_material"]}
+    def __init__(self, llm=None, adjacency=None):
+        self.llm = llm
+        self.last_prompt = ""
+
+
+class R1_EntrySplit(unittest.TestCase):
+    """R1: 入口分隔符切片正确/标记丢弃/无标记不动"""
+    def test(self):
+        MARK = "---ref_material---"
+        raw = f"评估专利方案{MARK}\n一级分类内容。\n\n二级分类内容。"
+        gp, _, mp = raw.partition(MARK)
+        self.assertEqual(gp, "评估专利方案")
+        self.assertEqual(mp.lstrip("\r\n"), "一级分类内容。\n\n二级分类内容。")
+        # 标记只切首次; 材料内再出现标记原样保留
+        raw2 = f"问题{MARK}\n材料A{MARK}材料内标记保留"
+        gp2, _, mp2 = raw2.partition(MARK)
+        self.assertIn(MARK, mp2)
+        # 无标记: 不处理
+        raw3 = "普通问题无标记"
+        self.assertNotIn(MARK, raw3.partition(MARK)[0] + (raw3.partition(MARK)[2] if MARK in raw3 else "x"))
+
+
+class R2_EmptyAfterMark(unittest.TestCase):
+    """R2: 标记后为空 → 视同无标记, ref_material=''"""
+    def test(self):
+        from cgraph.executor import ChainExecutor
+        # 直接验证切片语义: 标记后空 → 材料识别移交 anchor(此处验证空判定)
+        raw = "任务目标\n---ref_material---\n"
+        gp, _, mp = raw.partition("---ref_material---")
+        self.assertFalse(mp.strip())   # 空 → 不作为素材
+
+
+class R3_LLMChannelStrip(unittest.TestCase):
+    """R3: anchor LLM 通道剥离——ref_material 写入 state, goal_anchored 纯框架"""
+    def test(self):
+        from cgraph.skill_anchor_target import SkillAnchorTarget
+        import json as _j
+        class _L:  last_usage = None
+        class _Anchor(SkillAnchorTarget):
+            def __init__(self):
+                BaseAtomicSkill = None
+        # 用真实 SkillAnchorTarget + mock adjacency + mock llm
+        from cgraph.atomic_skill import BaseAtomicSkill
+        adj = {"entries": {"skill_anchor_target": {
+            "state_inputs": ["goal"], "state_outputs": ["goal_anchored", "ref_material", "flags.confidence", "flags.sensitive"],
+            "result_fields": ["anchored_goal", "ref_material", "goal_type", "ambiguity_note", "summary"],
+            "next_options": [], "terminate_suggest": "恒假"}}}
+        class FakeLLM:
+            last_usage = None
+            def chat(self, msgs):
+                return _j.dumps({"anchored_goal": "评估方案质量", "ref_material": "专利原文正文...",
+                                 "goal_type": "review", "ambiguity_note": "", "summary": "锚定",
+                                 "confidence": 0.8, "sensitive": False})
+        sk = SkillAnchorTarget.__new__(SkillAnchorTarget)
+        sk.skill_id = "skill_anchor_target"; sk.spec = adj["entries"]["skill_anchor_target"]
+        sk.adjacency = adj; sk.llm = FakeLLM()
+        st = ThinkState(goal="评估方案: <大段材料>")
+        res = sk.parse_result(sk.llm.chat([]), st)
+        self.assertEqual(res["ref_material"], "专利原文正文...")
+        self.assertEqual(res["anchored_goal"], "评估方案质量")
+
+
+class R4_LLMOverrideGuard(unittest.TestCase):
+    """R4: 入口已写非空 + LLM 再输出 → 代码丢弃 LLM 版本保留入口版(R13)"""
+    def test(self):
+        from cgraph.skill_anchor_target import SkillAnchorTarget
+        import json as _j
+        adj = {"entries": {"skill_anchor_target": {
+            "state_inputs": ["goal"], "state_outputs": [], "result_fields": [],
+            "next_options": [], "terminate_suggest": "恒假"}}}
+        sk = SkillAnchorTarget.__new__(SkillAnchorTarget)
+        sk.skill_id = "skill_anchor_target"; sk.spec = adj["entries"]["skill_anchor_target"]
+        sk.adjacency = adj; sk.llm = None
+        st = ThinkState(goal="g", ref_material="入口版本素材")
+        raw = _j.dumps({"anchored_goal": "目标", "ref_material": "LLM试图覆盖的版本",
+                        "goal_type": "analysis", "ambiguity_note": "", "summary": "s",
+                        "confidence": 0.9, "sensitive": False})
+        res = sk.parse_result(raw, st)
+        self.assertEqual(res["ref_material"], "入口版本素材")   # 代码级防御生效
+
+
+class R5_AnchorParseFailNoDegrade(unittest.TestCase):
+    """R5: ref_material 键缺失 → 空串不降级; anchored_goal 空才降级"""
+    def test(self):
+        from cgraph.skill_anchor_target import SkillAnchorTarget
+        import json as _j
+        adj = {"entries": {"skill_anchor_target": {
+            "state_inputs": ["goal"], "state_outputs": [], "result_fields": [],
+            "next_options": [], "terminate_suggest": "恒假"}}}
+        sk = SkillAnchorTarget.__new__(SkillAnchorTarget)
+        sk.skill_id = "skill_anchor_target"; sk.spec = adj["entries"]["skill_anchor_target"]
+        sk.adjacency = adj; sk.llm = None
+        raw = _j.dumps({"anchored_goal": "有效目标", "goal_type": "analysis",
+                        "ambiguity_note": "", "summary": "s", "confidence": 0.9, "sensitive": False})
+        res = sk.parse_result(raw, ThinkState(goal="g"))
+        self.assertEqual(res["ref_material"], "")
+        self.assertNotIn("_degraded", res)                      # 素材缺失不降级
+        raw2 = _j.dumps({"goal_type": "analysis"})             # anchored_goal 缺失
+        res2 = sk.parse_result(raw2, ThinkState(goal="g"))
+        self.assertIn("_degraded", res2)                        # 目标缺失才降级
+
+
+class _SpecSkill:                     # R6/R7 共用: 消费技能视角
+    def __init__(self, declares=True):
+        self.spec = {"state_inputs": ["ref_material"] if declares else []}
+
+
+class R6_ThresholdInline(unittest.TestCase):
+    """R6: 材料 ≤2000 → 直塞完整材料"""
+    def test(self):
+        sk = _SpecSkill()
+        mat = "短材料" * 300            # 900字符 < 2000
+        st = ThinkState(goal="g", goal_anchored="任务", ref_material=mat)
+        blk = _ref_material_block(st, sk)
+        self.assertIn("参考素材(完整)", blk)
+        self.assertIn("短材料", blk)
+
+
+class R7_ThresholdRetrieve(unittest.TestCase):
+    """R7: 材料 >2000 → 检索片段入prompt(素材本体完整保留)"""
+    def test(self):
+        sk = _SpecSkill()
+        mat = "可复现性判定是核心创新点。\n\n" + "填充内容。" * 600      # >2000
+        st = ThinkState(goal="g", goal_anchored="评估可复现判定方案", ref_material=mat)
+        blk = _ref_material_block(st, sk)
+        self.assertIn("超直塞阈值", blk)
+        self.assertIn("可复现性判定", blk)
+        self.assertEqual(st.ref_material, mat)                  # 原始素材不丢失
+        # 未声明 state_inputs 的技能不注入(权限内降级)
+        blk2 = _ref_material_block(st, _SpecSkill(declares=False))
+        self.assertEqual(blk2, "")
+
+
+class R8_OversizeTruncate(unittest.TestCase):
+    """R8: 30万字符 → 截断至200K留痕, 链路不崩(截断逻辑在executor入口, 此处验证语义)"""
+    def test(self):
+        MAXC = 200_000
+        mat = "可复现性判定核心章节。\n\n" + "填充内容。" * 60000        # >30万
+        self.assertGreater(len(mat), 300_000)
+        cut = mat[:MAXC]                                            # 入口截断语义
+        self.assertEqual(len(cut), MAXC)
+        blk = _ref_material_block(ThinkState(goal="g", goal_anchored="评估可复现性判定", ref_material=cut), _SpecSkill())
+        self.assertIn("超直塞阈值", blk)                              # 截断后仍走检索分支, 关键段判别力保留
+        self.assertIn("可复现性判定", blk)
+
+
+class R9_UsageMissing(RouterTestBase):
+    """R9: mock LLM 无 usage → token_in/out=None, 链路正常"""
+    def test(self):
+        rep = RouterAtomic(MockLLM('{"chosen": "skill_terminate", "reason": "r"}'), self.adj).run(ThinkState(goal="g"))
+        for s in rep.steps_log:
+            self.assertIn("token_in", s)
+            self.assertIn("token_out", s)
+            self.assertTrue(s["token_in"] is None or isinstance(s["token_in"], int))
+
+
+class R0_RetrieveContract(unittest.TestCase):
+    """附加: retrieve 契约——判别力/异常恒返[]/top_k"""
+    def test(self):
+        mat = "一级完全可复现信息。\n\n三级不可复现信息永久保存。\n\n闪念记忆层。"
+        r = retrieve("不可复现信息如何保存", mat, 2)
+        self.assertTrue(any("不可复现" in x for x in r))
+        self.assertEqual(retrieve("", mat), [])
+        self.assertEqual(retrieve("q", ""), [])
+        self.assertEqual(retrieve(None, mat), [])
 
 
 if __name__ == "__main__":

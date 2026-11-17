@@ -209,6 +209,10 @@ class RouterAtomic:
         self.steps_log.append({"step": len(self.steps_log) + 1, "skill_id": skill_id,
                                "chosen": chosen, "candidates": list(candidates), "reason": reason,
                                "fallback": fallback, "preempt": preempt, "degrade": degrade,
+                               # P-C4(段二2.5): token埋点纯观测透传, router不接管不计算;
+                               # 取值来自技能层写入的result; 缺失/None照存, 不干预链路
+                               "token_in": sr.result.get("token_in"),
+                               "token_out": sr.result.get("token_out"),
                                "secs": round(sr.secs, 3), "ts": ts})
         return sr
 
