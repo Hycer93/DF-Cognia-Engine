@@ -98,3 +98,24 @@ C3 分流规则(LLM 选路天然消化大半, 观察后定) / engine 两网归�
 **断言域教训**: S1词表断言首版查terminate final_output全FAIL——汇编仅是60字截断summary拼装, 材料引用活在f_reason假设谱(result_fields)。修正为查全trail产出。terminate汇编对长输入仍单薄(P-sufficiency佐证+2)。
 
 **token埋点定位**: 纯观测不干预; 熔断/预警/硬预算/累计统计全部后置(planned P-token-budget收窄版)。
+
+
+## P-C5 附录: 结论充分性校验 skill_sufficiency_check(2026-11-17 七段定稿+验收闭环)
+
+**一句话**: 链路收口后后置参谋技能(POST_EXIT_HINT同memory_gate先例, 不占步数不进菜单不进steps_log)——机械对账八指标(纯Python)为主, 可疑时LLM疑点复核为辅; 只告警不裁决不拦截(R15); LLM复核永为机械疑点下游放大器, 无疑点零调用(R16)。
+
+**病灶重定性(段一考古)**: 非terminate汇编写得薄——llm_terminate通道下terminate汇编技能从未执行(终态=最后一步60字step_summary); 病灶A(汇编缺位)由编排器补跑纯Python汇编修复, final_assembly_present指标兼回归哨兵。
+
+**机械八指标**: subq_coverage(排除scan自身sub_questions复读——自命中恒100%bug编码期抓出)/hypotheses_n/wl_addressed/empty_evidence_fields/degraded_steps/retrieval_dependent(盲区标记, 2-gram与检索同基线, 局限写进coverage_note)/material_unmapped/final_assembly_present。
+
+**首次技能增员**: skills 8→9(此前只有改造无增员); G检查(state_inputs↔ThinkState漂移硬拦截)对第9技能零成本通过——P-C4建立的机制红利。
+
+**阈值校准记录(段二A裁决流程, 段四实测)**: 初值subq_coverage<0.6; N1实测健康链路1.0/hypotheses_n=5/wl_addressed=141——无"健康链路误告警"或"病灶链路漏告警"证据, **初值不动**; S1-S10单测中构造的病灶样本(subq=0.0/wl=0)均正确触发——候选阈值与实测分布一致, 固化。
+
+**验收(4.6口径全过)**: 43单测全绿(33存量+10新增) / 校验器PASS(skills=9真实邻接表) / E12八样本(G1-G3兼容+S1词表3/5+S2检索3/5+S3不崩+N1后置硬断言+N2不适用合法) / A-B对拍(病灶A: 60字→1524字汇编0→1; 病灶C: 盲区从无人知晓→10条告警含retrieval_dependent)。
+
+**编码期真bug三连(均单测/E12暴露后修复)**: ①subq_coverage自命中(scan的sub_questions复读自己, 指标恒100%) ②补跑汇编绕过router trail追加(基类run不写trail, 手动append+steps回滚) ③E12 for-else缩进(S3 FAIL实为S1/S2断言错位, 真S3判定从未执行)——三连再次佐证"mock单测不能替代E12真实冒烟"。
+
+**审计**: sufficiency:alert独立op(metrics全量+alerts+[LLM新发现]/[措辞违规已过滤]/[复核失败]标记+token埋点); 不进E7晨报; 月度误报率观测(planned)。
+
+**R15**: 输出永久只含告警/指标/疑点; 禁pass/fail/阻断/写state; alerts永不作自动机制触发条件。**R16**: LLM复核永为机械下游; 无疑点零调用; 禁升级全量评审。
