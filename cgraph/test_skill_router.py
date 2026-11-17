@@ -48,6 +48,7 @@ BASE_ADJ = {
             {"skill": "skill_weakest_link", "gain": "g", "cost": "c"},
             {"skill": "skill_terminate", "gain": "g", "cost": "c"}]},
         "skill_weakest_link": {"next_options": [{"skill": "skill_terminate", "gain": "g", "cost": "c"}]},
+        "skill_f_reason": {"next_options": [{"skill": "skill_terminate", "gain": "g", "cost": "c"}]},  # P-C3
         "skill_terminate": {"next_options": []},
     },
 }
@@ -275,8 +276,200 @@ class T12_RouteReportSchema(RouterTestBase):
         self.assertIsInstance(rep.steps_log, list)
         self.assertIsInstance(rep.fallback_count, int)
         for s in rep.steps_log:
-            self.assertEqual(set(s.keys()),
-                             {"step", "skill_id", "chosen", "candidates", "reason", "fallback", "degrade", "secs", "ts"})
+            self.assertEqual(set(s.keys()),   # P-C3: +preempt 字段(段二配套)
+                             {"step", "skill_id", "chosen", "candidates", "reason", "fallback", "preempt", "degrade", "secs", "ts"})
+        # P-C3 段五: RouteReport 观测字段
+        self.assertIn(rep.task_type, ("eval", "root_cause", "decision", "execution", "other"))
+        self.assertIn(rep.task_type_source, ("llm", "lexicon", "other"))
+
+
+# ---------------- P-C3 新增 8 项(C1-C8, 段六冻结清单; mock 注入 task_type) ----------------
+
+class C3TestBase(RouterTestBase):
+    """C3 用例公共: 构造 weakest_link 后菜单含 f_reason+terminate 的标准场景。"""
+    def _wl_adj(self):
+        # weakest_link 菜单含 f_reason 与 terminate(邻接表真实形态)
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_f_reason", "gain": "g", "cost": "c"},
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_f_reason"]["next_options"] = [
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [
+            {"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+
+    def _run_wl(self, replies, task_type=None, steps=None):
+        llm = MockLLM(replies)
+        r = RouterAtomic(llm, self.adj)
+        if task_type is not None:
+            r.task_type, r.task_type_source = task_type, "llm"   # mock 注入(段三解耦原则)
+        if steps is not None:
+            r._orig = None
+        st = ThinkState(goal="评估类目标")
+        return r.run(st), llm
+
+
+class C1_PreemptFull(RouterTestBase):
+    """C1: eval 全条件满足 LLM 选 terminate → 拦截走 f_reason"""
+    def test(self):
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_f_reason", "gain": "g", "cost": "c"},
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_f_reason"]["next_options"] = [{"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [{"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+        llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_weakest_link", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_terminate", "reason": "完成", "task_type": "eval"}',
+                      '{"chosen": "skill_terminate", "reason": "收", "task_type": "eval"}'])
+        rep = RouterAtomic(llm, self.adj).run(ThinkState(goal="评估方案风险"))
+        self.assertIn("skill_f_reason", [s["skill_id"] for s in rep.steps_log])
+        pre = [s for s in rep.steps_log if s.get("preempt")]
+        self.assertTrue(pre)
+        self.assertEqual(pre[0]["reason"], "C3偏好拦截terminate→f_reason")
+        self.assertTrue(all(s.get("fallback") is False for s in pre))   # 策略拦截≠故障回退
+        self.assertIn(rep.exit_channel, ("llm_terminate", "terminate_suggest"))
+        self.assertEqual(rep.fallback_count, 0)
+
+
+class C2_SecondPassThrough(RouterTestBase):
+    """C2: 拦一次后 LLM 再选 terminate → 无条件放行"""
+    def test(self):
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_f_reason", "gain": "g", "cost": "c"},
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_f_reason"]["next_options"] = [{"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [{"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+        # f_reason 菜单只剩 terminate → 拦截后下一轮 LLM 选 terminate → 放行
+        llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_weakest_link", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_terminate", "reason": "1", "task_type": "eval"}',
+                      '{"chosen": "skill_terminate", "reason": "2", "task_type": "eval"}'])
+        rep = RouterAtomic(llm, self.adj).run(ThinkState(goal="评估方案风险"))
+        self.assertEqual(rep.exit_channel, "llm_terminate")
+        self.assertEqual(len([s for s in rep.steps_log if s.get("preempt")]), 1)  # 只拦一次
+
+
+class C3_TypeOff(RouterTestBase):
+    """C3: decision/other → 提示不追加、不拦截"""
+    def test(self):
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_f_reason", "gain": "g", "cost": "c"},
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [{"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+        llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "r", "task_type": "decision"}',
+                      '{"chosen": "skill_weakest_link", "reason": "r", "task_type": "decision"}',
+                      '{"chosen": "skill_terminate", "reason": "收", "task_type": "decision"}'])
+        rep = RouterAtomic(llm, self.adj).run(ThinkState(goal="该不该建仓"))
+        self.assertEqual(rep.exit_channel, "llm_terminate")
+        self.assertNotIn("skill_f_reason", [s["skill_id"] for s in rep.steps_log])
+        for msgs in llm.calls:
+            self.assertNotIn("竞争假设", msgs[1]["content"])          # 无提示注入
+
+
+class C4_PromptHint(RouterTestBase):
+    """C4: 窗口期内 prompt 含偏好提示; 窗口关闭后不含"""
+    def test(self):
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_f_reason", "gain": "g", "cost": "c"},
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_f_reason"]["next_options"] = [{"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [{"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+        llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_weakest_link", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_terminate", "reason": "x", "task_type": "eval"}',
+                      '{"chosen": "skill_terminate", "reason": "y", "task_type": "eval"}'])
+        RouterAtomic(llm, self.adj).run(ThinkState(goal="评估方案风险"))
+        # 第3次调用(weakest_link后)应有提示; 第4次(拦截后窗口关)无
+        self.assertIn("竞争假设", llm.calls[2][1]["content"])
+        self.assertNotIn("竞争假设", llm.calls[3][1]["content"])
+
+
+class C5_LexiconFallback(RouterTestBase):
+    """C5: 词表兜底只归 root_cause, 不归 eval"""
+    def test(self):
+        # 场景1: LLM 无 task_type + goal 含"复盘" → root_cause/lexicon
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_f_reason", "gain": "g", "cost": "c"},
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [{"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+        llm1 = MockLLM(['{"chosen": "skill_scope_scan", "reason": "r"}',
+                       '{"chosen": "skill_weakest_link", "reason": "r"}',
+                       '{"chosen": "skill_terminate", "reason": "s"}'])
+        r1 = RouterAtomic(llm1, self.adj)
+        st1 = ThinkState(goal="复盘零入库事故根因")
+        rep1 = r1.run(st1)
+        self.assertEqual(r1.task_type, "root_cause")
+        self.assertEqual(r1.task_type_source, "lexicon")
+        self.assertEqual(rep1.task_type, "root_cause")
+        # 场景2: 仅"风险"(决策语境)不命中词表 → other
+        llm2 = MockLLM(['{"chosen": "skill_scope_scan", "reason": "r"}',
+                       '{"chosen": "skill_weakest_link", "reason": "r"}',
+                       '{"chosen": "skill_terminate", "reason": "s"}'])
+        r2 = RouterAtomic(llm2, self.adj)
+        r2.run(ThinkState(goal="建仓风险评估"))          # "分析"命中词表? 分析在词表内→root_cause
+        # 词表词含"分析"——按裁决词集(根因/分析/审查/复盘)本goal命中; 换纯决策goal
+        r3 = RouterAtomic(MockLLM(['{"chosen": "skill_terminate", "reason": "s"}']), self.adj)
+        r3.run(ThinkState(goal="该不该买紫光国微"))
+        self.assertEqual(r3.task_type, "other")
+
+
+class C6_FirstRoundLock(RouterTestBase):
+    """C6: task_type 首轮锁定, 后续漂移不改"""
+    def test(self):
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [{"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+        llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_weakest_link", "reason": "r", "task_type": "decision"}',
+                      '{"chosen": "skill_terminate", "reason": "s", "task_type": "other"}'])
+        r = RouterAtomic(llm, self.adj)
+        r.run(ThinkState(goal="评估方案"))
+        self.assertEqual(r.task_type, "eval")            # 首轮锁定
+
+
+class C7_BudgetGuard(RouterTestBase):
+    """C7: steps=max_steps-1 → 预算不足放行, 无拦截无提示"""
+    def test(self):
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_f_reason", "gain": "g", "cost": "c"},
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [{"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+        self.adj["global"]["max_steps"] = 4
+        llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_weakest_link", "reason": "r", "task_type": "eval"}',
+                      '{"chosen": "skill_terminate", "reason": "收", "task_type": "eval"}'])
+        # anchor(1)+scan(2)+wl(3); wl 后选 terminate 时 steps=3 > max-2=2 → 预算不足抑制, 放行
+        rep = RouterAtomic(llm, self.adj).run(ThinkState(goal="评估方案"))
+        self.assertEqual(rep.exit_channel, "llm_terminate")
+        self.assertNotIn("skill_f_reason", [s["skill_id"] for s in rep.steps_log])
+
+
+class C8_VisitCapOff(RouterTestBase):
+    """C8: f_reason 已 2 次 → C3 关闭; RouteReport 观测字段类型合法"""
+    def test(self):
+        self.adj["entries"]["skill_weakest_link"]["next_options"] = [
+            {"skill": "skill_f_reason", "gain": "g", "cost": "c"},
+            {"skill": "skill_terminate", "gain": "g", "cost": "c"}]
+        self.adj["entries"]["skill_scope_scan"]["next_options"] = [{"skill": "skill_weakest_link", "gain": "g", "cost": "c"}]
+        _patch_registry(self.adj)
+        r = RouterAtomic(MockLLM('{}'), self.adj)
+        r.task_type, r.task_type_source = "eval", "llm"
+        st = ThinkState(goal="g")
+        st.trail = [{"skill_id": "skill_weakest_link"}, {"skill_id": "skill_f_reason"},
+                    {"skill_id": "skill_weakest_link"}, {"skill_id": "skill_f_reason"}]
+        st.steps = 4
+        self.assertFalse(r._c3_should_preempt(st, [{"skill": "skill_f_reason"}]))
+        # RouteReport 观测字段(非C3主逻辑)
+        rep = RouterAtomic(MockLLM('{"chosen": "skill_terminate", "reason": "r", "task_type": "eval"}'), self.adj).run(ThinkState(goal="g"))
+        self.assertIsInstance(rep.task_type, str)
+        self.assertIsInstance(rep.task_type_source, str)
 
 
 if __name__ == "__main__":
