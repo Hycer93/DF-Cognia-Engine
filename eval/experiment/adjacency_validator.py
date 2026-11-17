@@ -34,7 +34,7 @@ ENTRY_HINT = "skill_anchor_target"   # 约定入口(表内 role 或显式 entry 
 # 后置收尾步豁免(2026-11-17 skill_memory_gate 七段定稿段一B案): terminate 之后由编排器
 # 直接触发的收尾技能, 不在邻接图可达域内(terminate 出口 next_options 必空无法出边);
 # 校验口径同 __planned__ 占位豁免——图可达性只覆盖思考主链, 收尾步归编排器管。
-POST_EXIT_HINT = {"skill_memory_gate"}   # 编排器后置触发技能(豁免孤岛+可达性检查)
+POST_EXIT_HINT = {"skill_memory_gate", "skill_sufficiency_check"}   # 编排器后置触发技能(豁免孤岛+可达性检查)
 
 
 def load_table(path):

@@ -222,6 +222,27 @@ class ChainExecutor:
             ref_material = ""
         state = ThinkState(goal=user_input, ref_material=ref_material)
         report = RouterAtomic(self.llm, adjacency).run(state)
+        # ---- P-C5 后置时序(段二2.5裁决): 补汇编(病灶A) → sufficiency → gate ----
+        # 后置段整体 try/except: 任何后置故障不污染主链结果(fail-safe, 段五5.2)
+        try:
+            # 病灶A修复: llm_terminate 通道退出时 terminate 汇编技能从未执行,
+            # 终态=最后一步60字step_summary。汇编本体纯Python零LLM, 编排器补跑
+            # 成本≈0; 补跑条目正常入 trail(段二C: sufficiency/memory_gate 均可读)
+            has_terminate = any(isinstance(e, dict) and e.get("skill_id") == "skill_terminate"
+                                for e in state.trail)
+            if not has_terminate:
+                from cgraph.skill_terminate import SkillTerminate
+                from cgraph.router_atomic import SKILL_REGISTRY
+                _saved_reg = dict(SKILL_REGISTRY)
+                try:
+                    SKILL_REGISTRY["skill_terminate"] = SkillTerminate
+                    SkillTerminate(llm=self.llm, adjacency=adjacency).run(state)
+                finally:
+                    SKILL_REGISTRY.clear(); SKILL_REGISTRY.update(_saved_reg)
+            # sufficiency: 后置参谋, 不占步数不进steps_log(段四B), 审计独立op
+            self._run_sufficiency_check(state, adjacency)
+        except Exception as _e:
+            print(f"[post-exit] 后置段异常(不污染主链): {_e}")
         # trail → 伪 node_outputs {skill_id: step_summary}(满足 build_trail_digest 读取,
         # gate 本体零修改); walked = trail 的 skill_id 序列
         pseudo = {e["skill_id"]: e.get("step_summary", "") for e in report.final_state.trail}
@@ -231,6 +252,37 @@ class ChainExecutor:
             result, gate = gate_result
             commit_green_cards(result, gate, user_input)
         return report, report.final_state, gate_result
+
+    def _run_sufficiency_check(self, state, adjacency):
+        """P-C5 后置触发(POST_EXIT_HINT 同 memory_gate 先例): 只告警不裁决(R15);
+        审计独立 op=sufficiency:alert; 任何异常静默(机械层内部已有降级)。"""
+        try:
+            import sqlite3 as _sq, time as _tm
+            from cgraph.skill_sufficiency_check import SkillSufficiencyCheck
+            sk = SkillSufficiencyCheck(llm=self.llm, adjacency=adjacency)
+            sr = sk.run(state)
+            r = sr.result or {}
+            # 审计载荷(段五5.3): 独立 op=sufficiency:alert(非 atomic_skill:* 归属,
+            # 段二2.5裁决); metrics全量+alerts清单+复核标记; 不进steps_log(段四B)
+            con = _sq.connect(_os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), "data", "memory", "corpus_store.db"))
+            con.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
+                        (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "sufficiency:alert",
+                         _json.dumps({
+                             "coverage_metrics": r.get("coverage_metrics"),
+                             "alerts": r.get("alerts", []),
+                             "applicable": r.get("applicable"),
+                             "llm_review": bool((r.get("sufficiency_report") or {}).get("llm_review"))
+                             if isinstance(r.get("sufficiency_report"), dict) else False,
+                             "degraded": bool(r.get("_degraded")),
+                             "token_in": r.get("token_in"), "token_out": r.get("token_out"),
+                             "secs": sr.secs}, ensure_ascii=False)))
+            con.commit(); con.close()
+            if r.get("alerts"):
+                n = len(r["alerts"])
+                print(f"[sufficiency] 告警 {n} 条(只告警不裁决): " +
+                      "; ".join(str(a)[:60] for a in r["alerts"][:3]) + ("..." if n > 3 else ""))
+        except Exception as e:
+            print(f"[sufficiency] 后置校验异常(跳过): {e}")
 
     def _run_memory_gate(self, user_input: str, node_outputs: dict, walked: list):
         """组装 ThinkState(终态) 并跑 skill_memory_gate。

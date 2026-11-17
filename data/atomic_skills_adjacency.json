@@ -256,6 +256,31 @@
       "next_options": [],
       "terminate_suggest": "恒真(链路收尾步, 编排器后置触发, 不在主链内)",
       "dfcp_link": "无(纯内省, 不读记忆库)"
+    },
+    "skill_sufficiency_check": {
+      "role": "结论充分性校验后置参谋(P-C5): 链路收口后机械对账结论↔证据支撑关系, 可疑时LLM疑点复核; 只告警不裁决不拦截(R15); 编排器后置触发不占步数不进菜单",
+      "state_inputs": [
+        "goal",
+        "goal_anchored",
+        "sub_questions",
+        "summary",
+        "trail",
+        "ref_material"
+      ],
+      "state_outputs": [],
+      "result_fields": [
+        "sufficiency_report",
+        "alerts",
+        "coverage_metrics",
+        "applicable",
+        "coverage_note",
+        "summary",
+        "confidence",
+        "ambiguity_note"
+      ],
+      "terminate_suggest": "恒真(链路收尾步, 编排器后置触发, 不在主链内)",
+      "next_options": [],
+      "is_exit": true
     }
   },
   "_reserved": {
