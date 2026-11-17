@@ -240,14 +240,19 @@ class T11_RunAtomicE2E(RouterTestBase):
         # 直接构造 ChainExecutor 并替换两方法
         saved_gate = EX.ChainExecutor._run_memory_gate
         saved_commit = EX.commit_green_cards
+        class _FakeGateResult:                       # 对齐 _run_memory_gate 真实契约: (result, gate)
+            def __init__(self):
+                self.result = {"applicable": True, "gate_list": [
+                    {"tier": "green", "gist": "测试", "atype": "观测",
+                     "verb": "建议立卡", "evidence_step": 1}], "coverage_note": "", "summary": "s",
+                    "confidence": 0.8, "ambiguity_note": "", "degraded": False}
         EX.ChainExecutor._run_memory_gate = lambda self, ui, no, walked: (
             gate_calls.append({"node_outputs": dict(no), "walked": list(walked)}) or
-            {"applicable": True, "gate_list": [{"tier": "green", "gist": "测试", "atype": "观测",
-                                                "verb": "建议立卡", "evidence_step": 1}], "coverage_note": "", "summary": "s",
-             "confidence": 0.8, "ambiguity_note": "", "degraded": False})
+            (_FakeGateResult(), object()))
         EX.commit_green_cards = lambda result, gate, ui: commit_calls.append(1)
         try:
             ex = EX.ChainExecutor.__new__(EX.ChainExecutor)
+            ex.llm = MockLLM('{"chosen": "skill_terminate", "reason": "收口"}')  # 绕过__init__需补llm
             report, state, gate = ex.run_atomic("端到端测试目标")
             # 伪 node_outputs 映射: trail 每步 skill_id→step_summary
             self.assertEqual(gate_calls[0]["node_outputs"],

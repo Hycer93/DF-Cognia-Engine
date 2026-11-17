@@ -162,6 +162,36 @@ class ChainExecutor:
                           event_counts=event_counts, jw_sidebranch=jw_out)
 
     # ---------- 记忆写入闸门(段一B案后置钩子) ----------
+    def run_atomic(self, user_input: str):
+        """原子技能管线薄入口(2026-11-17 skill_router 七段定稿段四②b)。
+
+        职责划分: router_atomic 只做纯调度循环(R6: 零 DB 写零编排钩子);
+        本方法承接编排——跑网 → trail 映射伪 node_outputs → 复用
+        _run_memory_gate + commit_green_cards 两连调(零重复开发)。
+        不改动原 run() 骨架链路。
+        返回 (report, state, gate_result or None)。
+        """
+        import json as _json
+        import os as _os
+        import io as _io
+        from cgraph.atomic_skill import ThinkState
+        from cgraph.router_atomic import RouterAtomic
+        _adj_path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                                 "data", "atomic_skills_adjacency.json")
+        with _io.open(_adj_path, encoding="utf-8") as f:
+            adjacency = _json.load(f)
+        state = ThinkState(goal=user_input)
+        report = RouterAtomic(self.llm, adjacency).run(state)
+        # trail → 伪 node_outputs {skill_id: step_summary}(满足 build_trail_digest 读取,
+        # gate 本体零修改); walked = trail 的 skill_id 序列
+        pseudo = {e["skill_id"]: e.get("step_summary", "") for e in report.final_state.trail}
+        walked = [e["skill_id"] for e in report.final_state.trail]
+        gate_result = self._run_memory_gate(user_input, pseudo, walked)
+        if gate_result is not None:
+            result, gate = gate_result
+            commit_green_cards(result, gate, user_input)
+        return report, report.final_state, gate_result
+
     def _run_memory_gate(self, user_input: str, node_outputs: dict, walked: list):
         """组装 ThinkState(终态) 并跑 skill_memory_gate。
         返回 (gate_result, skill) 或 None(未启用/技能缺失)。降级/失败只告警。"""
