@@ -29,6 +29,9 @@ class LLMClient:
                 raise RuntimeError(f"缺少环境变量 {key_env}——本工程禁止硬编码 API key")
         else:
             self.api_key = be.get("api_key", "ollama")
+        # P-C4 token 埋点(段二2.5裁决): 实例属性方案, 单线程顺序执行无串扰;
+        # 仅成功响应后更新, 失败重试不覆盖旧值; 无 usage 字段时为 None(纯观测不干预)
+        self.last_usage = None
 
     @staticmethod
     def _load_config(config_path: str) -> dict:
@@ -75,6 +78,11 @@ class LLMClient:
         )
         with urllib.request.urlopen(req, timeout=300) as resp:
             data = json.loads(resp.read().decode("utf-8"))
+            # P-C4: 保留 API usage 透传(此前被直接丢弃); 埋点前置依赖
+            try:
+                self.last_usage = data.get("usage") or None
+            except Exception:
+                self.last_usage = None
             return data["choices"][0]["message"]["content"]
 
     def health(self) -> bool:
