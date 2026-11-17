@@ -68,3 +68,16 @@ cgraph/router_atomic.py
 ## 遗留(全 planned, 本次零实现)
 
 C3 分流规则(LLM 选路天然消化大半, 观察后定) / engine 两网归一分流 / skill_asset_import / 审计升全量流水(需统计时无损升级)
+
+## P-C3 附录: route-preference 偏好机制(2026-11-17 七段定稿+实测迭代)
+
+**一句话**: eval/root_cause 类任务在 weakest_link 后, prompt 偏好提示优先+最多一次软否决拦截 terminate 转 f_reason; 六条件互锁(类型/上一步/菜单/一次上限/访问上限/预算≥2); 拦截付步数成本; kind=c3_preempt 留痕; fail-safe 退化为无偏好基线; R11/R12 封闭受控先例。
+
+**关键实测事件(2026-11-17 晚)**:
+- E12 首跑三题全 WARN → 根因: 真实邻接表 weakest_link.next_options 仅[terminate,__planned__], **无 f_reason 边**——C3 六条件③永不成立, 提示与拦截全不生效。单测 mock 菜单自构造含 f_reason, 掩盖了数据源缺失(mock 不能替代真实 LLM+真实邻接表的 E 系冒烟——教训入 planned 观测)。
+- **entries 一次性豁免(commit 965ad00)**: 仅 weakest_link.next_options 追加 skill_f_reason 一处; 性质=数据补边非规约变更(语义: 定位薄弱点后允许假设谱推演, 设计时遗漏的思维通路); 邻接校验器重跑 PASS(skills=8); 未命中 C3 时 LLM 照常可选 terminate, 原行为零改变。**此豁免不构成先例——entries 零改动承诺在其余所有场景继续有效。**
+- 补边后 E12 三样本全 PASS 零 WARN: G1/G2 走 f_reason(均为提示生效 LLM 主动采纳, preempt=0——软引导即够, 拦截兜底未动用); G3 干净收口无 f_reason。
+- A/B 复测(B 侧完整 run_atomic 含 terminate 汇编): G1/G2 trail 含 f_reason 且终态含≥4 条竞争假设带验证路径; G3 无 f_reason。对照段六判定表=**修复达标档**(f_reason 触发+假设谱产出+负样本纯净)。深度仍薄于骨架 A(汇总篇幅), 归 P-sufficiency 待办不阻塞。
+
+**R11**: 受控拦截先例封闭——仅 C3 场景(六条件全满足+一次上限+付步数成本); 新增触发类型/可干预通道/放宽上限/豁免成本, 一律必走新七段, 禁止直接编码。
+**R12**: task_type 五枚举+词表(根因/分析/审查/复盘, 只归 root_cause)+首轮锁定, 全封闭; 增删必走七段。
