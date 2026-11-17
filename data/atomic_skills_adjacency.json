@@ -157,6 +157,11 @@
      "skill": "__planned__",
      "gain": "后续深挖节点(skill_f_reason 等)待讨论登记开放",
      "cost": "待登记"
+    },
+    {
+     "skill": "skill_f_reason",
+     "gain": "对定位出的薄弱环节做多竞争假设推演(向后探索解释空间)",
+     "cost": "高: LLM多假设推演, F20封装"
     }
    ],
    "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 终止仅来自菜单显式选择 skill_terminate)",
