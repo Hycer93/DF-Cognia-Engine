@@ -112,7 +112,7 @@ check("T7② 只含事实陈述(触及事实)", "触及事实" in cc)
 
 # T8 邻接表契约
 spec = ADJ["entries"]["skill_terminate"]
-check("T8① state_inputs四键", spec.get("state_inputs") == ["goal", "goal_anchored", "summary", "trail"])
+check("T8① state_inputs五键(P-C4增ref_material)", spec.get("state_inputs") == ["goal", "goal_anchored", "summary", "trail", "ref_material"])
 check("T8② state_outputs=[]", spec.get("state_outputs") == [])
 check("T8③ result_fields含coverage_check", "coverage_check" in spec.get("result_fields", []))
 check("T8④ 恒真terminate_suggest(is_exit双通道)", spec.get("terminate_suggest", "").startswith("恒真"))

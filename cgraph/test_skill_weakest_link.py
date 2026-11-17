@@ -162,8 +162,8 @@ except PermissionError:
     check("未声明键 goal 读取被拒", True)
 
 # --- 菜单取自邻接表 ---
-check("next_options = terminate + __planned__(模型不可生成)",
-      {o.get("skill") for o in r.next_options} == {"skill_terminate", "__planned__"})
+check("next_options = terminate + __planned__ + f_reason(模型不可生成, P-C3路由偏好增边)",
+      {o.get("skill") for o in r.next_options} == {"skill_terminate", "__planned__", "skill_f_reason"})
 check("上游登记: scope_scan 与 source_intent menu 均含 weakest_link(无孤岛)",
       "skill_weakest_link" in {o.get("skill") for o in ADJ["entries"]["skill_scope_scan"]["next_options"]}
       and "skill_weakest_link" in {o.get("skill") for o in ADJ["entries"]["skill_source_intent"]["next_options"]})
@@ -177,7 +177,7 @@ check("审计落库(op=atomic_skill:skill_weakest_link, 独立归属)", n >= 7, 
 # --- 邻接表七段契约 ---
 spec = ADJ["entries"]["skill_weakest_link"]
 check("邻接表契约: state_inputs/outputs/dfcp_link=无 与实现一致",
-      spec.get("state_inputs") == ["goal_anchored", "sub_questions", "summary"]
+      spec.get("state_inputs") == ["goal_anchored", "sub_questions", "summary", "ref_material"]  # P-C4素材通道增键
       and spec.get("state_outputs") == ["weakest_link", "summary"]
       and spec.get("dfcp_link") == "无")
 

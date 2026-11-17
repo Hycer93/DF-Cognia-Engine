@@ -147,7 +147,7 @@ check("R9 审计落库(op=atomic_skill:skill_f_reason, 独立归属)", n >= 8, s
 # R10 邻接表契约
 spec = ADJ["entries"]["skill_f_reason"]
 check("R10① state_inputs/outputs与实现一致",
-      spec.get("state_inputs") == ["goal_anchored", "sub_questions", "summary"]
+      spec.get("state_inputs") == ["goal_anchored", "sub_questions", "summary", "ref_material"]  # P-C4素材通道增键
       and spec.get("state_outputs") == ["hypotheses", "summary"])
 check("R10② dfcp_link=无(段二裁决, 不预留占位)", spec.get("dfcp_link") == "无")
 check("R10③ 菜单契约=terminate+__planned__仅两项",
