@@ -7,8 +7,8 @@ skill_anchor_target.py — 原子技能·目标锚定(试点①, 2026-11-16 七�
     收敛成结构化顶层锚定目标; 区分任务类型/识别歧义; 整套原子思考链路标准入口。
     只做目标解析——不做答案、不查 DFCP 记忆。
   state_inputs:  goal
-  state_outputs: goal_anchored, flags.confidence, flags.sensitive
-  result_fields: anchored_goal, goal_type, ambiguity_note, summary
+  state_outputs: goal_anchored, ref_material, flags.confidence, flags.sensitive
+  result_fields: anchored_goal, ref_material, goal_type, ambiguity_note, summary
   next_options:  skill_scope_scan(平铺拆解) / skill_terminate(简单查询直收敛)
   terminate_suggest: goal_type==simple_query 且 ambiguity_note 为空
     且 flags.confidence>=0.9 → 建议终止; 其他不建议(风险1兜底: 置信偏低
@@ -29,6 +29,7 @@ CONF_TERMINATE_MIN = 0.9     # 终止分支最低置信(风险1兜底)
 # state_outputs 键 → result 字段映射(基类按此写回)
 STATE_OUTPUT_MAP = {
     "goal_anchored": "anchored_goal",
+    "ref_material": "ref_material",
     "flags.confidence": "confidence",
     "flags.sensitive": "sensitive",
 }
@@ -39,6 +40,7 @@ SYSTEM_PROMPT = """你是目标锚定模块(思考链路的标准入口)。只�
 严格输出 JSON(不要输出任何 JSON 以外的文字):
 {
   "anchored_goal": "一句话收敛后的清晰目标",
+  "ref_material": "原始提问中若含大段文档/日志/专利正文等附属参考素材, 剥离其完整原文到此字段; 无则空字符串",
   "goal_type": "simple_query|analysis|scheme_design|review|unknown_ambiguous 之一",
   "ambiguity_note": "歧义说明; 无歧义必须输出空字符串, 识别到模糊点必须记录",
   "summary": "本技能摘要(30字内, 供后续技能作上下文)",
@@ -51,7 +53,10 @@ SYSTEM_PROMPT = """你是目标锚定模块(思考链路的标准入口)。只�
   scheme_design=方案/架构/流程设计; review=审查复核已有结论或产物;
   unknown_ambiguous=目标本身无法收敛(多重解读/要素缺失)。
 - confidence: 锚定置信 0~1(自己对收敛质量的评估, 宁低勿高)。
-- sensitive: 涉及用户隐私/关系/高敏资产记忆主题时 true。"""
+- sensitive: 涉及用户隐私/关系/高敏资产记忆主题时 true。
+- ref_material 规则: 只做完整原文剥离, 严禁摘要压缩/删改(压缩=信息丢失);
+  anchored_goal 只保留任务问题框架, 不掺杂大段材料;
+  若材料已由入口通道剥离(提问中无大段材料), 输出空字符串即可。"""
 
 
 class SkillAnchorTarget(BaseAtomicSkill):
@@ -82,8 +87,16 @@ class SkillAnchorTarget(BaseAtomicSkill):
         ag = str(j.get("anchored_goal", "") or "").strip()
         if not ag:                                  # 目标收敛失败=最严重降级
             return self._degraded("anchored_goal 为空")
+        # P-C4 LLM 通道剥离(段三3.1): 素材是增强非必需——解析失败得空串不降级;
+        # anchor 是否降级只看 anchored_goal, 与 ref_material 语义完全解耦
+        mat = str(j.get("ref_material", "") or "").strip()
+        # R4 LLM 覆盖防御(段三3.1硬约束/R13 素材只读红线): 入口通道已写非空素材时,
+        # 代码层直接丢弃 LLM 输出保留入口版本——prompt 是软约束, 代码是硬约束
+        if getattr(state, "ref_material", ""):
+            mat = state.ref_material
         return {
             "anchored_goal": ag,
+            "ref_material": mat,                     # 原样搬运, 严禁压缩(入口通道写入优先, 见 run 覆写防御)
             "goal_type": gt,
             "ambiguity_note": amb,                  # 强制输出字段: 无歧义=空串(风险2兜底)
             "summary": str(j.get("summary", "") or "").strip()[:60],

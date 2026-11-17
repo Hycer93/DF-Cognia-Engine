@@ -180,7 +180,47 @@ class ChainExecutor:
                                  "data", "atomic_skills_adjacency.json")
         with _io.open(_adj_path, encoding="utf-8") as f:
             adjacency = _json.load(f)
-        state = ThinkState(goal=user_input)
+        # P-C4 入口分隔符通道(段二2.2契约): ---ref_material--- 独立成行(大小写敏感),
+        # split(标记,1) 首次出现切分, 标记丢弃; 无标记/标记后空 → 不处理移交 anchor LLM 通道;
+        # 切分异常 → entry_fallback 审计 + 材料留在 goal(回退旧管线行为, fail-safe 段三3.1)
+        ref_material = ""
+        MARK = "---ref_material---"
+        try:
+            if MARK in user_input:
+                goal_part, _, mat_part = user_input.partition(MARK)
+                mat_part = mat_part.lstrip("\r\n")
+                if mat_part.strip():
+                    goal_part = goal_part.rstrip()
+                    MAXC = 200_000            # REF_MAX_CHARS(段四4.1: 写入硬上限, 一次性截断)
+                    if len(mat_part) > MAXC:
+                        ref_material = mat_part[:MAXC]
+                        _audit_note = {"ref_truncated": f"原始{len(mat_part)}字符, 截断至{MAXC}"}
+                    else:
+                        ref_material = mat_part
+                        _audit_note = None
+                    user_input = goal_part
+                    try:
+                        import sqlite3 as _sq, time as _tm
+                        _c = _sq.connect(_os.path.join(_os.path.dirname(_adj_path), "memory", "corpus_store.db"))
+                        _c.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
+                                   (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "ref_material:entry_hit",
+                                    _json.dumps({"len": len(ref_material), **(_audit_note or {})}, ensure_ascii=False)))
+                        _c.commit(); _c.close()
+                    except Exception:
+                        pass                    # 审计失败不阻断
+                # 标记后为空: 视同无标记, 交 anchor LLM 通道
+        except Exception:
+            try:
+                import sqlite3 as _sq, time as _tm
+                _c = _sq.connect(_os.path.join(_os.path.dirname(_adj_path), "memory", "corpus_store.db"))
+                _c.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
+                           (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "ref_material:entry_fallback",
+                            _json.dumps({"why": "入口切片异常, 材料留goal"}, ensure_ascii=False)))
+                _c.commit(); _c.close()
+            except Exception:
+                pass
+            ref_material = ""
+        state = ThinkState(goal=user_input, ref_material=ref_material)
         report = RouterAtomic(self.llm, adjacency).run(state)
         # trail → 伪 node_outputs {skill_id: step_summary}(满足 build_trail_digest 读取,
         # gate 本体零修改); walked = trail 的 skill_id 序列

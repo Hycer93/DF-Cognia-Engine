@@ -1,262 +1,267 @@
 {
- "_schema": "atomic_meta_core_adjacency_v1",
- "_doc": "原子化元核·中心化邻接表(2026-11-16 用户定案)。规约: ①技能只能在 next_options 暴露逻辑连通后继, 禁止硬编码写死在技能内部; ②本文件是唯一权威源, 技能实现不得自带旁路连通表; ③加载时与文件变更时双触发校验(见 eval/experiment/adjacency_validator.py), 校验不过拒绝加载; ④v1 为地基试点版: 只登记骨架结构 + 首批试点技能(skill_anchor_target), 其余节点逐个讨论达成共识后登记(一次一个节点, 禁一次性批量定义)。",
- "version": 1,
- "updated_ts": "2026-11-16T20:10:00",
- "global": {
-  "max_steps": 24,
-  "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)",
-  "router": {
-   "component": "cgraph/router_atomic.py",
-   "note": "编排层组件, 消费邻接表非被调度节点, 不进entries(段一①a); 冷启动=ENTRY_HINT硬编码, 四通道退出(terminate_suggest|llm_terminate|collapse|max_steps), 乒乓软防护(禁连跳+单技能≤2次), 异常审计op=orchestrate:skill_router仅4 kind",
-   "entry_hint": "skill_anchor_target"
+  "_schema": "atomic_meta_core_adjacency_v1",
+  "_doc": "原子化元核·中心化邻接表(2026-11-16 用户定案)。规约: ①技能只能在 next_options 暴露逻辑连通后继, 禁止硬编码写死在技能内部; ②本文件是唯一权威源, 技能实现不得自带旁路连通表; ③加载时与文件变更时双触发校验(见 eval/experiment/adjacency_validator.py), 校验不过拒绝加载; ④v1 为地基试点版: 只登记骨架结构 + 首批试点技能(skill_anchor_target), 其余节点逐个讨论达成共识后登记(一次一个节点, 禁一次性批量定义)。",
+  "version": 1,
+  "updated_ts": "2026-11-16T20:10:00",
+  "global": {
+    "max_steps": 24,
+    "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)",
+    "router": {
+      "component": "cgraph/router_atomic.py",
+      "note": "编排层组件, 消费邻接表非被调度节点, 不进entries(段一①a); 冷启动=ENTRY_HINT硬编码, 四通道退出(terminate_suggest|llm_terminate|collapse|max_steps), 乒乓软防护(禁连跳+单技能≤2次), 异常审计op=orchestrate:skill_router仅4 kind",
+      "entry_hint": "skill_anchor_target"
+    }
+  },
+  "entries": {
+    "skill_anchor_target": {
+      "role": "目标锚定(试点①: 原元核无独立对应节点——路由器前置职责的原子化收编; 从原始任务文本锚定顶层目标)",
+      "state_inputs": [
+        "goal"
+      ],
+      "state_outputs": [
+        "goal_anchored",
+        "flags.confidence",
+        "flags.sensitive",
+        "ref_material"
+      ],
+      "result_fields": [
+        "anchored_goal",
+        "goal_type",
+        "ambiguity_note",
+        "summary"
+      ],
+      "next_options": [
+        {
+          "skill": "skill_scope_scan",
+          "gain": "任务空间平铺, 展开子问题面",
+          "cost": "低: 单脚本, 无LLM"
+        },
+        {
+          "skill": "skill_terminate",
+          "gain": "目标已清晰且无需推理, 直接收敛",
+          "cost": "零"
+        }
+      ],
+      "terminate_suggest": "goal 已唯一锚定且为简单查询型任务(无衍生子问题)",
+      "dfcp_link": "无(纯思考技能, 不读记忆库)"
+    },
+    "skill_scope_scan": {
+      "role": "任务空间平铺扫描(原 Aa/G00; 七段定稿 2026-11-16: v1 仅收编 behavior-1 任务空间扫描, 参数变更溯源/遗留问题回溯移出待跨任务技能)",
+      "state_inputs": [
+        "goal_anchored",
+        "flags",
+        "ref_material"
+      ],
+      "state_outputs": [
+        "sub_questions",
+        "summary",
+        "flags.scan_confidence"
+      ],
+      "result_fields": [
+        "sub_questions",
+        "key_parameters",
+        "domains_touched",
+        "summary",
+        "confidence",
+        "ambiguity_note"
+      ],
+      "next_options": [
+        {
+          "skill": "skill_terminate",
+          "gain": "扫描后任务空间已闭合, 无需深挖",
+          "cost": "零"
+        },
+        {
+          "skill": "skill_source_intent",
+          "gain": "对任务涉及外部信息源做主体、动机意图画像",
+          "cost": "中等: LLM语义挖掘, 无DFCP调用"
+        },
+        {
+          "skill": "skill_weakest_link",
+          "gain": "对系统/方案/论证做脆弱面扫描, 定位最弱环节",
+          "cost": "中等: LLM语义评分, 聚合Python化"
+        },
+        {
+          "skill": "skill_f_reason",
+          "gain": "对子问题中的关键不确定点生成竞争假设谱(向外探索候选空间)",
+          "cost": "高: LLM多假设推演, F20封装"
+        }
+      ],
+      "terminate_suggest": "sub_questions 为空(任务空间单点闭合)",
+      "dfcp_link": "无"
+    },
+    "skill_source_intent": {
+      "role": "信息源头意图检测(原 Bb/G01; 七段定稿 2026-11-16: v1 合并 behavior-1 主体追溯+behavior-2 时机动机挖掘; behavior-3 可信度打分移出待独立技能; applicable=false 为语义不适用非降级)",
+      "state_inputs": [
+        "goal_anchored",
+        "sub_questions",
+        "summary"
+      ],
+      "state_outputs": [
+        "source_intents",
+        "summary"
+      ],
+      "result_fields": [
+        "source_intents",
+        "applicable",
+        "summary",
+        "confidence",
+        "ambiguity_note"
+      ],
+      "next_options": [
+        {
+          "skill": "skill_terminate",
+          "gain": "本轮深挖完成, 直接收敛输出",
+          "cost": "零"
+        },
+        {
+          "skill": "skill_weakest_link",
+          "gain": "切换到系统脆弱面扫描(源画像与薄弱点互补)",
+          "cost": "中等: LLM语义评分, 聚合Python化"
+        },
+        {
+          "skill": "skill_f_reason",
+          "gain": "对子问题中的关键不确定点生成竞争假设谱(向外探索候选空间)",
+          "cost": "高: LLM多假设推演, F20封装"
+        }
+      ],
+      "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 终止仅来自菜单显式选择 skill_terminate)",
+      "dfcp_link": "无"
+    },
+    "skill_weakest_link": {
+      "role": "最弱环节定位(原 Bc/G02; 七段定稿 2026-11-16: behavior-1 全局扫描+behavior-3 定位合并收编, behavior-2 评分聚合Python化; 只画像+评分不处置; weakest_point 单点语义)",
+      "state_inputs": [
+        "goal_anchored",
+        "sub_questions",
+        "summary",
+        "ref_material"
+      ],
+      "state_outputs": [
+        "weakest_link",
+        "summary"
+      ],
+      "result_fields": [
+        "weakest_point",
+        "others",
+        "dimension_scores",
+        "risk_level",
+        "applicable",
+        "summary",
+        "confidence",
+        "ambiguity_note"
+      ],
+      "next_options": [
+        {
+          "skill": "skill_terminate",
+          "gain": "本轮深挖完成, 直接收敛输出",
+          "cost": "零"
+        },
+        {
+          "skill": "__planned__",
+          "gain": "后续深挖节点(skill_f_reason 等)待讨论登记开放",
+          "cost": "待登记"
+        },
+        {
+          "skill": "skill_f_reason",
+          "gain": "对定位出的薄弱环节做多竞争假设推演(向后探索解释空间)",
+          "cost": "高: LLM多假设推演, F20封装"
+        }
+      ],
+      "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 终止仅来自菜单显式选择 skill_terminate)",
+      "dfcp_link": "无"
+    },
+    "skill_terminate": {
+      "role": "终止收敛与整体汇编(链路出口; 七段定稿2026-11-16 分歧⑧-⑪b: 纯Python拼装不调LLM/汇编素材取trail自报摘要/termination_reason可观测两态/coverage_check只陈列事实禁评价)",
+      "is_exit": true,
+      "state_inputs": [
+        "goal",
+        "goal_anchored",
+        "summary",
+        "trail",
+        "ref_material"
+      ],
+      "state_outputs": [],
+      "result_fields": [
+        "final_output",
+        "termination_reason",
+        "steps_used",
+        "coverage_check"
+      ],
+      "next_options": [],
+      "terminate_suggest": "恒真(本技能即终止)",
+      "dfcp_link": "无"
+    },
+    "__planned__": {
+      "role": "占位通道(非技能): 登记未来逐节点讨论达成的后继方向; 讨论共识落地时以真实技能 id 替换本占位并同步增补该技能 entries 条目——禁止提前批量登记未讨论节点(用户裁决: 一次只聊一个)",
+      "state_inputs": [],
+      "state_outputs": [],
+      "result_fields": [],
+      "next_options": [],
+      "terminate_suggest": "不可执行(占位符, 编排器跳过并告警)",
+      "dfcp_link": "无"
+    },
+    "skill_f_reason": {
+      "role": "多假设推演(F20封装; 七段定稿 2026-11-16 分歧①-⑦裁决: 移除plausibility档位/证据字段宽容清洗/空谱三态/恒False; 只陈列假设-支持-反证-验证路径, 只推演不裁决)",
+      "state_inputs": [
+        "goal_anchored",
+        "sub_questions",
+        "summary",
+        "ref_material"
+      ],
+      "state_outputs": [
+        "hypotheses",
+        "summary"
+      ],
+      "result_fields": [
+        "hypotheses",
+        "applicable",
+        "coverage_note",
+        "summary",
+        "confidence",
+        "ambiguity_note"
+      ],
+      "next_options": [
+        {
+          "skill": "skill_terminate",
+          "gain": "假设谱生成完成, 收敛输出",
+          "cost": "零"
+        },
+        {
+          "skill": "__planned__",
+          "gain": "skill_source_trust(信源可信度)等后续深挖节点待登记开放",
+          "cost": "待登记"
+        }
+      ],
+      "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 收敛决策交由terminate节点综合完整state完成)",
+      "dfcp_link": "无"
+    },
+    "skill_memory_gate": {
+      "role": "记忆写入闸门(Jw经验闭环后置收口; 2026-11-17七段定稿: terminate后独立步B案/零DB写C案/绿黄红分档封闭枚举/越档丢弃a案/双审计b案/红档仅清单内标记a案)",
+      "is_exit": true,
+      "state_inputs": [
+        "goal",
+        "goal_anchored",
+        "summary",
+        "trail"
+      ],
+      "state_outputs": [],
+      "result_fields": [
+        "gate_list",
+        "applicable",
+        "coverage_note",
+        "summary",
+        "confidence",
+        "ambiguity_note"
+      ],
+      "next_options": [],
+      "terminate_suggest": "恒真(链路收尾步, 编排器后置触发, 不在主链内)",
+      "dfcp_link": "无(纯内省, 不读记忆库)"
+    }
+  },
+  "_reserved": {
+    "_doc": "预留位: 后续逐节点讨论登记(顺序按用户裁决: 试点稳定后逐个开启, 一次一个)。skill_f_reason(F系推演封装)在试点期后登记, DFCP 属可选外部技能。",
+    "planned": [
+      "skill_source_trust(信源可信度, Bb behavior-3 移出项, 需重分歧③)"
+    ]
   }
- },
- "entries": {
-  "skill_anchor_target": {
-   "role": "目标锚定(试点①: 原元核无独立对应节点——路由器前置职责的原子化收编; 从原始任务文本锚定顶层目标)",
-   "state_inputs": [
-    "goal"
-   ],
-   "state_outputs": [
-    "goal_anchored",
-    "flags.confidence",
-    "flags.sensitive"
-   ],
-   "result_fields": [
-    "anchored_goal",
-    "goal_type",
-    "ambiguity_note",
-    "summary"
-   ],
-   "next_options": [
-    {
-     "skill": "skill_scope_scan",
-     "gain": "任务空间平铺, 展开子问题面",
-     "cost": "低: 单脚本, 无LLM"
-    },
-    {
-     "skill": "skill_terminate",
-     "gain": "目标已清晰且无需推理, 直接收敛",
-     "cost": "零"
-    }
-   ],
-   "terminate_suggest": "goal 已唯一锚定且为简单查询型任务(无衍生子问题)",
-   "dfcp_link": "无(纯思考技能, 不读记忆库)"
-  },
-  "skill_scope_scan": {
-   "role": "任务空间平铺扫描(原 Aa/G00; 七段定稿 2026-11-16: v1 仅收编 behavior-1 任务空间扫描, 参数变更溯源/遗留问题回溯移出待跨任务技能)",
-   "state_inputs": [
-    "goal_anchored",
-    "flags"
-   ],
-   "state_outputs": [
-    "sub_questions",
-    "summary",
-    "flags.scan_confidence"
-   ],
-   "result_fields": [
-    "sub_questions",
-    "key_parameters",
-    "domains_touched",
-    "summary",
-    "confidence",
-    "ambiguity_note"
-   ],
-   "next_options": [
-    {
-     "skill": "skill_terminate",
-     "gain": "扫描后任务空间已闭合, 无需深挖",
-     "cost": "零"
-    },
-    {
-     "skill": "skill_source_intent",
-     "gain": "对任务涉及外部信息源做主体、动机意图画像",
-     "cost": "中等: LLM语义挖掘, 无DFCP调用"
-    },
-    {
-     "skill": "skill_weakest_link",
-     "gain": "对系统/方案/论证做脆弱面扫描, 定位最弱环节",
-     "cost": "中等: LLM语义评分, 聚合Python化"
-    },
-    {
-     "skill": "skill_f_reason",
-     "gain": "对子问题中的关键不确定点生成竞争假设谱(向外探索候选空间)",
-     "cost": "高: LLM多假设推演, F20封装"
-    }
-   ],
-   "terminate_suggest": "sub_questions 为空(任务空间单点闭合)",
-   "dfcp_link": "无"
-  },
-  "skill_source_intent": {
-   "role": "信息源头意图检测(原 Bb/G01; 七段定稿 2026-11-16: v1 合并 behavior-1 主体追溯+behavior-2 时机动机挖掘; behavior-3 可信度打分移出待独立技能; applicable=false 为语义不适用非降级)",
-   "state_inputs": [
-    "goal_anchored",
-    "sub_questions",
-    "summary"
-   ],
-   "state_outputs": [
-    "source_intents",
-    "summary"
-   ],
-   "result_fields": [
-    "source_intents",
-    "applicable",
-    "summary",
-    "confidence",
-    "ambiguity_note"
-   ],
-   "next_options": [
-    {
-     "skill": "skill_terminate",
-     "gain": "本轮深挖完成, 直接收敛输出",
-     "cost": "零"
-    },
-    {
-     "skill": "skill_weakest_link",
-     "gain": "切换到系统脆弱面扫描(源画像与薄弱点互补)",
-     "cost": "中等: LLM语义评分, 聚合Python化"
-    },
-    {
-     "skill": "skill_f_reason",
-     "gain": "对子问题中的关键不确定点生成竞争假设谱(向外探索候选空间)",
-     "cost": "高: LLM多假设推演, F20封装"
-    }
-   ],
-   "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 终止仅来自菜单显式选择 skill_terminate)",
-   "dfcp_link": "无"
-  },
-  "skill_weakest_link": {
-   "role": "最弱环节定位(原 Bc/G02; 七段定稿 2026-11-16: behavior-1 全局扫描+behavior-3 定位合并收编, behavior-2 评分聚合Python化; 只画像+评分不处置; weakest_point 单点语义)",
-   "state_inputs": [
-    "goal_anchored",
-    "sub_questions",
-    "summary"
-   ],
-   "state_outputs": [
-    "weakest_link",
-    "summary"
-   ],
-   "result_fields": [
-    "weakest_point",
-    "others",
-    "dimension_scores",
-    "risk_level",
-    "applicable",
-    "summary",
-    "confidence",
-    "ambiguity_note"
-   ],
-   "next_options": [
-    {
-     "skill": "skill_terminate",
-     "gain": "本轮深挖完成, 直接收敛输出",
-     "cost": "零"
-    },
-    {
-     "skill": "__planned__",
-     "gain": "后续深挖节点(skill_f_reason 等)待讨论登记开放",
-     "cost": "待登记"
-    },
-    {
-     "skill": "skill_f_reason",
-     "gain": "对定位出的薄弱环节做多竞争假设推演(向后探索解释空间)",
-     "cost": "高: LLM多假设推演, F20封装"
-    }
-   ],
-   "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 终止仅来自菜单显式选择 skill_terminate)",
-   "dfcp_link": "无"
-  },
-  "skill_terminate": {
-   "role": "终止收敛与整体汇编(链路出口; 七段定稿2026-11-16 分歧⑧-⑪b: 纯Python拼装不调LLM/汇编素材取trail自报摘要/termination_reason可观测两态/coverage_check只陈列事实禁评价)",
-   "is_exit": true,
-   "state_inputs": [
-    "goal",
-    "goal_anchored",
-    "summary",
-    "trail"
-   ],
-   "state_outputs": [],
-   "result_fields": [
-    "final_output",
-    "termination_reason",
-    "steps_used",
-    "coverage_check"
-   ],
-   "next_options": [],
-   "terminate_suggest": "恒真(本技能即终止)",
-   "dfcp_link": "无"
-  },
-  "__planned__": {
-   "role": "占位通道(非技能): 登记未来逐节点讨论达成的后继方向; 讨论共识落地时以真实技能 id 替换本占位并同步增补该技能 entries 条目——禁止提前批量登记未讨论节点(用户裁决: 一次只聊一个)",
-   "state_inputs": [],
-   "state_outputs": [],
-   "result_fields": [],
-   "next_options": [],
-   "terminate_suggest": "不可执行(占位符, 编排器跳过并告警)",
-   "dfcp_link": "无"
-  },
-  "skill_f_reason": {
-   "role": "多假设推演(F20封装; 七段定稿 2026-11-16 分歧①-⑦裁决: 移除plausibility档位/证据字段宽容清洗/空谱三态/恒False; 只陈列假设-支持-反证-验证路径, 只推演不裁决)",
-   "state_inputs": [
-    "goal_anchored",
-    "sub_questions",
-    "summary"
-   ],
-   "state_outputs": [
-    "hypotheses",
-    "summary"
-   ],
-   "result_fields": [
-    "hypotheses",
-    "applicable",
-    "coverage_note",
-    "summary",
-    "confidence",
-    "ambiguity_note"
-   ],
-   "next_options": [
-    {
-     "skill": "skill_terminate",
-     "gain": "假设谱生成完成, 收敛输出",
-     "cost": "零"
-    },
-    {
-     "skill": "__planned__",
-     "gain": "skill_source_trust(信源可信度)等后续深挖节点待登记开放",
-     "cost": "待登记"
-    }
-   ],
-   "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 收敛决策交由terminate节点综合完整state完成)",
-   "dfcp_link": "无"
-  },
-  "skill_memory_gate": {
-   "role": "记忆写入闸门(Jw经验闭环后置收口; 2026-11-17七段定稿: terminate后独立步B案/零DB写C案/绿黄红分档封闭枚举/越档丢弃a案/双审计b案/红档仅清单内标记a案)",
-   "is_exit": true,
-   "state_inputs": [
-    "goal",
-    "goal_anchored",
-    "summary",
-    "trail"
-   ],
-   "state_outputs": [],
-   "result_fields": [
-    "gate_list",
-    "applicable",
-    "coverage_note",
-    "summary",
-    "confidence",
-    "ambiguity_note"
-   ],
-   "next_options": [],
-   "terminate_suggest": "恒真(链路收尾步, 编排器后置触发, 不在主链内)",
-   "dfcp_link": "无(纯内省, 不读记忆库)"
-  }
- },
- "_reserved": {
-  "_doc": "预留位: 后续逐节点讨论登记(顺序按用户裁决: 试点稳定后逐个开启, 一次一个)。skill_f_reason(F系推演封装)在试点期后登记, DFCP 属可选外部技能。",
-  "planned": [
-   "skill_source_trust(信源可信度, Bb behavior-3 移出项, 需重分歧③)"
-  ]
- }
 }

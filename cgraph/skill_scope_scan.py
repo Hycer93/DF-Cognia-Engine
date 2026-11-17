@@ -24,7 +24,7 @@ skill_scope_scan.py — 原子技能·任务空间平铺扫描(试点②, 原元
 """
 from __future__ import annotations
 
-from cgraph.atomic_skill import BaseAtomicSkill, ThinkState, extract_json
+from cgraph.atomic_skill import BaseAtomicSkill, ThinkState, extract_json, _ref_material_block
 
 CONF_TERMINATE_MIN = 0.9     # 终止分支最低扫描置信
 MAX_SUB_QUESTIONS = 8        # 风险1: 子问题爆炸硬上限, 超出截断+note
@@ -64,6 +64,7 @@ class SkillScopeScan(BaseAtomicSkill):
         goal = self._in(state, "goal_anchored")
         flags = self._in(state, "flags") or {}
         ctx = f"已锚定目标:\n{goal}\n\n锚定置信: {flags.get('confidence', '?')} | 敏感: {flags.get('sensitive', False)}"
+        ctx += _ref_material_block(state, self)      # P-C4: 参考素材阈值分流注入
         amb = flags.get("ambiguity_note")
         if not amb:
             # 锚定阶段歧义从 goal_anchored 不可得——本技能只声明读 flags, 歧义若在

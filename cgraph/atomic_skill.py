@@ -47,11 +47,21 @@ class ThinkState:
     标记位: conflict/sensitive/confidence——技能只能通过 state_outputs 声明的键写。"""
     goal: str = ""
     goal_anchored: str = ""
+    # P-C4 参考素材通道(段二2.1契约): 用户原始附属材料原样保存; 空串=无素材(常态,
+    # 行为与旧版等价); 仅 run_atomic 入口与 anchor_target 两处可写(R13 素材只读红线:
+    # 写入后链中任何技能禁止修改/覆盖/二次截断); 不落盘、不进 trail 防日志膨胀
+    ref_material: str = ""
     sub_questions: list = field(default_factory=list)
     summary: str = ""
     trail: list = field(default_factory=list)       # [(skill_id, chosen, candidates, reason, ts)]
     flags: dict = field(default_factory=dict)       # {"confidence": float, "sensitive": bool, "conflict": bool}
     steps: int = 0
+    # 存量动态输出键显性化(P-C4 校验器 G 检查逼出的隐性契约): 此三键由各技能
+    # state_outputs 声明并经 write() 动态 setattr 写入, 原本未在 dataclass 声明——
+    # 校验器上线后必须显性化否则字段漂移硬拦截; 默认 None=未写入态
+    weakest_link: object = None                     # skill_weakest_link 主字段(单点语义)
+    hypotheses: list = None                          # skill_f_reason 假设谱
+    source_intents: list = None                      # skill_source_intent 意图清单
 
     def read(self, key: str):
         """state 读取(编排层控制: 只允许技能读邻接表 state_inputs 声明的键)"""
@@ -69,6 +79,41 @@ class ThinkState:
                 self.flags[k2] = value
                 return
         setattr(self, key, value)
+
+
+# ---------------- P-C4 参考素材消费侧阈值分流(段二2.4/2.5 契约) ----------------
+
+# REF_INLINE_THRESHOLD(段四4.1定值, R14 封闭): 消费分流阈值——
+#   ≤2000字符: 完整直塞进技能 prompt;
+#   >2000字符: 调 ref_retrieval.retrieve() 只拉相关片段(素材本体完整保留在 state)。
+# 与 REF_MAX_CHARS=200_000(入口写入硬上限, 见 executor.run_atomic)是两套独立参数。
+REF_INLINE_THRESHOLD = 2000
+
+
+def _ref_material_block(state: "ThinkState", skill) -> str:
+    """消费技能 build_prompt 统一注入块。
+    无素材(空串)返回 ""——prompt 与旧版逐字节等价(向前兼容段三3.6)。
+    读 state.ref_material 需技能在邻接表 state_inputs 声明该键, 否则不注入
+    (权限模型内自然降级, 不 raise)。检索异常返回[]等价于无片段(段三3.3)。"""
+    try:
+        if "ref_material" not in skill.spec.get("state_inputs", []):
+            return ""
+        mat = state.ref_material or ""
+        if not mat:
+            return ""
+        if len(mat) <= REF_INLINE_THRESHOLD:
+            return f"\n\n参考素材(完整):\n{mat}"
+        from cgraph.ref_retrieval import retrieve
+        query = (getattr(state, "goal_anchored", "") or "") + "\n" + \
+                "\n".join(str(q.get("q", ""))[:100] for q in (state.sub_questions or [])[:4] if isinstance(q, dict))
+        frags = retrieve(query, mat, top_k=3)
+        if not frags:
+            return ""
+        joined = "\n---\n".join(frags)
+        return (f"\n\n参考素材(原始{len(mat)}字符超直塞阈值, 以下为与任务最相关的片段, "
+                f"素材可能不完整):\n{joined}")
+    except Exception:
+        return ""                                  # fail-safe: 注入失败=无素材, 不劣于现状
 
 
 # ---------------- 原子技能基类 ----------------
@@ -155,6 +200,20 @@ class BaseAtomicSkill:
         _audit_log(self.skill_id, {"result_keys": list(result.keys()),
                                    "terminate": terminate, "secs": secs,
                                    "degraded": bool(result.get("_degraded"))})
+
+        # ⑥ P-C4 token 埋点(段三3.4): 纯观测不干预; try整体包裹——埋点自身故障
+        #    绝不干扰业务链路(对齐 _audit_log 哲学); 取最后一次 chat 的 usage;
+        #    无 usage 记 None; 多次调用暂不累计(planned P-token-budget)
+        try:
+            u = getattr(self.llm, "last_usage", None) if self.llm else None
+            if u is None:
+                result["token_in"] = None
+                result["token_out"] = None
+            else:
+                result["token_in"] = u.get("prompt_tokens") if isinstance(u, dict) else None
+                result["token_out"] = u.get("completion_tokens") if isinstance(u, dict) else None
+        except Exception:
+            pass                                    # 埋点失败: 不写键, 不阻断
 
         return SkillResult(skill_id=self.skill_id, result=result,
                            next_options=self.spec.get("next_options", []),

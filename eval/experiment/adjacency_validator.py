@@ -117,7 +117,43 @@ def validate(table):
     for sid in unreachable:
         warnings.append(f"[入口不可达] {sid} 从入口 {start} 出发不可达(孤立分支)")
 
+    # G. state_inputs/outputs 字段漂移(P-C4 段三3.5/段四4.3 定案): 声明读取/写入的键
+    #    必须存在于 ThinkState 数据类定义(含 flags. 前缀展开), 杜绝静默读 None 的隐蔽
+    #    bug(P-C3 E12 mock-现实偏差教训固化成机制)。只校"声明的必须存在", 不反向
+    #    强制"存在的必须被声明"(向后兼容: 技能可不读某字段)。
+    drift = check_state_inputs(table)
+    for e in drift:
+        errors.append(e)
+
     return errors, warnings
+
+
+def check_state_inputs(table) -> list:
+    """返回漂移错误明细(空列表=通过)。硬拦截: errors 非空即 exit 1。"""
+    sys.path.insert(0, _HERE)
+    from cgraph.atomic_skill import ThinkState
+    top_keys = set(ThinkState.__dataclass_fields__.keys())
+    flag_keys = {"confidence", "sensitive", "conflict"}   # flags dict 合法键集
+    errs = []
+    for sid, spec in table.get("entries", {}).items():
+        for key in spec.get("state_inputs", []) or []:
+            if "." in key:
+                k1, k2 = key.split(".", 1)
+                if k1 == "flags":
+                    if k2 not in flag_keys:
+                        errs.append(f"[字段漂移] {sid} state_inputs '{key}' —— flags 无 '{k2}' 键")
+                elif k1 not in top_keys:
+                    errs.append(f"[字段漂移] {sid} state_inputs '{key}' —— ThinkState 无 '{k1}' 字段")
+            elif key not in top_keys:
+                errs.append(f"[字段漂移] {sid} state_inputs '{key}' —— ThinkState 无此字段")
+        for key in spec.get("state_outputs", []) or []:
+            if "." in key:
+                k1 = key.split(".", 1)[0]
+            else:
+                k1 = key
+            if k1 not in top_keys:
+                errs.append(f"[字段漂移] {sid} state_outputs '{key}' —— ThinkState 无 '{k1}' 字段")
+    return errs
 
 
 def run_check(path, quiet=False):

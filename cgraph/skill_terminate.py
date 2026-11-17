@@ -36,7 +36,7 @@ skill_terminate.py — 原子技能·链路收敛与整体汇编(2026-11-16 七�
 """
 from __future__ import annotations
 
-from cgraph.atomic_skill import BaseAtomicSkill, ThinkState
+from cgraph.atomic_skill import BaseAtomicSkill, ThinkState, _ref_material_block
 
 STEP_SUMMARY_MAX = 60          # trail 条目 step_summary 截断上限(分歧⑧配套规约)
 
@@ -133,6 +133,11 @@ class SkillTerminate(BaseAtomicSkill):
             parts.append("关键产出引用(完整内容见外部trail日志):")
             parts += ["  " + r for r in field_refs]
         parts.append(f"终局摘要(最后一步局部视角): {last_summary or '(无)'}")
+        # P-C4(段二2.5): terminate 汇编可访问素材——缓解长输入终态单薄; 纯Python
+        # 复用分流块(短直塞/长检索同口径); terminate不调LLM, 素材作为汇编附件陈述
+        mat_block = _ref_material_block(state, self)
+        if mat_block:
+            parts.append("参考素材附件(用户原始输入材料, 供人闸复核):" + mat_block)
 
         # coverage_check: 只陈列触及/未触及事实, 禁定性评价(分歧⑨)
         covered = [t.get("skill_id", "?") for t in trail if isinstance(t, dict)]

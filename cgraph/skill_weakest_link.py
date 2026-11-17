@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import re
 
-from cgraph.atomic_skill import BaseAtomicSkill, ThinkState, extract_json
+from cgraph.atomic_skill import BaseAtomicSkill, ThinkState, extract_json, _ref_material_block
 
 MAX_OTHERS = 4              # 次级脆弱点硬上限(超限截断+note, 沿用统一防护模式)
 
@@ -103,7 +103,8 @@ class SkillWeakestLink(BaseAtomicSkill):
                               for s in subs) or "(无子问题)"
         ctx = (f"已锚定目标:\n{goal}\n\n"
                f"任务空间扫描摘要:\n{scan_summary or '(无)'}\n\n"
-               f"子问题清单(定位哪些子问题涉及系统/方案/论证面):\n{sub_lines}")
+               f"子问题清单(定位哪些子问题涉及系统/方案/论证面):\n{sub_lines}"
+               + _ref_material_block(state, self))    # P-C4: 参考素材阈值分流注入
         return [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": ctx},

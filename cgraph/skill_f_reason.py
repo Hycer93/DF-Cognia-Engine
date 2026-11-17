@@ -41,7 +41,7 @@ skill_f_reason.py — 原子技能·多假设推演(F20封装, 2026-11-16 七段
 """
 from __future__ import annotations
 
-from cgraph.atomic_skill import BaseAtomicSkill, ThinkState, extract_json
+from cgraph.atomic_skill import BaseAtomicSkill, ThinkState, extract_json, _ref_material_block
 
 MAX_HYPOTHESES = 5         # 假设条目硬上限(对齐 MAX_SOURCES/MAX_OTHERS 截断家族)
 
@@ -92,7 +92,8 @@ class SkillFReason(BaseAtomicSkill):
                               for s in subs) or "(无子问题)"
         ctx = (f"已锚定目标:\n{goal}\n\n"
                f"任务空间扫描摘要:\n{scan_summary or '(无)'}\n\n"
-               f"子问题清单(定位哪些子问题含关键不确定点, 对其生成竞争假设):\n{sub_lines}")
+               f"子问题清单(定位哪些子问题含关键不确定点, 对其生成竞争假设):\n{sub_lines}"
+               + _ref_material_block(state, self))    # P-C4: 参考素材阈值分流注入
         return [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": ctx},
