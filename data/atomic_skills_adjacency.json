@@ -2,7 +2,7 @@
  "_schema": "atomic_meta_core_adjacency_v1",
  "_doc": "原子化元核·中心化邻接表(2026-11-16 用户定案)。规约: ①技能只能在 next_options 暴露逻辑连通后继, 禁止硬编码写死在技能内部; ②本文件是唯一权威源, 技能实现不得自带旁路连通表; ③加载时与文件变更时双触发校验(见 eval/experiment/adjacency_validator.py), 校验不过拒绝加载; ④v1 为地基试点版: 只登记骨架结构 + 首批试点技能(skill_anchor_target), 其余节点逐个讨论达成共识后登记(一次一个节点, 禁一次性批量定义)。",
  "version": 1,
- "updated_ts": "2026-11-16T19:24:00",
+ "updated_ts": "2026-11-16T20:10:00",
  "global": {
   "max_steps": 24,
   "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)"
@@ -158,10 +158,11 @@
    "dfcp_link": "无"
   },
   "skill_terminate": {
-   "role": "终止收敛(链路出口; 原元核无对应——旧体系由固定拓扑终点隐式承担, 现显式化为原子技能保证可达性校验有明确终止节点)",
+   "role": "终止收敛与整体汇编(链路出口; 七段定稿2026-11-16 分歧⑧-⑪b: 纯Python拼装不调LLM/汇编素材取trail自报摘要/termination_reason可观测两态/coverage_check只陈列事实禁评价)",
    "is_exit": true,
    "state_inputs": [
     "goal",
+    "goal_anchored",
     "summary",
     "trail"
    ],
@@ -169,7 +170,8 @@
    "result_fields": [
     "final_output",
     "termination_reason",
-    "steps_used"
+    "steps_used",
+    "coverage_check"
    ],
    "next_options": [],
    "terminate_suggest": "恒真(本技能即终止)",
@@ -217,6 +219,28 @@
    ],
    "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 收敛决策交由terminate节点综合完整state完成)",
    "dfcp_link": "无"
+  },
+  "skill_memory_gate": {
+   "role": "记忆写入闸门(Jw经验闭环后置收口; 2026-11-17七段定稿: terminate后独立步B案/零DB写C案/绿黄红分档封闭枚举/越档丢弃a案/双审计b案/红档仅清单内标记a案)",
+   "is_exit": true,
+   "state_inputs": [
+    "goal",
+    "goal_anchored",
+    "summary",
+    "trail"
+   ],
+   "state_outputs": [],
+   "result_fields": [
+    "gate_list",
+    "applicable",
+    "coverage_note",
+    "summary",
+    "confidence",
+    "ambiguity_note"
+   ],
+   "next_options": [],
+   "terminate_suggest": "恒真(链路收尾步, 编排器后置触发, 不在主链内)",
+   "dfcp_link": "无(纯内省, 不读记忆库)"
   }
  },
  "_reserved": {

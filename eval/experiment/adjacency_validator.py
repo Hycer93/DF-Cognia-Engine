@@ -31,6 +31,11 @@ GUARD_LOG = os.path.join(_HERE, "logs", "adjacency_guard.log")
 
 ENTRY_HINT = "skill_anchor_target"   # 约定入口(表内 role 或显式 entry 字段可扩展)
 
+# 后置收尾步豁免(2026-11-17 skill_memory_gate 七段定稿段一B案): terminate 之后由编排器
+# 直接触发的收尾技能, 不在邻接图可达域内(terminate 出口 next_options 必空无法出边);
+# 校验口径同 __planned__ 占位豁免——图可达性只覆盖思考主链, 收尾步归编排器管。
+POST_EXIT_HINT = {"skill_memory_gate"}   # 编排器后置触发技能(豁免孤岛+可达性检查)
+
 
 def load_table(path):
     with io.open(path, encoding="utf-8") as f:
@@ -76,8 +81,8 @@ def validate(table):
     # B. 孤岛技能
     referenced = {o.get("skill") for spec in entries.values() for o in spec.get("next_options", [])}
     for sid in entries:
-        if sid != ENTRY_HINT and sid not in referenced:
-            # 入口豁免; 终止技能天然被指向, 这里抓的是谁都不指、也不被指的真孤岛
+        if sid != ENTRY_HINT and sid not in POST_EXIT_HINT and sid not in referenced:
+            # 入口豁免; 后置收尾步豁免(编排器触发,不在主链图内); 终止技能天然被指向
             if sid not in referenced:
                 errors.append(f"[孤岛] {sid} 无入边且非约定入口——任何链路都到不了它")
 
@@ -108,7 +113,7 @@ def validate(table):
     if not reach_exit:
         errors.append(f"[终止不可达] 从入口 {start} 出发无任何路径到达终止技能")
     # 入口出发到不了的节点(非孤岛但不可达=孤立分支)
-    unreachable = set(entries) - seen
+    unreachable = set(entries) - seen - POST_EXIT_HINT   # 后置收尾步豁免(编排器触发,不在主链图内)
     for sid in unreachable:
         warnings.append(f"[入口不可达] {sid} 从入口 {start} 出发不可达(孤立分支)")
 

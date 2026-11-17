@@ -144,11 +144,131 @@ class ChainExecutor:
             "deepens": len(deepen_events),
             "total_ms": sum(t["ms"] for t in trace),
         }
+
+        # 契约⑤(2026-11-17 skill_memory_gate 七段定稿段一B案): 记忆写入闸门——
+        # terminate/汇总完成后的后置收尾步(Jw经验闭环行为4的落库判定)。
+        # 技能零DB写(段二C案): 本体只产 gate_list 分档清单; 绿档落库走
+        # commit_green_cards() 机械执行(段六b案: 独立审计行 memory_commit:green);
+        # 黄档入人闸提示; 红档仅会话内标记(段七a案)。降级只告警不炸主链路(段四a案)。
+        gate_result = self._run_memory_gate(user_input, node_outputs, walked)
+        if gate_result is not None:
+            result, gate = gate_result
+            commit_green_cards(result, gate, user_input)
+
         return WalkResult(user_input=user_input, final_answer=final,
                           path=walked, planned_path=decision.path,
                           deepen_events=deepen_events, llm_trace=trace,
                           verify_note=verify_note, node_outputs=node_outputs,
                           event_counts=event_counts, jw_sidebranch=jw_out)
+
+    # ---------- 记忆写入闸门(段一B案后置钩子) ----------
+    def _run_memory_gate(self, user_input: str, node_outputs: dict, walked: list):
+        """组装 ThinkState(终态) 并跑 skill_memory_gate。
+        返回 (gate_result, skill) 或 None(未启用/技能缺失)。降级/失败只告警。"""
+        try:
+            from cgraph.atomic_skill import ThinkState, _audit_log
+            from cgraph.skill_memory_gate import SkillMemoryGate, build_trail_digest
+        except ImportError as e:
+            print(f"[memory_gate] 技能模块缺失, 跳过: {e}")
+            return None
+        try:
+            # trail 素材: 主链各节点 → 汇总/SUMMARY 视作末步(近似 terminate 自报摘要)
+            trail = [{"skill_id": f"node_{c}", "step_summary": str(node_outputs.get(c, ""))[:60],
+                      "result_fields": []} for c in walked if c != "Jw"]
+            trail.append({"skill_id": "SUMMARY", "step_summary": str(node_outputs.get("SUMMARY", ""))[:60],
+                          "result_fields": []})
+            state = ThinkState(goal=user_input, goal_anchored=user_input,
+                               summary=str(node_outputs.get("SUMMARY", ""))[:400],
+                               trail=trail, steps=len(walked))
+            gate = SkillMemoryGate(llm=self.llm)
+            gate.jw_review_text = str(node_outputs.get("Jw", ""))  # 段三②b: Jw复盘作额外素材
+            result = gate.run(state)
+            if result.result.get("_degraded"):
+                print(f"[memory_gate] 降级(不炸主链路, 可单独重跑): {result.result['_degraded']}")
+            # 段六b案: 技能侧审计行带 gate_stats 对账口径
+            gl = result.result.get("gate_list") or []
+            _audit_log("skill_memory_gate", {
+                "result_keys": list(result.result.keys()), "terminate": True,
+                "secs": result.secs, "degraded": bool(result.result.get("_degraded")),
+                "gate_stats": {"green": sum(1 for x in gl if x["tier"] == "green"),
+                               "yellow": sum(1 for x in gl if x["tier"] == "yellow"),
+                               "red": sum(1 for x in gl if x["tier"] == "red"),
+                               "total": len(gl)}})
+            # 红档(段七a案): 仅会话内提示, 不持久化
+            for x in gl:
+                if x["tier"] == "red":
+                    print(f"[memory_gate][红档标记] 本链路存在范式级资产待终审: {x['gist']}")
+            # 黄档: 人闸提示
+            for x in gl:
+                if x["tier"] == "yellow":
+                    print(f"[memory_gate][黄档建议立卡, 等确认] {x['asset_type']}: {x['gist']}")
+            return (result, gate)
+        except Exception as e:
+            print(f"[memory_gate] 执行异常(只告警): {type(e).__name__}: {e}")
+            return None
+
+
+def commit_green_cards(result, gate, user_input: str):
+    """绿档落库 writer(段二C案: 编排层机械执行, 技能外)。
+    仅写绿档条目(asset_type ∈ 观测/测试结果/踩坑), 逐卡 full_hash 去重防重
+    (段七红线5幂等), raw 回链锚=本会话 user_input+日期窗口(0f2f4458 硬约束)。
+    段六b案: 成败一律落独立审计行 op=memory_commit:green。"""
+    import hashlib
+    import sqlite3
+    import uuid as _uuid
+    cards = [x for x in (result.result.get("gate_list") or []) if x["tier"] == "green"]
+    if not cards or result.result.get("_degraded"):
+        return {"written": 0, "skipped": len(cards)}
+    db = "data/memory/corpus_store.db"
+    ts = time.strftime("%Y-%m-%dT%H:%M:%S")
+    day = time.strftime("%Y-%m-%d")
+    written, ids, errs = 0, [], []
+    try:
+        con = sqlite3.connect(db)
+        for x in cards:
+            s = f"[{x['asset_type']}] {x['gist']}(evidence: {x['evidence_step']})"
+            fh = hashlib.sha256((s + "\x1f" + user_input).encode()).hexdigest()
+            if con.execute("SELECT 1 FROM core_memory_card WHERE full_hash=?",
+                           (fh,)).fetchone():
+                errs.append(f"dup:{x['gist'][:20]}")
+                continue
+            inst = _uuid.uuid4().hex
+            import json as _json
+            con.execute(
+                "INSERT INTO core_memory_card (inst_id, ts, event_ts, full_hash, "
+                "asset_class, repro, confidence, dfcp_tag, summary, summary_converged, "
+                "detail, source_ref, memory_class, tier, weight, status) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (inst, ts, ts, fh, "observation", "situational", 0.6,
+                 _json.dumps({"domain": "001-003", "behavior": "Ht", "relation": "P",
+                              "memory_class": "observation"}, ensure_ascii=False),
+                 s[:120], "0",
+                 f"绿档自动立卡(memory_gate 0f2f4458双层写入规约); "
+                 f"素材步: {x['evidence_step']}; 档案动词: {x['proposed_action']}",
+                 f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
+                 "observation", "active", '{"match": 0.0, "cited": 0}', "active"))
+            ids.append(inst[:16])
+            written += 1
+        con.commit()
+        con.close()
+    except Exception as e:
+        errs.append(f"db_error:{type(e).__name__}")
+    # 段六b案: 成败一律落独立审计行
+    try:
+        con = sqlite3.connect(db)
+        con.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
+                    (ts, "memory_commit:green",
+                     json.dumps({"written": written, "cards": ids,
+                                 "skipped": errs, "raw": f"session {day}",
+                                 "user_input": user_input[:60]}, ensure_ascii=False)))
+        con.commit()
+        con.close()
+    except Exception as e:
+        # 段六b案要求成败一律可追溯——审计失败不阻断链路但必须可见
+        print(f"[memory_commit] 审计行落库失败(不阻断, 需人工核): {type(e).__name__}: {e}")
+    if written:
+        print(f"[memory_gate] 绿档落库 {written} 张: {ids}")
+    return {"written": written, "skipped": errs}
 
     # ---------- Prompt 构造 ----------
     def _system_prompt(self, d: RouteDecision) -> str:
