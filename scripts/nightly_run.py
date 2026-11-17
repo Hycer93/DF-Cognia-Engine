@@ -60,6 +60,11 @@ STEPS = [
     # (f_reason 无plausibility档/memory_gate 绿档类目封闭); FAIL 退出1晨报高亮;
     # 只调技能本体零 DB 写, 夜间不产生绿卡写入(不调 commit_green_cards))
     ("E11 原子技能冒烟", [PY, "eval/core/e11_atomic_skill_smoke.py"], "logs/e11_atomic_smoke.json"),
+    # E12 skill_router 冒烟(2026-11-17 七段定稿段六③a变体: 编排组件双准入之
+    # nightly 步骤, 豁免盲评。真实 LLM 一条标准故障根因目标走完整原子管线,
+    # 断言 ok=True/exit_channel合法/steps≥3/fallback≤1/单技能≤2次;
+    # FAIL 退出1晨报高亮; 零 DB 写, 不调 commit_green_cards)
+    ("E12 路由器冒烟", [PY, "eval/core/e12_router_smoke.py"], "logs/e12_router_smoke.json"),
     # trace 月度归档（2026-11-15 #31 切换步骤④：主库流水开始灌入后归档能力直接就位；
     # 热窗30天, 归档前对账守恒, 切换读源后主库不再无限膨胀）
     ("T1 trace月度归档", [PY, "memory/trace_archive.py"], "logs/e7_governance.json"),
