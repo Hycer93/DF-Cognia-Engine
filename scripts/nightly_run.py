@@ -55,6 +55,11 @@ STEPS = [
     # 复跑归档判定, 高价值拟卡送pending, 只提案绝不直写主库; probe假阴性攒scar_case;
     # transcript兜底: 只读扫applog提取当日用户提交→simhash去重→复本隔离入raw_corpus)
     ("E9 对话治理", [PY, "eval/core/e9_dialog_governance.py"], "logs/e9_dialog_governance.json"),
+    # E11 元核原子技能冒烟(2026-11-17 立项: f_reason+memory_gate 上线双准入之
+    # nightly 冒烟步骤。真实 LLM 固定样例各跑一次, 断言非降级+schema+红线
+    # (f_reason 无plausibility档/memory_gate 绿档类目封闭); FAIL 退出1晨报高亮;
+    # 只调技能本体零 DB 写, 夜间不产生绿卡写入(不调 commit_green_cards))
+    ("E11 原子技能冒烟", [PY, "eval/core/e11_atomic_skill_smoke.py"], "logs/e11_atomic_smoke.json"),
     # trace 月度归档（2026-11-15 #31 切换步骤④：主库流水开始灌入后归档能力直接就位；
     # 热窗30天, 归档前对账守恒, 切换读源后主库不再无限膨胀）
     ("T1 trace月度归档", [PY, "memory/trace_archive.py"], "logs/e7_governance.json"),
