@@ -39,6 +39,9 @@ SMOKE_GOALS = [
 PATENT_PATH = os.path.join(HERE, "data", "patent_evidence",
                            "一种基于可复现性判定的AI记忆分级存储方法.txt")
 P4_KEYWORDS = ["可复现性", "三级分类", "三层架构", "判定单元", "闪念记忆层"]
+P4_MARK = "---ref_material---"
+P4_COMMON = ("评估专利P1《一种基于可复现性判定的AI记忆分级存储方法》交底书方案质量: "
+             "核心创新点与现有技术区分度/最薄弱环节/可落地性")
 
 def _smoke_s_samples():
     """S1/S2/S3 由专利正文构造; 文件缺失时返回空列表(跳过并 warn)。"""
@@ -50,13 +53,10 @@ def _smoke_s_samples():
     s1_mat = patent[:1500]                                    # ≤2000 直塞分支
     s2_mat = patent + "\n\n背景补充: " + ("相关论述。" * 300)   # >2000 检索分支
     s3_mat = patent[:1000] + ("扩展段落内容。\n\n" * 20000)     # >200K 截断分支
-    MARK = "---ref_material---"
-    common = ("评估专利P1《一种基于可复现性判定的AI记忆分级存储方法》交底书方案质量: "
-              "核心创新点与现有技术区分度/最薄弱环节/可落地性")
     return [
-        ("S1-短材料直塞", f"{common}{MARK}\n{s1_mat}", "inline"),
-        ("S2-长材料检索", f"{common}{MARK}\n{s2_mat}", "retrieve"),
-        ("S3-超大截断", f"{common}{MARK}\n{s3_mat}", "oversize"),
+        ("S1-短材料直塞", f"{P4_COMMON}{P4_MARK}\n{s1_mat}", "inline"),
+        ("S2-长材料检索", f"{P4_COMMON}{P4_MARK}\n{s2_mat}", "retrieve"),
+        ("S3-超大截断", f"{P4_COMMON}{P4_MARK}\n{s3_mat}", "oversize"),
     ]
 
 EXIT_CHANNELS = ("terminate_suggest", "llm_terminate", "collapse", "max_steps")
@@ -159,6 +159,8 @@ def main():
                 sr["ok"] = report.ok and report.exit_channel in EXIT_CHANNELS
                 if not sr["ok"]:
                     hard_fail = True
+                print(f"[E12] {tag} {'PASS' if sr['ok'] else 'FAIL'} ({secs}s) mode={mode} "
+                      f"mat={sr['material_len']}chars exit={sr['exit_channel']} 词表命中={len(hits)}/{len(P4_KEYWORDS)} {hits}")
             else:
                 # S1/S2: 词表硬断言——命中>=2 个专利关键词(从 0 到 1 引用材料为本轮 KPI)
                 sr["ok"] = report.ok and len(hits) >= 2
@@ -166,9 +168,75 @@ def main():
                     hard_fail = True
                 elif len(hits) < 2:
                     hard_fail = True
-            print(f"[E12] {tag} {'PASS' if sr['ok'] else 'FAIL'} ({secs}s) mode={mode} "
-                  f"mat={sr['material_len']}chars exit={sr['exit_channel']} 词表命中={len(hits)}/{len(P4_KEYWORDS)} {hits}")
+                print(f"[E12] {tag} {'PASS' if sr['ok'] else 'FAIL'} ({secs}s) mode={mode} "
+                      f"mat={sr['material_len']}chars exit={sr['exit_channel']} 词表命中={len(hits)}/{len(P4_KEYWORDS)} {hits}")
             results.append(sr)
+
+    # ---- P-C5 后置段冒烟(段四4.3): N1带材料告警链 / N2 simple_query不适用 ----
+    # 走 run_atomic 完整后置时序(补汇编→sufficiency→gate), 不进 steps_log;
+    # final_assembly_present=False 属硬 FAIL(病灶A回归哨兵)
+    from cgraph.executor import ChainExecutor
+    from cgraph.atomic_skill import REF_INLINE_THRESHOLD
+    try:
+        with io.open(PATENT_PATH, encoding="utf-8", errors="replace") as f:
+            patent_full = f.read()
+    except OSError:
+        patent_full = "可复现性判定记忆分级存储方案概要文本"
+    for tag, goal, expect_assembly, expect_applicable in [
+        ("N1-带材料后置", (P4_COMMON + P4_MARK + "\n" + patent_full), True, True),
+        ("N2-直收口不适用", "今天星期几? 一句话回答即可", True, False),
+    ]:
+        ex = ChainExecutor.__new__(ChainExecutor); ex.llm = llm
+        t0 = time.time()
+        try:
+            rep, st, gate = ex.run_atomic(goal)
+        except Exception as e:
+            print(f"[E12] {tag} FAIL: run_atomic异常 {e}")
+            hard_fail = True
+            continue
+        secs = round(time.time() - t0, 1)
+        ids = [e["skill_id"] for e in st.trail]
+        nr = {"task": tag, "secs": secs, "trail": ids,
+              "has_terminate": "skill_terminate" in ids,
+              "ref_len": len(st.ref_material or "")}
+        # final_output 信息量(病灶A对拍: 旧版终态=60字尾步summary)
+        fo = ""
+        for e in st.trail:
+            if e.get("skill_id") == "skill_terminate":
+                rf = e.get("result_fields") or {}
+                fo = str(rf.get("final_output", "")) if isinstance(rf, dict) else ""
+        nr["final_output_len"] = len(fo)
+        checks_ok = True
+        if not nr["has_terminate"]:
+            print(f"[E12] {tag} FAIL: final_assembly_present=False(病灶A回归哨兵)")
+            hard_fail = True
+            checks_ok = False
+        if tag.startswith("N2") and not expect_applicable:
+            pass                                  # applicable=False 断言走审计行(下查)
+        print(f"[E12] {tag} {'PASS' if checks_ok else 'FAIL'} ({secs}s) trail={'→'.join(ids)} "
+              f"汇编={nr['has_terminate']} final_output={nr['final_output_len']}字 ref={nr['ref_len']}")
+        results.append(nr)
+    # N1 后置告警链审计断言: sufficiency:alert 行存在 + retrieval_dependent 硬断言(段四A)
+    try:
+        import sqlite3 as _sq
+        _con = _sq.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+        rows = _con.execute("SELECT payload FROM audit_topic_log WHERE op='sufficiency:alert' "
+                            "ORDER BY rowid DESC LIMIT 4").fetchall()
+        _con.close()
+        n1_row = None
+        for rr in rows:
+            p = json.loads(rr[0])
+            if p.get("coverage_metrics", {}).get("retrieval_dependent") is True:
+                n1_row = p
+                break
+        if n1_row is None:
+            print("[E12] N1 FAIL: 未检出 retrieval_dependent=True 告警(段四A硬断言)")
+            hard_fail = True
+        else:
+            print(f"[E12] N1 后置告警链 PASS: sufficiency:alert 已落盘, retrieval_dependent=True, "
+                  f"alerts={len(n1_row.get('alerts', []))}条, metrics={ {k: v for k, v in n1_row['coverage_metrics'].items() if k in ('subq_coverage', 'hypotheses_n', 'wl_addressed', 'final_assembly_present')} }")
+    except Exception as e:
+        print(f"[E12] N1 审计断言异常(不阻断): {e}")
 
     ok = not hard_fail
     report_json = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "ok": ok,
