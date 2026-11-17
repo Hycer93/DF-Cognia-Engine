@@ -1,6 +1,10 @@
 """
 夜间实验 3：SFT 七池蒸馏质检（E3）v2
 
+[去向账本 2026-11-15 用户裁决·方案A] E3 定性为一次性专项审计, 已从 nightly 主链摘除,
+归 eval/audit/。编号保留(账本式历史, 不重编)——缺号本身记录了退役事实。
+若改造为"新入库 SFT 样本准入预检"再迁 core, 需单写晋升规约(README 管线分级)。
+
 v1 教训：七池 schema 各不相同（不是统一 inst_id/entity_id/summary），
 统一字段检测全误报。v2 按每池真实 schema 定制体检项。
 
@@ -21,7 +25,7 @@ import glob
 import json
 import os
 
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SFT_DIR = os.path.join(HERE, "data", "trajectories")
 GRAPH = os.path.join(HERE, "data", "mind_graph.json")
 E3_OUT = os.path.join(HERE, "logs", "e3_sft_audit.json")

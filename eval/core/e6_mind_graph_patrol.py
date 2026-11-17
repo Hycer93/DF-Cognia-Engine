@@ -11,7 +11,7 @@ import os
 import sys
 from datetime import datetime
 
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 GRAPH = os.path.join(HERE, "data", "mind_graph.json")
 LOGS = os.path.join(HERE, "logs")
 

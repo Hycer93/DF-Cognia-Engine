@@ -1,4 +1,9 @@
-# eval/e8_shadow_dialog.py — 影子对话步（2026-11-11 用户裁决新增）
+# eval/drill/e8_shadow_dialog.py — 影子对话演习（2026-11-11 用户裁决新增）
+#
+# [去向账本 2026-11-15 用户裁决·方案A] E8 依赖人工喂标签+外部DS资源, 与夜间主链
+# "无人值守纯本地"原则冲突, 已摘出主链, 归 eval/drill/(定期演习, 按需手动/单独调度)。
+# 编号保留(账本式历史, 不重编)。晨报仍汇报最近一次演习落盘结果(只读 jsonl)。
+# 独立调用: NO_MEMORY=1 python eval/drill/e8_shadow_dialog.py
 #
 # 定位：nightly 跑完后的记忆系统实战演习——
 #   我（主AI）提供标签和摘要 → DS 扮演真实用户出题（仿人模糊式对话）→
@@ -27,7 +32,7 @@ import sys
 import time
 from datetime import datetime
 
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(HERE, "memory"))
 sys.path.insert(0, HERE)
 os.environ.setdefault("NO_MEMORY", "1")

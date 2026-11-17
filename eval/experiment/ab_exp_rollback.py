@@ -7,7 +7,7 @@
   中间态：标记生成但未接管主线 = 软通路漏洞仍在，只是放大器弱了
 """
 import json, os, shutil, sys, time
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, HERE)
 from cgraph.llm import LLMClient
 from cgraph.engine import Engine

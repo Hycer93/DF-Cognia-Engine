@@ -7,7 +7,7 @@ import os
 import sys
 import time
 
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, HERE)
 
 SRC = os.path.join(HERE, "logs", "ab_result_20261103_102050.jsonl")

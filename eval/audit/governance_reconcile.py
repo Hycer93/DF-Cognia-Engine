@@ -27,7 +27,7 @@ import sqlite3
 import sys
 from datetime import datetime
 
-_HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB = os.path.join(_HERE, "data", "memory", "corpus_store.db")
 MEM = os.path.join(_HERE, "data", "memory")
 OUT_JSON = os.path.join(_HERE, "logs", "governance_reconcile_report.json")

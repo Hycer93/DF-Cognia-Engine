@@ -21,7 +21,7 @@ import json
 import os
 from collections import Counter
 
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SFT_DIR = os.path.join(HERE, "data", "trajectories")
 GRAPH = os.path.join(HERE, "data", "mind_graph.json")
 E3_OUT = os.path.join(HERE, "logs", "e3_sft_audit.json")

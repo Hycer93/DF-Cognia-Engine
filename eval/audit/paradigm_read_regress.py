@@ -28,7 +28,7 @@ import sqlite3
 import sys
 from datetime import datetime
 
-_HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, _HERE)
 sys.path.insert(0, os.path.join(_HERE, "memory"))
 DB = os.path.join(_HERE, "data", "memory", "corpus_store.db")

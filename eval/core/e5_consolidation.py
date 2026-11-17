@@ -20,7 +20,7 @@ import os
 import sys
 from datetime import datetime
 
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(HERE, "memory"))
 os.environ.setdefault("NO_MEMORY", "1")
 
