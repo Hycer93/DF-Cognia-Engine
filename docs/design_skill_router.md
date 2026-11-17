@@ -81,3 +81,20 @@ C3 分流规则(LLM 选路天然消化大半, 观察后定) / engine 两网归�
 
 **R11**: 受控拦截先例封闭——仅 C3 场景(六条件全满足+一次上限+付步数成本); 新增触发类型/可干预通道/放宽上限/豁免成本, 一律必走新七段, 禁止直接编码。
 **R12**: task_type 五枚举+词表(根因/分析/审查/复盘, 只归 root_cause)+首轮锁定, 全封闭; 增删必走七段。
+
+
+## P-C4 附录: 参考素材通道(2026-11-17 七段定稿+验收闭环)
+
+**一句话**: 长goal附属参考材料经双通道(入口`---ref_material---`分隔符确定性切片优先, 无标记时anchor_target LLM识别)剥离进state.ref_material; 消费侧阈值分流(≤2000直塞/>2000走ref_retrieval 2-gram检索); 8技能token_in/out纯观测埋点; R13素材只读红线+R14两阈值封闭(200K写入上限/2000分流阈值)。
+
+**病灶重定性**: 非token截断——锚定协议把2719字goal压缩成单句goal_anchored后原始材料被整链丢弃(P1专利实测: f_reason假设全为外部猜测)。加预算无效, 治根=素材通道。
+
+**R8 entries受控变更判例**: state_inputs/outputs扩展≠965ad00补边豁免——邻接表schema职责内合法演化; 配套校验器新增G检查(check_state_inputs: 声明键必须存在于ThinkState, 硬exit 1)。**G检查首跑即逼出3个存量隐性漂移**(weakest_link/hypotheses/source_intents动态setattr从未声明), 全部显性化——隐性契约显性化的首次战果, E12 mock教训从纪律固化为机制。
+
+**R7判例**: 瘦身规约约束中间产物膨胀; ref_material是用户原始输入保真通道, 二者正交。
+
+**验收(4.7口径全过)**: 33单测全绿(31存量+R1-R9+R0) / 校验器PASS(真实邻接表) / E12六样本PASS(G1-G3兼容+S1命中3/5+S2命中3/5+S3不崩) / A-B: G1/G2同构+G3决策自主f_reason(WARN观察, preempt=0)+S1病灶对拍0→3词表命中。
+
+**断言域教训**: S1词表断言首版查terminate final_output全FAIL——汇编仅是60字截断summary拼装, 材料引用活在f_reason假设谱(result_fields)。修正为查全trail产出。terminate汇编对长输入仍单薄(P-sufficiency佐证+2)。
+
+**token埋点定位**: 纯观测不干预; 熔断/预警/硬预算/累计统计全部后置(planned P-token-budget收窄版)。
