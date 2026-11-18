@@ -66,6 +66,11 @@ class ThinkState:
     # 校验器上线后必须显性化否则字段漂移硬拦截; 默认 None=未写入态
     weakest_link: object = None                     # skill_weakest_link 主字段(单点语义)
     hypotheses: list = None                          # skill_f_reason 假设谱
+    # P-skill-synthesize(2026-11-18 段三T5): 三输出键显性化(沿上方先例);
+    # 默认 None=未写入态, 由 skill_synthesize 的 state_outputs 声明经 write() 写入
+    selection_rationale: object = None              # 路线权衡(引用假设编号)
+    final_deliverable: object = None                # 终稿推演(交付内容)
+    alternatives_appendix: object = None            # 备选假设完整留存
     source_intents: list = None                      # skill_source_intent 意图清单
 
     def read(self, key: str):

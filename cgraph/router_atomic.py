@@ -36,6 +36,7 @@ from cgraph.skill_source_intent import SkillSourceIntent
 from cgraph.skill_weakest_link import SkillWeakestLink
 from cgraph.skill_f_reason import SkillFReason
 from cgraph.skill_terminate import SkillTerminate
+from cgraph.skill_synthesize import SkillSynthesize
 
 ENTRY_HINT = "skill_anchor_target"          # 冷启动硬编码入口(段二①a, R4)
 TERMINATE = "skill_terminate"
@@ -61,6 +62,7 @@ SKILL_REGISTRY = {                            # 与探针一致; router 只消�
     "skill_source_intent": SkillSourceIntent,
     "skill_weakest_link": SkillWeakestLink,
     "skill_f_reason": SkillFReason,
+    "skill_synthesize": SkillSynthesize,
     "skill_terminate": SkillTerminate,
 }
 
@@ -128,7 +130,7 @@ class RouterAtomic:
                 exit_channel = "max_steps"; break
 
             # 菜单清洗(R3: __planned__/表外项在 prompt 组装前剔除, LLM 不可见)
-            menu = self._clean_menu(sr.next_options)
+            menu = self._clean_menu(sr.next_options, state)
             if not menu:
                 if exit_channel is None:
                     exit_channel = "terminate_suggest"   # 菜单耗尽=链路闭合(探针 C4/C5 先例)
@@ -217,8 +219,34 @@ class RouterAtomic:
         return sr
 
     # ---------------- 菜单清洗(段五②a) ----------------
-    def _clean_menu(self, next_options: list) -> list:
+    def _anchor_goal_type(self, state: ThinkState) -> str:
+        """P-skill-synthesize(段二裁决2): goal_type 不落 ThinkState, 从 trail 内
+        anchor 记录读; 读不到(降级/异常)返回 "" → 门控按非 scheme_design 处理
+        (fail-safe: 宁可不进 synthesize, 不引入误触发)。"""
+        try:
+            for e in state.trail:
+                if isinstance(e, dict) and e.get("skill_id") == "skill_anchor_target":
+                    rf = e.get("result_fields") or {}
+                    gt = rf.get("goal_type")
+                    if isinstance(gt, str) and gt:
+                        return gt
+        except Exception:
+            pass
+        return ""
+
+    def _clean_menu(self, next_options: list, state: ThinkState = None) -> list:
         menu, illegal = [], []
+        # P-skill-synthesize 路由门(段二裁决2, 零侵入 f_reason):
+        # 菜单含 skill_synthesize 且 goal_type != scheme_design → 剔除。
+        # analysis/review/simple_query/unknown_ambiguous/读取失败 全部不进
+        # synthesize, 链路字节级回归。R9 例外注记: 剔除留审计行可追溯。
+        if state is not None and any(o.get("skill") == "skill_synthesize"
+                                     for o in next_options or []):
+            if self._anchor_goal_type(state) != "scheme_design":
+                next_options = [o for o in (next_options or [])
+                                if o.get("skill") != "skill_synthesize"]
+                self._audit("synthesize_gate", "goal_type!=scheme_design",
+                            self._ids(next_options or []) or [], len(self.steps_log))
         for opt in next_options or []:
             sid = opt.get("skill")
             if sid == "__planned__":

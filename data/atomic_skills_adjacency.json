@@ -2,7 +2,7 @@
   "_schema": "atomic_meta_core_adjacency_v1",
   "_doc": "原子化元核·中心化邻接表(2026-11-16 用户定案)。规约: ①技能只能在 next_options 暴露逻辑连通后继, 禁止硬编码写死在技能内部; ②本文件是唯一权威源, 技能实现不得自带旁路连通表; ③加载时与文件变更时双触发校验(见 eval/experiment/adjacency_validator.py), 校验不过拒绝加载; ④v1 为地基试点版: 只登记骨架结构 + 首批试点技能(skill_anchor_target), 其余节点逐个讨论达成共识后登记(一次一个节点, 禁一次性批量定义)。",
   "version": 1,
-  "updated_ts": "2026-11-18T13:32:00",
+  "updated_ts": "2026-11-18T14:26:00",
   "global": {
     "max_steps": 24,
     "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)",
@@ -224,6 +224,11 @@
       ],
       "next_options": [
         {
+          "skill": "skill_synthesize",
+          "gain": "scheme_design类: 收敛假设谱+终稿推演",
+          "cost": "一次LLM调用"
+        },
+        {
           "skill": "skill_terminate",
           "gain": "假设谱生成完成, 收敛输出",
           "cost": "零"
@@ -283,6 +288,38 @@
       "terminate_suggest": "恒真(链路收尾步, 编排器后置触发, 不在主链内)",
       "next_options": [],
       "is_exit": true
+    },
+    "skill_synthesize": {
+      "role": "假设谱收敛+完整交付推演(P-skill-synthesize 段二契约: 一体单步三段式; hypotheses只读红线)",
+      "state_inputs": [
+        "goal_anchored",
+        "sub_questions",
+        "summary",
+        "hypotheses",
+        "ref_material"
+      ],
+      "state_outputs": [
+        "selection_rationale",
+        "final_deliverable",
+        "alternatives_appendix",
+        "summary"
+      ],
+      "result_fields": [
+        "selection_rationale",
+        "final_deliverable",
+        "alternatives_appendix",
+        "summary",
+        "confidence"
+      ],
+      "next_options": [
+        {
+          "skill": "skill_terminate",
+          "gain": "终稿交付, 汇编收口",
+          "cost": "一次LLM调用"
+        }
+      ],
+      "terminate_suggest": false,
+      "dfcp_link": "F20/P-skill-synthesize"
     }
   },
   "_reserved": {
