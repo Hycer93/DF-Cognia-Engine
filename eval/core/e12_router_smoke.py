@@ -290,6 +290,40 @@ def main():
                    "warns": warns, "results": results}
     with io.open(LOG, "w", encoding="utf-8") as f:
         json.dump(report_json, f, ensure_ascii=False, indent=1)
+
+    # ---- P0-1 观测埋点(2026-11-18 round5自举审计, R14-a: 先观测不调参) ----
+    # 统计真实库内 gate 摘要两两 bigram-Jaccard 分布(近30天绿色提交),
+    # 为幂等阈值 0.6 是否失效提供实测分布; 只统计不裁决, 输出到晨报观测。
+    try:
+        import sqlite3 as _sq
+        import itertools as _it
+        _db = os.path.join(HERE, "data", "memory", "corpus_store.db")
+        _con = _sq.connect(_db)
+        _rows = _con.execute(
+            "SELECT summary FROM core_memory_card WHERE source_ref LIKE 'memory_gate%' "
+            "ORDER BY rowid DESC LIMIT 60").fetchall()
+        _con.close()
+        def _j(a, b):
+            wa = {a[i:i+2] for i in range(len(a)-1)}
+            wb = {b[i:i+2] for i in range(len(b)-1)}
+            return len(wa & wb) / len(wa | wb) if (wa | wb) else 0.0
+        _scores = []
+        for (x,), (y,) in _it.combinations(_rows, 2):
+            if x and y:
+                _scores.append(_j(x, y))
+        if _scores:
+            import statistics as _st
+            _sorted = sorted(_scores)
+            print(f"[E12][P0-1观测] gate摘要Jaccard分布: n={len(_scores)} "
+                  f"p50={_sorted[len(_sorted)//2]:.2f} "
+                  f"max={max(_scores):.2f} "
+                  f">0.6占比={sum(1 for s in _scores if s > 0.6)/len(_scores):.1%} "
+                  f"(R14-a: 阈值决策待此分布积累)")
+        else:
+            print("[E12][P0-1观测] 近期gate摘要样本不足, 分布统计跳过")
+    except Exception as _e:
+        print(f"[E12][P0-1观测] 异常(不阻断): {_e}")
+
     for w in warns:
         print(f"[E12][WARN] {w}")
     print(f"[E12] 总判定: {'PASS' if ok else 'FAIL'} (warn {len(warns)}条不阻断) | 明细 {LOG}")

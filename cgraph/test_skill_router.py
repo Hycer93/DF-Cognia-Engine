@@ -1169,5 +1169,23 @@ class R16d_DegradeToTerminate(RouterTestBase):
         self.assertFalse(sk.decide_terminate(st, r))       # 恒False(收敛交terminate)
 
 
+# ---------------- round5 自举审计快修 R17(2026-11-18): DB路径同源断言 ----------------
+
+class R17_CommitDbSameSource(RouterTestBase):
+    """R17: P0-3 回归锚——commit_green_cards 使用的 db 必须与 atomic_skill.AUDIT_DB
+    同源(相对路径硬编码=CWD漂移静默落错库, E4 对账 drift 根因嫌疑)。"""
+    def test(self):
+        import io as _io
+        src = _io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "executor.py"), encoding="utf-8").read()
+        with _io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "executor.py"), encoding="utf-8") as _f:
+            src = _f.read()
+        # 禁止出现相对路径硬编码(旧P0-3形态)
+        self.assertNotIn('db = "data/memory/corpus_store.db"', src)
+        # 必须引用 AUDIT_DB 同源
+        self.assertIn("AUDIT_DB as db", src)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

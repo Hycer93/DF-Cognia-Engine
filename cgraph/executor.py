@@ -504,7 +504,9 @@ def commit_green_cards(result, gate, user_input: str):
     cards = [x for x in (result.result.get("gate_list") or []) if x["tier"] == "green"]
     if not cards or result.result.get("_degraded"):
         return {"written": 0, "skipped": len(cards)}
-    db = "data/memory/corpus_store.db"
+    # P0-3 修复(2026-11-18 round5自举审计): 弃相对路径硬编码(CWD漂移会静默
+    # 落错库——E4对账drift嫌疑根因), 改用 atomic_skill.AUDIT_DB 同源绝对路径
+    from cgraph.atomic_skill import AUDIT_DB as db
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
     day = time.strftime("%Y-%m-%d")
     written, ids, errs = 0, [], []

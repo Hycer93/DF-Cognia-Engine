@@ -178,6 +178,9 @@ def mount_topic(inst_id: str, summary: str, detail: str = "", *, method: str = "
         # 2026-11-16 管道裂缝修复(用户裁决): hold 触发时 jsonl + core_hold_pool db
         # 双写——此前仅写 jsonl 而 E7 只消费 db 表, hold 行落不了库,
         # 历史均靠人工 INSERT 补行。源头双写保证两份存储一致。
+        # P0-4 修复(2026-11-18 round5自举审计): jsonl 优先+DB try 包裹——
+        # jsonl(append-only)为真相源可重放; DB 失败不回滚 jsonl(append文件
+        # 删除易损坏), 只留审计标记, 依靠 E7 夜间对账兜底补齐。
         hc = _conn()
         try:
             hc.execute(
@@ -186,6 +189,10 @@ def mount_topic(inst_id: str, summary: str, detail: str = "", *, method: str = "
                 (inst_id, v.get("evidence_gap", ""),
                  1 if v.get("reference_mention") else 0, now))
             hc.commit()
+        except Exception as _e:
+            _log("hold_db_degraded", {"inst_id": inst_id,
+                                      "error": str(_e)[:120],
+                                      "note": "jsonl已落, DB半写失败, E7夜间对账补齐"})
         finally:
             hc.close()
         _log("hold", {"inst_id": inst_id, "why": v.get("evidence_gap", "")})
