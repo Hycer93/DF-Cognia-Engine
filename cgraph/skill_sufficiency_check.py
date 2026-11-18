@@ -29,7 +29,7 @@ skill_sufficiency_check.py — 原子技能·结论充分性校验(P-C5, 2026-11
 from __future__ import annotations
 
 from cgraph.atomic_skill import BaseAtomicSkill, ThinkState, extract_json, REF_INLINE_THRESHOLD
-from cgraph.ref_retrieval import _tokens
+from cgraph.ref_retrieval import _tokens, _segments as _segments_mat
 
 # 候选告警阈值(段二A裁决: 初版候选, 段四实测校准, 无证据不动默认值)
 THRESH_SUBQ_COVERAGE = 0.6       # 子问题覆盖率低于此告警
@@ -150,6 +150,9 @@ class SkillSufficiencyCheck(BaseAtomicSkill):
                 if isinstance(hyps, list):
                     hypotheses_n = len(hyps)
         # 3) wl_addressed: weakest_point 与假设谱/后续产出的关键词重叠数
+        #    边界注释(P-retrieval-upgrade 段二②裁决): wl_addressed 维持 _tokens 2-gram 交集
+        #    不随检索算法迁移——它是产出互校验(薄弱点↔假设谱), 不属检索链路, 与
+        #    retrieval_dependent/material_unmapped(依赖检索选段逻辑, 已切 BM25 同源)互不干扰。
         wl_point = ""
         for e in trail:
             if isinstance(e, dict) and e.get("skill_id") == "skill_weakest_link":
@@ -176,23 +179,32 @@ class SkillSufficiencyCheck(BaseAtomicSkill):
                             empty_ev += 1
         # 5) degraded_steps(terminate 同口径)
         degraded_steps = sum(1 for t in trail if isinstance(t, dict) and t.get("degraded"))
-        # 6) retrieval_dependent: 检索分支 + 结论关键词命中素材(2-gram, 段二B)
+        # 6) retrieval_dependent: 检索分支 + 结论关键词命中素材(BM25 同源, P-retrieval-upgrade 段二②)
+        #    同源约束: 判据与检索选段共用 ref_retrieval.bm25_scores 同一把尺——检索侧换 BM25 后
+        #    此处同步迁移, 禁止两套打分标准(尺子错位=判定逻辑失真)。
+        #    风险锚(段三裁决): 同源切换后判定门槛收紧, E12 N1 告警链若 FAIL,
+        #    优先定位 sufficiency 打分阈值, 不要直接改动检索主逻辑。
         retrieval_branch = bool(mat) and len(mat) > REF_INLINE_THRESHOLD
         retrieval_dependent = False
         if retrieval_branch:
-            mt = _tokens(mat)
+            from cgraph.ref_retrieval import bm25_scores as _bm25
+            mat_segs = _segments_mat(mat)
             for key_txt in (goal_anchored, summary):
-                kt = set(x for x in _tokens(key_txt) if len(x) >= 2)
-                if kt and kt & mt:
+                # min_token_len=2 过滤单字词元(无判别力, S5实证"题"单字误命中; 段三粒度修正)
+                if key_txt and _bm25(key_txt, mat_segs, min_token_len=2):
                     retrieval_dependent = True
                     break
-        # 7) material_unmapped: 素材存在但全链产出零命中素材关键词
+        # 7) material_unmapped: 素材存在但全链产出未命中素材(BM25 同源, 段二②)
+        #    方向语义(段三编码期修正): 产出文本作query对素材段打分——与 retrieval_dependent
+        #    同方向(结论能否被素材支撑), 而非素材对产出打分(后者低频碎片偶现单字即得正分误判)。
+        #    min_token_len=2 过滤单字词元(S5实证"题"字误命中, 段三粒度修正)。
         material_unmapped = False
         if mat:
-            mt2 = set(x for x in _tokens(mat[:5000]) if len(str(x)) >= 2)
-            out_t = _tokens(all_text)
-            if mt2 and not (mt2 & out_t):
-                material_unmapped = True
+            from cgraph.ref_retrieval import bm25_scores as _bm25_2
+            mat_segs2 = _segments_mat(mat[:5000])
+            if mat_segs2:
+                material_unmapped = not (all_text and
+                                         _bm25_2(all_text, mat_segs2, min_token_len=2))
         # 8) final_assembly_present(病灶A哨兵)
         final_assembly_present = any(isinstance(e, dict) and e.get("skill_id") == "skill_terminate"
                                      for e in trail)

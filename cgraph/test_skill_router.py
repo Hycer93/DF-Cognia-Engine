@@ -660,7 +660,8 @@ class R10_CippInline6401(unittest.TestCase):
 
 
 class R0_RetrieveContract(unittest.TestCase):
-    """附加: retrieve 契约——判别力/异常恒返[]/top_k"""
+    """附加: retrieve 契约——BM25 判别力/异常恒返[]/top_k(P-retrieval-upgrade 段二⑤: 判别力用例
+    更新为 BM25 语义, 异常返回[]用例直接复用; 打分 BM25(k1=1.5,b=0.75)+仅前邻扩展)"""
     def test(self):
         mat = "一级完全可复现信息。\n\n三级不可复现信息永久保存。\n\n闪念记忆层。"
         r = retrieve("不可复现信息如何保存", mat, 2)
@@ -668,6 +669,44 @@ class R0_RetrieveContract(unittest.TestCase):
         self.assertEqual(retrieve("", mat), [])
         self.assertEqual(retrieve("q", ""), [])
         self.assertEqual(retrieve(None, mat), [])
+        # BM25 语义判别力: 专题段应胜过高频泛段(query 专有词 IDF 加权)
+        mat2 = ("概述段落: 本系统包含多个方面内容总览介绍。\n\n"
+                "错误处理机制: 校验失败时接收端返回错误帧并重传。\n\n"
+                "概述段落再次出现: 系统总体架构与内容总览。")
+        r2 = retrieve("校验失败如何重传", mat2, 1)
+        self.assertTrue(r2 and "错误帧" in r2[0])
+
+
+class R11_HeadingBodyAdjacency(unittest.TestCase):
+    """R11(P-retrieval-upgrade 段三): 标题-正文邻接召回——短碎标题段 IDF 偏低分数下沉,
+    依靠前邻扩展兜底(该病灶专属哨兵用例, 段三用户裁决风险锚)。
+    场景: 标题段含 query 关键词, 定义正文不含关键词却在标题下一段——
+    前邻扩展应让命中标题时带出其上文, 或命中正文时带出标题。"""
+    def test(self):
+        mat = ("可复现性驱动的三级记忆分层体系\n"          # 标题段(碎段, IDF 偏低风险)
+               "一级记忆为闪念级, 传输即验证; 二级记忆为工作集, 保存七天;\n"
+               "三级记忆为永久留存, 按需复核。三级之间按判定结果自动流转。\n\n"
+               "其他无关章节: 本段讲通信协议帧格式的魔数定义与操作码体系。")
+        # query 命中标题词 → 召回应含标题段(或其正文段带出标题)
+        r = retrieve("三级记忆分层体系怎么定义", mat, 2)
+        joined = "\n".join(r)
+        self.assertTrue(any("三级记忆" in x or "分层体系" in x for x in r))
+        # 若召回的是正文段(不含"体系"标题词), 前邻扩展须带出标题段
+        self.assertIn("…(上文)", joined)   # 前邻扩展生效
+        self.assertTrue("永久留存" in joined or "闪念级" in joined)   # 定义内容可见
+
+
+class R12_FillerNoCrowdOut(unittest.TestCase):
+    """R12(P-retrieval-upgrade 段三): 填充噪声段不挤占业务段召回位(R10 精神, 噪声回归)。
+    场景: 大量重复填充段 + 业务段, BM25 IDF 应让填充词(文档内高频)贬值,
+    query 业务词优先召回业务段。"""
+    def test(self):
+        filler = "\n\n".join("相关论述补充说明。" * 1 for _ in range(40))
+        mat = (filler + "\n\n判定单元在记忆入库前执行可复现性检测并输出分类标签。\n\n" + filler)
+        r = retrieve("判定单元如何检测", mat, 3)
+        self.assertTrue(any("判定单元" in x for x in r))
+        # 填充段不得占满全部召回位
+        self.assertTrue(any("判定单元" in x for x in r[:2]))
 
 
 # ---------------- P-C5 新增 10 项(S1-S10, 段四4.1 冻结清单) ----------------
