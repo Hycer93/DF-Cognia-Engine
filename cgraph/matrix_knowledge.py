@@ -54,7 +54,11 @@ def _entry_text(e: dict) -> str:
 
 def load_matrix(goal: str, scan_summary: str = "",
                 token_cap: int = MATRIX_TOKEN_CAP) -> list:
-    """BM25(trigger_kw 对 goal+scan_summary 打分) → top 条目 → token 截断。
+    """知识条目匹配 → token 截断。
+
+    匹配口径(2026-11-18 段三裁决): 小知识库(≤10条)用 trigger_kw 词元交集计数,
+    规避小规模集合 BM25-IDF 失效(每词 DF≤5 无区分度); 对外签名保持不变,
+    扩充到 15-20 条时内部切换为真实 bm25_scores, 上层零改动(兼容设计)。
 
     返回注入条目列表; 读取失败/零命中/超限全降级 → [] 或截断尾部。
     不抛异常、不告警, 降级理由由调用方埋 trail。

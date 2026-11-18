@@ -897,5 +897,119 @@ class S10_AssemblyBackfill(RouterTestBase):
         # 哨兵指标由技能计算; 此处直接断言terminate条目存在(病灶A修复)
 
 
+# ---------------- P-matrix-feed R15(a-d) 隔离&降级&回归(2026-11-18 段三T6) ----------------
+
+class R15a_SufficiencyZeroMatrix(RouterTestBase):
+    """R15a: 隔离红线——skill_sufficiency_check.py 源码零 matrix 字符串。"""
+    def test(self):
+        import io as _io
+        with _io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "skill_sufficiency_check.py"), encoding="utf-8") as _f:
+            src = _f.read()
+        self.assertNotIn("matrix", src)   # 源码级断言: sufficiency 判据零触碰
+
+
+class R15b_DegradedPaths(RouterTestBase):
+    """R15b: 三条降级路径——路径错误[]/超限截断/零命中[]。"""
+    def test(self):
+        from cgraph import matrix_knowledge as MK
+        # ① 路径错误(monkeypatch 模块路径常量)
+        real = MK._MATRIX_PATH
+        MK._MATRIX_PATH = "data/matrix/__no_such__.jsonl"
+        try:
+            self.assertEqual(MK.load_matrix("记忆 异常 权重", ""), [])
+            self.assertEqual(MK._load_entries(), [])
+        finally:
+            MK._MATRIX_PATH = real
+        # ② 超限: cap 极小 → 条目全弃(尾部截断在小集合下的等价形态)
+        mk = MK.load_matrix("认知断点 异常暂存 标签化 记忆归档 权重迭代 不可篡改 区分度", "")
+        self.assertTrue(len(mk) >= 1)     # 正常cap下有命中
+        self.assertEqual(MK.load_matrix("认知断点 异常暂存 标签化 记忆归档", "", token_cap=1), [])
+        # ③ 零命中(无任何 trigger_kw 交集)
+        self.assertEqual(MK.load_matrix("完全无关的美食烹饪问题怎么做好吃", ""), [])
+        # 兜底锚: scan_summary 空时 goal 单独输入不崩(上面各例 scan_summary 均为 "")
+
+
+class R15c_PromptByteRegression(RouterTestBase):
+    """R15c: prompt 回归——关 matrix 字节级一致; 开 matrix 出现隔离头+溯源标记。"""
+    def test(self):
+        from cgraph.matrix_knowledge import matrix_block
+        # 构造带/不带 matrix_knowledge 的 state, 直接对比注入串
+        st_off = ThinkState(goal="g")
+        self.assertEqual(matrix_block(st_off, None), "")          # 关闭 → 恒 ''(基线字节一致)
+        st_on = ThinkState(goal="g")
+        st_on.matrix_knowledge = [{"matrix_id": "pa-001", "tech_name": "RAG长期记忆",
+                                   "mapping_note": "映射依据", "audit_risk": "驳回锚"}]
+        blk = matrix_block(st_on, None)
+        self.assertTrue(blk.startswith("---matrix_knowledge"))    # 隔离分隔头
+        self.assertIn("[source=pa-001]", blk)                     # 溯源标记
+        # 物理隔离: 不含 ref_material 分隔头
+        self.assertNotIn("---ref_material", blk)
+        # 真实技能 build_prompt 双形态对照(mock LLM 拿到 prompt 再断言)
+        import json as _j
+        from cgraph.skill_f_reason import SkillFReason
+        from cgraph.router_atomic import SKILL_REGISTRY
+        _saved = SKILL_REGISTRY.get("skill_f_reason")
+        adj = {"entries": {"skill_f_reason": {"state_inputs": ["goal_anchored", "sub_questions",
+                                                              "summary", "ref_material",
+                                                              "matrix_knowledge"],
+                                              "state_outputs": ["hypotheses", "summary"]}}}
+        llm = MockLLM(_j.dumps({"hypotheses": [{"hypothesis": "h", "support": "s", "contradict": "",
+                                                "test_next": "t"}], "applicable": [],
+                                "coverage_note": "c", "summary": "s", "confidence": 0.8}))
+        try:
+            # OFF
+            sk = SkillFReason(llm=llm, adjacency=adj)
+            st = ThinkState(goal="g", goal_anchored="目标", sub_questions=[], summary="s")
+            off_msgs = sk.build_prompt(st); off_prompt = off_msgs[-1]["content"]
+            self.assertNotIn("---matrix_knowledge", off_prompt)
+            # ON
+            st2 = ThinkState(goal="g", goal_anchored="目标", sub_questions=[], summary="s")
+            st2.matrix_knowledge = st_on.matrix_knowledge
+            on_msgs = sk.build_prompt(st2); on_prompt = on_msgs[-1]["content"]
+            self.assertIn("---matrix_knowledge", on_prompt)
+            self.assertIn("[source=pa-001]", on_prompt)
+            # OFF prompt 去掉 ON 独有段后与 ON 前缀一致(增量注入不扰动基线内容)
+            self.assertTrue(on_prompt.startswith(off_prompt))
+        finally:
+            if _saved is not None:
+                SKILL_REGISTRY["skill_f_reason"] = _saved
+
+
+class R15d_TrailMatrixInjected(RouterTestBase):
+    """R15d: trail 埋点——run_atomic 后 matrix_injected 或 degraded 标记存在。"""
+    def test(self):
+        # 主链 mock: anchor→scan→terminate; scan 的 step_summary 含命中词触发装载
+        llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "扫"}',
+                       '{"chosen": "skill_terminate", "reason": "收"}'])
+        # scan mock 产出带 trigger_kw 的 summary
+        def _scan_run(self, st):
+            st.summary = "认知断点 异常暂存 记忆归档 评估"
+            return SkillResult(skill_id="skill_scope_scan",
+                               result={"summary": "认知断点 异常暂存 记忆归档 评估"},
+                               next_options=[], terminate_suggest=False)
+        saved_scan = R.SKILL_REGISTRY.get("skill_scope_scan")
+        R.SKILL_REGISTRY["skill_scope_scan"] = type("S", (object,),
+            {"__init__": lambda s, llm, adjacency: None, "run": _scan_run})
+        try:
+            self._saved = _patch_registry(self.adj, overrides={"skill_scope_scan": {"term": False}})
+            # 恢复自定义 scan(被 _patch_registry 覆盖)
+            R.SKILL_REGISTRY["skill_scope_scan"] = type("S", (object,),
+                {"__init__": lambda s, llm, adjacency: None, "run": _scan_run})
+            from cgraph.executor import ChainExecutor
+            ex = ChainExecutor.__new__(ChainExecutor); ex.llm = llm
+            report, state, gate = ex.run_atomic("评估认知断点检测与记忆归档专利")
+            mk_rows = [e for e in state.trail if e.get("skill_id") == "matrix_feed"]
+            self.assertEqual(len(mk_rows), 1)                       # 装载一次
+            note = mk_rows[0]["step_summary"]
+            self.assertTrue(note.startswith("matrix_injected:") or
+                            note.startswith("matrix: degraded"))    # 二态埋点
+            if note.startswith("matrix_injected:"):
+                self.assertIn("pa-", note)                          # 命中条目 id 列表
+        finally:
+            if saved_scan is not None:
+                R.SKILL_REGISTRY["skill_scope_scan"] = saved_scan
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
