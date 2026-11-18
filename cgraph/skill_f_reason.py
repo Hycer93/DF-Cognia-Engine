@@ -95,6 +95,22 @@ class SkillFReason(BaseAtomicSkill):
                f"任务空间扫描摘要:\n{scan_summary or '(无)'}\n\n"
                f"子问题清单(定位哪些子问题含关键不确定点, 对其生成竞争假设):\n{sub_lines}"
                + _ref_material_block(state, self))    # P-C4: 参考素材阈值分流注入
+        # P1快修(2026-11-18 round6上下文传递审计+用户裁决): 注入上游weakest_link
+        # 结构化结果——打通Bd双维交叉验证通路(wl定位的薄弱点作为假设生成语境,
+        # 非独立打分)。只补注入不改主逻辑; 传结构化字段(dict)非原始长文本,
+        # 自带字段边界; wl未执行时state.weakest_link=None→恒''(链路行为与
+        # 改造前一致, wl∉链路场景零影响)
+        # wl未在 state_inputs 声明的旧邻接表 → _in 白名单守卫抛 PermissionError,
+        # 视同 wl∉链路跳过注入(向后兼容: 旧配置行为与改造前一致)
+        try:
+            wl = self._in(state, "weakest_link")
+        except PermissionError:
+            wl = None
+        if isinstance(wl, dict) and wl.get("location"):
+            ctx += (f"\n\n上游最弱环节定位(交叉验证语境, 假设应回应或竞争解释此薄弱点):\n"
+                    f"- 位置: {str(wl.get('location'))[:120]}\n"
+                    f"- 维度: {str(wl.get('dimension'))[:60]} | 风险分: {wl.get('score')}\n"
+                    f"- 依据: {str(wl.get('evidence'))[:200]}")
         # P-matrix-feed(2026-11-18 段二契约): 外部领域知识注入, 仅本技能+wl;
         # 物理隔离于 ref_material(独立分隔符头); 空 matrix → 恒''(R15c 字节级回归);
         # sufficiency 判据零读取 matrix(R15a 源码断言把守)

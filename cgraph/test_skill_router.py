@@ -1187,5 +1187,57 @@ class R17_CommitDbSameSource(RouterTestBase):
         self.assertIn("AUDIT_DB as db", src)
 
 
+class R18_WlToFReasonCrossCheck(RouterTestBase):
+    """R18: P1快修回归(2026-11-18 round6上下文传递审计)——wl→f_reason 链路:
+    f_reason build_prompt 可读取上游 weakest_link 结构化条目并注入交叉验证语境;
+    wl 缺失时 prompt 与改造前字节一致(零影响); parse 正常无降级。"""
+    def test(self):
+        import json as _j
+        from cgraph.skill_f_reason import SkillFReason
+        from cgraph.router_atomic import SKILL_REGISTRY
+        _saved = SKILL_REGISTRY.get("skill_f_reason")
+        # 邻接表带 weakest_link 键(对齐 P1快修后 data/atomic_skills_adjacency.json)
+        adj = {"entries": {"skill_f_reason": {"state_inputs": ["goal_anchored", "sub_questions",
+                                                              "summary", "ref_material",
+                                                              "matrix_knowledge",
+                                                              "weakest_link"],
+                                              "state_outputs": ["hypotheses", "summary"]}}}
+        wl = {"location": "说明书-创新点一 公开充分性", "dimension": "公开充分性",
+              "score": 0.25, "risk": "high", "evidence": "技术效果仅断言无实验数据支撑"}
+        ok_reply = _j.dumps({"hypotheses": [{"hypothesis": "H1公开不充分", "support": "s",
+                                             "contradict": "", "test_next": "t"}],
+                             "applicable": [], "coverage_note": "c", "summary": "s",
+                             "confidence": 0.8})
+        try:
+            llm = MockLLM(ok_reply)
+            sk = SkillFReason(llm=llm, adjacency=adj)
+            # ON: wl 在 state → 注入交叉验证块
+            st_on = ThinkState(goal="g", goal_anchored="审查锚点专利", sub_questions=[], summary="s")
+            st_on.weakest_link = dict(wl)
+            on_msgs = sk.build_prompt(st_on); on_prompt = on_msgs[-1]["content"]
+            self.assertIn("上游最弱环节定位", on_prompt)
+            self.assertIn("说明书-创新点一 公开充分性", on_prompt)
+            self.assertIn("0.25", on_prompt)
+            # OFF: wl=None → 与基线字节一致(无注入块)
+            st_off = ThinkState(goal="g", goal_anchored="审查锚点专利",
+                                sub_questions=[], summary="s")
+            off_msgs = sk.build_prompt(st_off); off_prompt = off_msgs[-1]["content"]
+            self.assertNotIn("上游最弱环节定位", off_prompt)
+            self.assertTrue(on_prompt.startswith(off_prompt))   # 增量注入不扰动基线
+            # OFF 且 dict 无 location → 同样零注入(条件守卫)
+            st_bad = ThinkState(goal="g", goal_anchored="x", sub_questions=[], summary="s")
+            st_bad.weakest_link = {"dimension": "d"}
+            self.assertNotIn("上游最弱环节定位",
+                             sk.build_prompt(st_bad)[-1]["content"])
+            # 全链 run: parse 正常无降级 + hypotheses 写回 state
+            r = sk.run(st_on)
+            self.assertNotIn("_degraded", r.result)
+            self.assertEqual(len(r.result["hypotheses"]), 1)
+            self.assertTrue(st_on.hypotheses and st_on.hypotheses[0]["hypothesis"] == "H1公开不充分")
+        finally:
+            if _saved is not None:
+                SKILL_REGISTRY["skill_f_reason"] = _saved
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
