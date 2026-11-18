@@ -70,6 +70,26 @@ def patrol(as_of=None):
     by_id = {m["inst_id"]: m for m in mems}
     report = {"ts": now.isoformat(), "total_memories": len(mems), "alerts": [], "items": {}}
 
+    # 0. DB↔jsonl 双写对账(P-db-recon, 2026-11-18): corpus_store.db 与 memories.jsonl
+    #    count 差值即迁移漂移, 差值>0 报警——此前仅晨报人工看一行数字, 无自动告警。
+    #    2026-11-18 晨报实证: db 286 vs jsonl 267, 差值 19 无人感知。
+    try:
+        import sqlite3 as _sq
+        _db = os.path.join(HERE, "data", "memory", "corpus_store.db")
+        _c = _sq.connect(f"file:{_db}?mode=ro", uri=True)
+        _db_n = _c.execute("SELECT COUNT(*) FROM core_memory_card").fetchone()[0]
+        _c.close()
+        _drift = _db_n - len(mems)
+        report["items"]["db_jsonl_drift"] = _drift
+        report["items"]["db_card_total"] = _db_n
+        if _drift != 0:
+            report["alerts"].append(
+                "DB↔jsonl 迁移漂移 " + ("+" if _drift > 0 else "") + str(_drift) +
+                f" (db={_db_n} vs jsonl={len(mems)})——差值非零须人工对账归零后才可切换读源")
+    except Exception as _e:
+        report["items"]["db_jsonl_drift"] = None
+        report["alerts"].append(f"DB↔jsonl 对账失败(不计入失败项, 须查): {_e}")
+
     # 1. 多主题混杂统计（风险2）——冻结的 + 嫌疑的都数
     multi_frozen = [m for m in mems if m.get("multi_topic")]
     report["items"]["multi_topic_frozen"] = len(multi_frozen)

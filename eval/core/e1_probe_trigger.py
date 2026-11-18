@@ -88,12 +88,22 @@ def main():
     print(f"[E1] config 快照: logs/{snap} | 判定后端: {meta['llm_backend']}/{meta['llm_model']}", flush=True)
 
     done = set()
+    # P-e1-freshness(2026-11-18): 断点续跑时效守卫——结果文件 mtime 超 3 天即视为陈旧,
+    # 整体重跑(旧文件备份为 .stale-<ts>), 防止"读五天前缓存冒充昨夜回归"。
+    # 2026-11-17 夜跑实证: done=123/todo=0 用时 0.1min, 晨报照旧汇报 mtime 11-12 的旧数据。
+    FRESHNESS_DAYS = 3
     if os.path.exists(E1_OUT):
-        for line in open(E1_OUT, encoding="utf-8"):
-            try:
-                done.add(json.loads(line)["id"])
-            except Exception:
-                pass
+        age_days = (time.time() - os.path.getmtime(E1_OUT)) / 86400
+        if age_days > FRESHNESS_DAYS:
+            bak = E1_OUT + ".stale-" + time.strftime("%Y%m%d_%H%M%S")
+            os.rename(E1_OUT, bak)
+            print(f"[E1] 结果文件陈旧({age_days:.1f}天 > {FRESHNESS_DAYS}天), 归档 {os.path.basename(bak)} 并全量重跑", flush=True)
+        else:
+            for line in open(E1_OUT, encoding="utf-8"):
+                try:
+                    done.add(json.loads(line)["id"])
+                except Exception:
+                    pass
     todo = [p for p in probes if p["id"] not in done]
     print(f"[E1] probes total {len(probes)}, done {len(done)}, todo {len(todo)}", flush=True)
 
