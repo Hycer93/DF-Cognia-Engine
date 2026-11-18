@@ -19,6 +19,15 @@ class LLMClient:
     def __init__(self, config_path: str = "config/config.yaml"):
         self.cfg = self._load_config(config_path)
         self._backend = self.cfg["llm"]["active"]
+        # codechat 后端(2026-11-18 用户裁决: deepseek 402 额度断供, 夜间探针
+        # LLM 通道切换到 CodeChat 桌面端登录态): 复用 CodeChatLLM 适配器,
+        # agent_free=True(纯文本直返, 原子技能需严格 JSON——agent 化后端会
+        # 自调工具破坏输出, 2026-11-16 探针已证); chat() 委托内部实例
+        if self._backend == "codechat":
+            from cgraph.llm_codechat import CodeChatLLM
+            be = self.cfg["llm"]["codechat"]
+            self._cc = CodeChatLLM(model=be.get("model") or None, agent_free=True)
+            return
         be = self.cfg["llm"][self._backend]
         self.base_url = be["base_url"].rstrip("/")
         self.model = be["model"]
@@ -44,6 +53,8 @@ class LLMClient:
 
     # ---------- 对外接口 ----------
     def chat(self, messages: list, retries: int = 3) -> str:
+        if self._backend == "codechat":
+            return self._cc.chat(messages)      # 委托 CodeChatLLM(自带重试)
         """带指数退避重试：网络错误/超时/空返回均重试，3 次全败才返回 None"""
         import time as _t
         last_err = None
@@ -87,6 +98,8 @@ class LLMClient:
 
     def health(self) -> bool:
         try:
+            if self._backend == "codechat":
+                return self._cc.chat([{"role": "user", "content": "ping"}]) is not None
             return self.chat([{"role": "user", "content": "ping"}]) is not None
         except Exception:
             return False

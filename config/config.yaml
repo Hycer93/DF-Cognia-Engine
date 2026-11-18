@@ -1,5 +1,5 @@
 llm:
-  active: deepseek
+  active: codechat
   codechat:
     model: ""
   ollama:
