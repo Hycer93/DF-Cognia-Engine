@@ -46,8 +46,31 @@ PENDING = os.path.join(DB_DIR, "store_pending.jsonl")
 MISS = os.path.join(DB_DIR, "gate_miss_case.jsonl")
 GATE_LOG = os.path.join(DB_DIR, "gate_log.jsonl")
 # transcript 兜底扫描源(只读!): CodeChat 平台日志, 当日用户提交原文在此
-TRANSCRIPT = r"C:/Users/uidq0280/AppData/Roaming/DSV CodeChat Desktop/logs/applog.log"
+# ---- P-e9-path-config(2026-11-18 运维合并段二裁决): 路径收拢 config/paths.json ----
+# 优先级: 环境变量 CODECHAT_APPLOG > paths.json > 默认值。
+# 探测失败不再静默——打出明确告警行(e9_transcript_offline), 晨报高亮标记
+# transcript 通道断流; _scan_transcript 仍降级空列表不阻断主链(只告警)。
+_TRANSCRIPT_DEFAULT = r"C:/Users/uidq0280/AppData/Roaming/DSV CodeChat Desktop/logs/applog.log"
+def _resolve_transcript_path():
+    import os as _os
+    p = _os.environ.get("CODECHAT_APPLOG")
+    if p:
+        return p, "env"
+    try:
+        cfg = json.load(io.open(_os.path.join(_os.path.dirname(_os.path.dirname(
+            _os.path.dirname(_os.path.abspath(__file__)))), "config", "paths.json"),
+            encoding="utf-8"))
+        v = cfg.get("transcript_applog")
+        if v:
+            return v, "paths.json"
+    except Exception:
+        pass
+    return _TRANSCRIPT_DEFAULT, "default"
+TRANSCRIPT, _TRANSCRIPT_SRC = _resolve_transcript_path()
 _SUBMIT_MARK = "user submit: "
+if not os.path.exists(TRANSCRIPT):
+    # 探测失败=晨报可grep的显式告警(非静默): 换环境/换机器立即暴露断流
+    print(f"[e9][transcript_offline] applog路径探测失败(src={_TRANSCRIPT_SRC}): {TRANSCRIPT} —— transcript兜底通道断流, 当日仅session_dialog复跑归档; 请核查 config/paths.json 或设置 CODECHAT_APPLOG", flush=True)
 
 
 def _scan_transcript(day):

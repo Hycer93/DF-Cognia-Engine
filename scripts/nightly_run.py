@@ -33,59 +33,61 @@ ENV = {**os.environ, "NO_MEMORY": "1", "PYTHONIOENCODING": "utf-8",
 STEPS = [
     # E0 开关守卫(2026-11-16 用户指令: TOPIC_LAYER_ON 断层曾全程静默——本探针把
     # "开关被意外关闭/锚管道断裂"变成硬 FAIL, 不再默默业务断层)
-    ("E0 topic锚开关守卫", [PY, "eval/core/e0_topic_gate_guard.py"], None),
+    ("E0 topic锚开关守卫", [PY, "eval/core/e0_topic_gate_guard.py"], None, 60),
     # 2026-11-15 用户裁决: E3(一次性审计, 归 eval/audit/)与E8(影子演习, 归 eval/drill/)
     # 均摘出主链; 主链=纯本地无人值守内务闭环, 只串 eval/core/ 六脚本
-    ("E2 反问门标定扫描", [PY, "eval/core/e2_gate_calibration.py"], "logs/e2_gate_calibration.json"),
-    ("E1 探针触发率全链回归", [PY, "eval/core/e1_probe_trigger.py"], "logs/e1_probe_result.jsonl"),
+    ("E2 反问门标定扫描", [PY, "eval/core/e2_gate_calibration.py"], "logs/e2_gate_calibration.json", 60),
+    ("E1 探针触发率全链回归", [PY, "eval/core/e1_probe_trigger.py"], "logs/e1_probe_result.jsonl", 90),
     # E4 维护巡逻（只读报警）+ E5 自动整理（幂等软层操作，只追加不删除）
-    ("E4 记忆库维护巡逻", [PY, "eval/core/e4_maintenance_patrol.py"], "logs/e4_maintenance.json"),
-    ("E5 记忆自动整理", [PY, "eval/core/e5_consolidation.py"], "logs/e5_consolidation.json"),
+    ("E4 记忆库维护巡逻", [PY, "eval/core/e4_maintenance_patrol.py"], "logs/e4_maintenance.json", 60),
+    ("E5 记忆自动整理", [PY, "eval/core/e5_consolidation.py"], "logs/e5_consolidation.json", 60),
     # E6 思维图巡逻（只读报警，2026-11-09 用户确认：记忆侧有E4/E5，思维侧专项体检）
-    ("E6 思维图巡逻", [PY, "eval/core/e6_mind_graph_patrol.py"], "logs/e6_mind_graph_patrol.json"),
+    ("E6 思维图巡逻", [PY, "eval/core/e6_mind_graph_patrol.py"], "logs/e6_mind_graph_patrol.json", 60),
     # E7 夜间治理（2026-11-15 用户指令#30：夜间提案/hold复审/范式标定/证据回写，
     # 机器只提案不裁决，终裁=人闸门晨报）
-    ("E7 夜间治理", [PY, "eval/core/e7_nightly_governance.py"], "logs/e7_governance.json"),
+    ("E7 夜间治理", [PY, "eval/core/e7_nightly_governance.py"], "logs/e7_governance.json", 240),
     # E10 语义离群巡检(2026-11-16 用户裁决独立立项: 本地bge embedding审卡片
     # 语义归属, 补v2.2统计链路看不见的"cue命中+统计合格但语义错挂"脏卡;
     # 与E7故障隔离(embedding异常不拖垮统计巡检); 增量触发默认+全量兜底;
     # 只读告警人闸终审; 独立E10不并E7)
-    ("E10 语义离群巡检", [PY, "eval/core/e10_semantic_outlier_patrol.py"], "logs/e10_semantic_audit.json"),
+    ("E10 语义离群巡检", [PY, "eval/core/e10_semantic_outlier_patrol.py"], "logs/e10_semantic_audit.json",240),
     # E9 夜间对话治理(2026-11-15 记忆门控定稿新增: 归档主通道——当日 session_dialog
     # 复跑归档判定, 高价值拟卡送pending, 只提案绝不直写主库; probe假阴性攒scar_case;
     # transcript兜底: 只读扫applog提取当日用户提交→simhash去重→复本隔离入raw_corpus)
-    ("E9 对话治理", [PY, "eval/core/e9_dialog_governance.py"], "logs/e9_dialog_governance.json"),
+    ("E9 对话治理", [PY, "eval/core/e9_dialog_governance.py"], "logs/e9_dialog_governance.json", 240),
     # E11 元核原子技能冒烟(2026-11-17 立项: f_reason+memory_gate 上线双准入之
     # nightly 冒烟步骤。真实 LLM 固定样例各跑一次, 断言非降级+schema+红线
     # (f_reason 无plausibility档/memory_gate 绿档类目封闭); FAIL 退出1晨报高亮;
     # 只调技能本体零 DB 写, 夜间不产生绿卡写入(不调 commit_green_cards))
-    ("E11 原子技能冒烟", [PY, "eval/core/e11_atomic_skill_smoke.py"], "logs/e11_atomic_smoke.json"),
+    ("E11 原子技能冒烟", [PY, "eval/core/e11_atomic_skill_smoke.py"], "logs/e11_atomic_smoke.json", 90),
     # E12 skill_router 冒烟(2026-11-17 七段定稿段六③a变体: 编排组件双准入之
     # nightly 步骤, 豁免盲评。真实 LLM 一条标准故障根因目标走完整原子管线,
     # 断言 ok=True/exit_channel合法/steps≥3/fallback≤1/单技能≤2次;
     # FAIL 退出1晨报高亮; 零 DB 写, 不调 commit_green_cards)
-    ("E12 路由器冒烟", [PY, "eval/core/e12_router_smoke.py"], "logs/e12_router_smoke.json"),
+    ("E12 路由器冒烟", [PY, "eval/core/e12_router_smoke.py"], "logs/e12_router_smoke.json", 90),
     # trace 月度归档（2026-11-15 #31 切换步骤④：主库流水开始灌入后归档能力直接就位；
     # 热窗30天, 归档前对账守恒, 切换读源后主库不再无限膨胀）
-    ("T1 trace月度归档", [PY, "memory/trace_archive.py"], "logs/e7_governance.json"),
+    ("T1 trace月度归档", [PY, "memory/trace_archive.py"], "logs/e7_governance.json", 60),
     # F20 夜间守卫（2026-11-16 用户裁决：挂主链尾部, 归属 experiment 不升级进 core;
     # 仅跑 baseline β=1.0 守卫基线, 保守/激进档位只在手动消融启用; PASS/FAIL 翻转→
     # 晨报高亮告警但不阻塞 E 系 core 主链; 完整快照独立 logs/f20/nightly_<date>/,
     # 晨报只放摘要。守卫自身吞错恒退出 0——experiment 层不惊扰主链步骤状态）
-    ("F20 基线守卫(experiment)", [PY, "eval/experiment/f20_nightly_guard.py"], "logs/f20/guard_latest.json"),
+    ("F20 基线守卫(experiment)", [PY, "eval/experiment/f20_nightly_guard.py"], "logs/f20/guard_latest.json", 30),
 ]
 
 
-def run_step(name: str, cmd: list, out: str):
+def run_step(name: str, cmd: list, out: str, timeout_min: int):
     print(f"\n{'='*60}\n[NIGHT] >>> {name}\n{'='*60}", flush=True)
     t0 = time.time()
+        # P-nightly-timeout(2026-11-18 运维合并段二裁决): 废除一刀切15h, 分级超时由
+        # STEPS 注册表第四列 timeout_min 按类型绑定(纯本地60/LLM探针90/重治理240/F20 30)
     try:
         # 不用 capture——直接继承 stdout，后台日志文件里能看到全部进度
-        r = subprocess.run(cmd, cwd=HERE, env=ENV, timeout=15 * 3600)
+        r = subprocess.run(cmd, cwd=HERE, env=ENV, timeout=timeout_min * 60)
         ok = r.returncode == 0
     except subprocess.TimeoutExpired:
         ok = False
-        print(f"[NIGHT] {name} 超时 15h，跳到下一步", flush=True)
+        print(f"[NIGHT] {name} 超时 {timeout_min}min(分级阈值)，跳到下一步", flush=True)
     except Exception as e:
         ok = False
         print(f"[NIGHT] {name} 异常: {e}", flush=True)
@@ -466,6 +468,22 @@ def write_report(durations):
     except Exception as e:
         lines.append(f"(读取失败: {e})")
 
+    # ---- 存储快修余项观测校验(2026-11-18 运维合并段二裁决#3) ----
+    # R14-a: 只观测不自动调参。两项均为固定检查条目, 结果只陈列供人闸晨间判读。
+    lines.append("\n## 固定观测校验（R14-a 只观测不调参）\n")
+    # 1) P0-1: E12 gate摘要 bigram-Jaccard 分布(E12尾部埋点落盘 e12_router_smoke.json)
+    try:
+        _j = json.load(open(os.path.join(LOGS, "e12_router_smoke.json"), encoding="utf-8"))
+        _jd = _j.get("jaccard_observation") or {}
+        lines.append(f"- P0-1 gate摘要Jaccard分布: {_jd}（阈值决策须待多晚分布积累, 勿单晚调参）")
+    except Exception as e:
+        lines.append(f"- P0-1 gate摘要Jaccard分布: (E12未跑或无埋点: {type(e).__name__})")
+    # 2) E4 drift: P0-3 库路径修复后, 主库对账漂移是否收敛(只观测)
+    try:
+        _e4 = json.load(open(os.path.join(LOGS, "e4_maintenance.json"), encoding="utf-8"))
+        lines.append(f"- E4 drift 对账: P0-3修复后观测——{_e4}（只看是否收敛, 不自动调参）")
+    except Exception as e:
+        lines.append(f"- E4 drift 对账: (读取失败: {type(e).__name__})")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print(f"\n[NIGHT] 晨间速读报告: {path}", flush=True)
@@ -484,9 +502,24 @@ def main():
     except Exception as e:
         print(f"[NIGHT] 图快照失败(不阻断夜跑): {e}", flush=True)
     durations = []
-    for name, cmd, _ in STEPS:
-        ok, mins = run_step(name, cmd, _)
+    # P-nightly-timeout(2026-11-18 段二裁决): 连续3步超时/FAIL -> 整轮熔断,
+    # 剩余步骤跳过, 晨报置顶高亮; 单步失败不熔断, 继续流转
+    streak = 0
+    fused = False
+    for name, cmd, _, timeout_min in STEPS:
+        if fused:
+            print(f"[NIGHT] 熔断, 跳过: {name}", flush=True)
+            durations.append((f"{name} [SKIPPED-FUSED]", 0))
+            continue
+        ok, mins = run_step(name, cmd, _, timeout_min)
         durations.append((f"{name} [{'OK' if ok else 'FAIL'}]", mins))
+        streak = streak + 1 if not ok else 0
+        if streak >= 3:
+            fused = True
+            print("[NIGHT] !!! 熔断: 连续3步超时/FAIL, 剩余步骤全部跳过 -- "
+                  "晨报置顶高亮, 检查环境(LLM通道/DB/路径)", flush=True)
+    if fused:
+        durations.insert(0, ("本轮熔断: 连续3步异常, 部分步骤被跳过", 0))
     write_report(durations)
     print(f"[NIGHT] 全部结束于 {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
 
