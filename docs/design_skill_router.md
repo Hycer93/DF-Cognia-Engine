@@ -154,3 +154,24 @@ C3 分流规则(LLM 选路天然消化大半, 观察后定) / engine 两网归�
 **E12验证**: N1检索轮BM25下告警链成立(retrieval_dependent=True+10告警+metrics健康), 判据同源切换无漏报; S2词表3/5持平无劣化。
 
 **遗留**: P-doc-map(两阶段索引根治)维持 planned——本次只做检索层单文档改造, 不建持久索引不动根治方案; 分段合并/自适应预算为二期叠加候选(段二B/C)。
+
+
+## P-matrix-feed 附录: 外部领域知识矩阵回灌(2026-11-18 五段闭环)
+
+**一句话**: 新增独立 state.matrix_knowledge 字段+5条专利审查领域卡(verified=true闸门), scan后一次性装载, 仅注入 f_reason/weakest_link 两步; 增益定性=把底座偶发闪现的领域具名能力固化为可溯源/可保底/可审计的合同化必现行为, 非给模型新增知识。
+
+**病灶(段一四实证)**: 管线推理上下文只有任务素材+内部规则, 缺领域知识槽位; 三轮对照复现"管线只会内部矛盾推演, 裸模型可具名比对现有技术"; 第四轮分清两缺口——P-matrix-feed补输入侧知识供给, P-skill-synthesize补输出侧假设收敛, 不可混淆。
+
+**段二契约**: ①知识源=手工领域卡为主(蒸馏仅参考素材, verified=false不注入) ②注入点=仅f_reason+weakest_link最小面 ③隔离红线=独立字段/物理分隔符/sufficiency零读取(R15a源码断言)/trail全量溯源 ④token硬上限1200+matrix单独计数+三级静默降级(恒[]不告警只埋trail)。
+
+**段三编码(T1-T5, commit e3a8635)**: patent_prior_art.jsonl 5条 / matrix_knowledge.py(load_matrix/matrix_block/matrix_tokens) / 邻接表两技能追加只读键 / prompt尾部追加注入 / executor scan后一次性装载+trail埋matrix_injected|degraded二态。小集合匹配用trigger_kw词元交集(≤10条BM25-IDF无区分度), 签名不变扩15-20条时内部切真BM25。
+
+**T6单测(commit ee870b6, 50/50)**: R15a sufficiency源码零matrix / R15b三降级路径 / R15c关闭态字节级基线一致+开启态隔离头+溯源标记+增量不扰动基线前缀 / R15d trail二态埋点恰好一次。
+
+**段四A/B实测(n=1)**: ON=matrix_injected 5条(tokens=181/1200), f_reason假设谱具名比对3个(主动学习/RAG/经验回放)且带映射依据+驳回锚; OFF=trail degraded标记, 但模型自带2个具名词(难例挖掘/主动学习)——关键发现: 同底座LLM偶发自带领域知识, matrix增益不在新词而在确定性必现+可溯源+审查范式对齐(驳回锚直挂假设)。降级三分支: 文件缺失[]/超限[]/零命中经换词重验抓到真bug——
+
+**段四编码期修正(第三处同款)**: 单字词元假命中("四川泡菜"×"四级记忆"经"四"、"不发白"×"不可篡改"经"不")——与P-retrieval-upgrade编码期S5单字误命中同款缺陷, load_matrix交集过滤len>=2词元; 修复后无关主题5query全零命中, 专利goal正样5/5无损, 50单测全绿。
+
+**局限与后续**: ①n=1单样本, E12增matrix-ON断言观测位夜跑自然积累 ②仅提示性参考, 深度融合推演缺口留给P-skill-synthesize ③知识库>15条切内部真BM25 ④显式深融合(跨条目组合推理)为二期候选。
+
+**planned现状快照(2026-11-18)**: P-skill-synthesize ready-to-start(样例已固化); P-e9-path-config/P-nightly-timeout合并运维延后; P-doc-map远期不动。

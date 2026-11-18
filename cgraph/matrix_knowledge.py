@@ -72,15 +72,19 @@ def load_matrix(goal: str, scan_summary: str = "",
         return []
     try:
         from cgraph.ref_retrieval import bm25_scores, _tokens
-        # trigger_kw 展开成词元后与 query 词元对齐(同 BM25 词元切分口径)
-        q_tokens = _tokens(query) | _tokens(scan_summary or "")
+        # trigger_kw 展开成词元后与 query 词元对齐(同 BM25 词元切分口径);
+        # 段四重验发现的链路缺陷修复: 单字词元过滤(min len 2)——
+        # "四川泡菜"与"四级记忆"会经单字"四"假命中(P-retrieval-upgrade S5 同款),
+        # 交集只认 len>=2 词元
+        q_tokens = {t for t in (_tokens(query) | _tokens(scan_summary or ""))
+                    if len(t) >= 2}
         if not q_tokens:
             return []
         scored = []
         for i, e in enumerate(entries):
             kw_tokens = set()
             for kw in e.get("trigger_kw", []):
-                kw_tokens |= _tokens(kw)
+                kw_tokens |= {t for t in _tokens(kw) if len(t) >= 2}
             if not kw_tokens:
                 continue
             s = sum(1 for t in kw_tokens & q_tokens)  # 交集计数(词条粒度足够小集合)
