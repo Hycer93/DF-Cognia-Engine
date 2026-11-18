@@ -1011,5 +1011,163 @@ class R15d_TrailMatrixInjected(RouterTestBase):
                 R.SKILL_REGISTRY["skill_scope_scan"] = saved_scan
 
 
+# ---------------- P-skill-synthesize R16(a-d) 收敛/路由/红线/降级(2026-11-18 段三T6) ----------------
+
+class R16a_ThreeSegmentSchema(RouterTestBase):
+    """R16a: 三段 schema 正常解析 + 缺段降级标记(不改 hypotheses)。"""
+    def test(self):
+        import json as _j
+        from cgraph.skill_synthesize import SkillSynthesize
+        adj = {"entries": {"skill_synthesize": {
+            "state_inputs": ["goal_anchored", "sub_questions", "summary", "hypotheses", "ref_material"],
+            "state_outputs": ["selection_rationale", "final_deliverable",
+                              "alternatives_appendix", "summary"]}}}
+        sk = SkillSynthesize(llm=MockLLM(""), adjacency=adj)
+        st = ThinkState(goal="g", goal_anchored="优化公式", sub_questions=[{"q": "算子"}],
+                        summary="s", hypotheses=[{"hypothesis": "EWMA"}, {"hypothesis": "贝叶斯"}])
+        msgs = sk.build_prompt(st)
+        self.assertIn("H1: EWMA", msgs[-1]["content"])
+        self.assertIn("H2: 贝叶斯", msgs[-1]["content"])
+        good = _j.dumps({"selection_rationale": "选H1", "final_deliverable": "w=α·w+β·Δ",
+                         "alternatives_appendix": [{"hypothesis_ref": "H2", "summary": "x",
+                                                    "keep_reason": "r"}],
+                         "summary": "s", "confidence": 0.8})
+        r = sk.parse_result(good, st)
+        self.assertEqual(r["selection_rationale"], "选H1")
+        self.assertEqual(r["final_deliverable"], "w=α·w+β·Δ")
+        self.assertEqual(len(r["alternatives_appendix"]), 1)
+        self.assertNotIn("degraded", r)
+        # 缺 final_deliverable → degraded 标记且 hypotheses 未被改
+        bad = _j.dumps({"selection_rationale": "x"})
+        r2 = sk.parse_result(bad, st)
+        self.assertEqual(r2.get("degraded"), "final_deliverable_missing")
+        self.assertEqual(len(st.hypotheses), 2)          # 红线: 原样保留
+        # decide_terminate 恒 False
+        self.assertFalse(sk.decide_terminate(st, r))
+
+
+class R16b_RouteGateRegression(RouterTestBase):
+    """R16b: 路由门——非 scheme_design 剔除 synthesize; scheme_design 保留;
+    无 anchor 记录 fail-safe 剔除。"""
+    def test(self):
+        menu = [{"skill": "skill_synthesize"}, {"skill": "skill_terminate"}]
+        import types as _tp
+        from cgraph.router_atomic import RouterAtomic
+        rt = RouterAtomic.__new__(RouterAtomic)
+        rt.steps_log = []; rt.adjacency = {"entries": {"skill_terminate": {}, "skill_synthesize": {}}}
+        rt._audit = _tp.MethodType(lambda self, *a: None, rt)
+        rt._ids = _tp.MethodType(lambda self, x: [o.get("skill") for o in (x or [])], rt)
+        for gt, keep in [("analysis", False), ("review", False), ("simple_query", False),
+                         ("unknown_ambiguous", False), ("scheme_design", True)]:
+            st = ThinkState(goal="g")
+            st.trail = [{"skill_id": "skill_anchor_target", "result_fields": {"goal_type": gt}}]
+            m = RouterAtomic._clean_menu(rt, [dict(o) for o in menu], st)
+            self.assertIn("skill_synthesize", [o["skill"] for o in m]) if keep else \
+                self.assertNotIn("skill_synthesize", [o["skill"] for o in m])
+        # fail-safe: 无 anchor 记录
+        st4 = ThinkState(goal="g"); st4.trail = []
+        m4 = RouterAtomic._clean_menu(rt, [dict(o) for o in menu], st4)
+        self.assertNotIn("skill_synthesize", [o["skill"] for o in m4])
+        # state=None 兼容旧调用签名(纯占位清洗不受影响)
+        m5 = RouterAtomic._clean_menu(rt, [{"skill": "skill_terminate"}, {"skill": "__planned__"}])
+        self.assertEqual([o["skill"] for o in m5], ["skill_terminate"])
+
+
+class R16c_HypothesesReadOnly(RouterTestBase):
+    """R16c: 红线——E2E 链上 synthesize 执行后 hypotheses 原样、trail 不受染、
+    三键写入 state。"""
+    def test(self):
+        import json as _j
+        hyps = [{"hypothesis": "H1EWMA", "supporting": ["a"], "contradicting": [], "test_next": "t"},
+                 {"hypothesis": "H2贝叶斯", "supporting": ["b"], "contradicting": [], "test_next": "t"}]
+        def _syn_run(self, st):
+            from cgraph.atomic_skill import SkillResult
+            return SkillResult(skill_id="skill_synthesize",
+                               result={"selection_rationale": "选H1因可公式化",
+                                       "final_deliverable": "w_{k+1}=α·w_k+β·Δ_k 全文推演",
+                                       "alternatives_appendix": [{"hypothesis_ref": "H2", "summary": "贝叶斯", "keep_reason": "备选"}],
+                                       "summary": "收敛完成", "confidence": 0.8},
+                               next_options=[{"skill": "skill_terminate", "gain": "g", "cost": "c"}],
+                               terminate_suggest=False)
+        import cgraph.router_atomic as RA
+        saved = RA.SKILL_REGISTRY.get("skill_synthesize")
+        RA.SKILL_REGISTRY["skill_synthesize"] = type("S", (object,),
+            {"__init__": lambda s, llm, adjacency: None, "run": _syn_run})
+        try:
+            # goal_type=scheme_design 才走 synthesize: anchor mock 输出该类型
+            def _anchor_run(self, st):
+                from cgraph.atomic_skill import SkillResult
+                return SkillResult(skill_id="skill_anchor_target",
+                                   result={"anchored_goal": st.goal, "goal_type": "scheme_design", "summary": "a"},
+                                   next_options=[{"skill": "skill_scope_scan", "gain": "g", "cost": "c"}],
+                                   terminate_suggest=False)
+            saved_a = RA.SKILL_REGISTRY.get("skill_anchor_target")
+            RA.SKILL_REGISTRY["skill_anchor_target"] = type("A", (object,),
+                {"__init__": lambda s, llm, adjacency: None, "run": _anchor_run})
+            # f_reason mock 产出假设谱并把 hypotheses 写进 state(mock 不走write机制, 手动设)
+            def _fr_run(self, st):
+                from cgraph.atomic_skill import SkillResult
+                st.hypotheses = [dict(h) for h in hyps]     # 模拟 state_outputs 写入
+                st.trail.append({"skill_id": "skill_f_reason", "chosen": "skill_f_reason",
+                                 "result_fields": {"hypotheses": hyps}, "step_summary": "fr"})
+                return SkillResult(skill_id="skill_f_reason", result={"hypotheses": hyps, "summary": "fr"},
+                                   next_options=[{"skill": "skill_synthesize", "gain": "g", "cost": "c"},
+                                                 {"skill": "skill_terminate", "gain": "g", "cost": "c"}],
+                                   terminate_suggest=False)
+            saved_f = RA.SKILL_REGISTRY.get("skill_f_reason")
+            RA.SKILL_REGISTRY["skill_f_reason"] = type("F", (object,),
+                {"__init__": lambda s, llm, adjacency: None, "run": _fr_run})
+            # scan mock: 转 f_reason(与真实邻接表一致)
+            def _scan_run(self, st):
+                from cgraph.atomic_skill import SkillResult
+                return SkillResult(skill_id="skill_scope_scan",
+                                   result={"sub_questions": [{"q": "q"}], "summary": "sc"},
+                                   next_options=[{"skill": "skill_f_reason", "gain": "g", "cost": "c"}],
+                                   terminate_suggest=False)
+            saved_s = RA.SKILL_REGISTRY.get("skill_scope_scan")
+            RA.SKILL_REGISTRY["skill_scope_scan"] = type("C", (object,),
+                {"__init__": lambda s, llm, adjacency: None, "run": _scan_run})
+            # 路由 LLM: 选 synthesize (goal_type 匹配)
+            llm = MockLLM(['{"chosen": "skill_scope_scan", "reason": "扫"}',
+                           '{"chosen": "skill_f_reason", "reason": "推理"}',
+                           '{"chosen": "skill_synthesize", "reason": "收敛"}',
+                           '{"chosen": "skill_terminate", "reason": "收"}'])
+            from cgraph.executor import ChainExecutor
+            ex = ChainExecutor.__new__(ChainExecutor); ex.llm = llm
+            report, state, gate = ex.run_atomic("设计一套三级收敛公式体系方案")
+            self.assertIn("skill_synthesize", [e["skill_id"] for e in state.trail])
+            # 红线①: hypotheses 原样(条数与内容)
+            self.assertEqual(len(state.hypotheses), 2)
+            self.assertEqual(state.hypotheses[0]["hypothesis"], "H1EWMA")
+            # 三段产出: 从 trail result_fields 断言(mock 不走基类write机制)
+            syn_rf = next(e.get("result_fields") for e in state.trail
+                          if e.get("skill_id") == "skill_synthesize")
+            self.assertIn("w_{k+1}", str(syn_rf.get("final_deliverable")))
+            self.assertIn("H2", str(syn_rf.get("alternatives_appendix")))
+            self.assertEqual(syn_rf.get("selection_rationale"), "选H1因可公式化")
+        finally:
+            for k, v in [("skill_synthesize", saved), ("skill_anchor_target", saved_a),
+                         ("skill_f_reason", saved_f), ("skill_scope_scan", saved_s)]:
+                if v is not None:
+                    RA.SKILL_REGISTRY[k] = v
+
+
+class R16d_DegradeToTerminate(RouterTestBase):
+    """R16d: LLM 输出解析失败 → degraded 标记 + 链路不因 synthesize 中断。"""
+    def test(self):
+        from cgraph.skill_synthesize import SkillSynthesize
+        adj = {"entries": {"skill_synthesize": {
+            "state_inputs": ["goal_anchored", "sub_questions", "summary", "hypotheses", "ref_material"],
+            "state_outputs": ["selection_rationale", "final_deliverable",
+                              "alternatives_appendix", "summary"]}}}
+        sk = SkillSynthesize(llm=MockLLM("不是JSON"), adjacency=adj)
+        st = ThinkState(goal="g", goal_anchored="x", hypotheses=[{"hypothesis": "h1"}])
+        # extract_json 兜不住纯文本 → parse 得空段 + degraded
+        r = sk.parse_result("完全不是 JSON 的输出", st)
+        self.assertEqual(r.get("degraded"), "empty_output")
+        self.assertEqual(len(st.hypotheses), 1)           # 上游不污染
+        self.assertFalse(sk.decide_terminate(st, r))       # 恒False(收敛交terminate)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
