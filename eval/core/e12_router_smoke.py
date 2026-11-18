@@ -211,9 +211,17 @@ def main():
             patent_full = f.read()
     except OSError:
         patent_full = "可复现性判定记忆分级存储方案概要文本"
+    # N1 材料 P-C6 后置适配: 扩至 >8000 保持检索通道(原硬断言语义不变——告警链回归哨兵);
+    # N3 新增: 原文材料(≈4045 ≤8000)直塞, 断言 retrieval_dependent 消除(P-C6 指标2 夜间哨兵)
+    n1_mat = patent_full + "\n\n背景补充: " + ("相关论述。" * 1600)
+    import sqlite3 as _sq0
+    _c0 = _sq0.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+    _bm = _c0.execute("SELECT MAX(rowid) FROM audit_topic_log WHERE op='sufficiency:alert'").fetchone()[0] or 0
+    _c0.close()
     for tag, goal, expect_assembly, expect_applicable in [
-        ("N1-带材料后置", (P4_COMMON + P4_MARK + "\n" + patent_full), True, True),
+        ("N1-带材料后置(检索)", (P4_COMMON + P4_MARK + "\n" + n1_mat), True, True),
         ("N2-直收口不适用", "今天星期几? 一句话回答即可", True, False),
+        ("N3-直塞无告警", (P4_COMMON + P4_MARK + "\n" + patent_full), True, True),
     ]:
         ex = ChainExecutor.__new__(ChainExecutor); ex.llm = llm
         t0 = time.time()
@@ -246,24 +254,34 @@ def main():
               f"汇编={nr['has_terminate']} final_output={nr['final_output_len']}字 ref={nr['ref_len']}")
         results.append(nr)
     # N1 后置告警链审计断言: sufficiency:alert 行存在 + retrieval_dependent 硬断言(段四A)
+    # N3 反向哨兵: 直塞(≤8000)后新产生的 sufficiency:alert 须 retrieval_dependent 非 True
     try:
         import sqlite3 as _sq
         _con = _sq.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
         rows = _con.execute("SELECT payload FROM audit_topic_log WHERE op='sufficiency:alert' "
-                            "ORDER BY rowid DESC LIMIT 4").fetchall()
+                            "AND rowid > ? ORDER BY rowid DESC LIMIT 6", (_bm,)).fetchall()
         _con.close()
         n1_row = None
+        n3_alert_rows = []
         for rr in rows:
             p = json.loads(rr[0])
-            if p.get("coverage_metrics", {}).get("retrieval_dependent") is True:
+            cm = p.get("coverage_metrics", {})
+            if cm.get("retrieval_dependent") is True and n1_row is None:
                 n1_row = p
-                break
+            if cm.get("retrieval_dependent") is not True:
+                n3_alert_rows.append(p)
         if n1_row is None:
-            print("[E12] N1 FAIL: 未检出 retrieval_dependent=True 告警(段四A硬断言)")
+            print("[E12] N1 FAIL: 未检出 retrieval_dependent=True 告警(段四A硬断言; 检索通道样本>8000)")
             hard_fail = True
         else:
             print(f"[E12] N1 后置告警链 PASS: sufficiency:alert 已落盘, retrieval_dependent=True, "
                   f"alerts={len(n1_row.get('alerts', []))}条, metrics={ {k: v for k, v in n1_row['coverage_metrics'].items() if k in ('subq_coverage', 'hypotheses_n', 'wl_addressed', 'final_assembly_present')} }")
+        # N3: N2/N3 轮次若落了告警行, 其 retrieval_dependent 必须非 True(直塞/无材料不触发盲区告警)
+        bad_n3 = [p for p in n3_alert_rows if p.get("alerts")]
+        if bad_n3:
+            print(f"[E12] N3 PASS: 直塞轮告警{len(bad_n3)}行, retrieval_dependent 均≠True(不触发盲区告警, P-C6指标2哨兵)")
+        else:
+            print("[E12] N3 PASS: 直塞/直收口轮未产生 sufficiency:alert 行(无告警即正确)")
     except Exception as e:
         print(f"[E12] N1 审计断言异常(不阻断): {e}")
 
