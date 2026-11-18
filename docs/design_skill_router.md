@@ -175,3 +175,22 @@ C3 分流规则(LLM 选路天然消化大半, 观察后定) / engine 两网归�
 **局限与后续**: ①n=1单样本, E12增matrix-ON断言观测位夜跑自然积累 ②仅提示性参考, 深度融合推演缺口留给P-skill-synthesize ③知识库>15条切内部真BM25 ④显式深融合(跨条目组合推理)为二期候选。
 
 **planned现状快照(2026-11-18)**: P-skill-synthesize ready-to-start(样例已固化); P-e9-path-config/P-nightly-timeout合并运维延后; P-doc-map远期不动。
+
+
+## P-skill-synthesize 附录: 假设谱收敛+终稿推演技能(2026-11-18 五段闭环)
+
+**一句话**: f_reason与terminate之间新增skill_synthesize一体单步技能(一次LLM调用三段式: selection_rationale引用H编号权衡+final_deliverable完整推演+alternatives_appendix备选留存), router._clean_menu按goal_type==scheme_design静态门控; 补齐"多竞争假设→收敛融合→可交付终稿"缺失环节, 完成从审计视图到交付文稿闭环。
+
+**病灶(段一)**: f_reason设计定位=陈列竞争假设即终点(decide_terminate恒False, 分歧⑥设计使然); terminate只做审计视图汇编; scheme_design类任务链路止步3步, 公式推演只到"四框架候选"(第四轮实测3个数学符号)。
+
+**段二契约**: ①一体单步不拆两技能(输出三段拿终稿+保权衡+留备选) ②静态路由门控(邻接表f_reason.next头部插入+router层goal_type过滤, 零侵入f_reason; goal_type从trail读, 读不到fail-safe剔除) ③红线: hypotheses只读/产出引用编号可回溯/备选不丢弃/sufficiency零触碰/降级只打result标记不改上游 ④v0不注入matrix(最小面)。
+
+**段三编码(T1-T5, commit c344cd3; T6 commit R16a-d, 54/54全绿)**: skill_synthesize.py / 邻接表新节点 / _anchor_goal_type+_clean_menu门控(R9例外注记synthesize_gate审计行) / registry注册 / ThinkState三键显性化。R16c编码期两修: mock技能next_options需真实邻接表形态(空菜单=链路提前耗尽); mock不走基类write机制, 三段产出从trail result_fields断言。
+
+**段四A/B实测(第四轮同任务)**: ON=5步(anchor→scan→wl→f_reason→synthesize→terminate), 三段全齐(rationale 777字/deliverable 2615字33公式符号/备选3条), H编号引用8处, **多假设融合路线**(H1+H3+H4三路融合, rationale记录理由——裁决1"或说明融合理由"分支首次实战); OFF=3步历史基线字节级回归, sufficiency告警形态与第四轮一致。
+
+**两个重要观测**: ①意外正向——synthesize存在后路由自然先走weakest_link, 且sufficiency自动将synthesize产出纳入监控("wl已识别收敛判据缺失score=0.22, 但synthesize…"), 审计能力自动延伸, 隔离红线未破; ②诚实差距——33 vs 裸模型152公式符号, 根源=prompt三段式结构约束(紧凑)vs裸模型无格式自由展开, 属篇幅差异非推理缺陷, 不阻塞closed; 后续放宽篇幅约束为可选演进点。
+
+**能力定位(黄档摘要)**: 三轮演进闭环——P-retrieval-upgrade解决看得全(检索层), P-matrix-feed把底座偶发领域比对固化为可溯源审查基础设施(输入侧), P-skill-synthesize补齐收敛融合终稿推演(输出侧); 管线现完整具备风险审查评估(多假设互竞审计)+方案设计推演交付(synthesize终稿)两套能力。遗留=运维还债(P-e9-path-config/P-nightly-timeout合并)+远期(P-doc-map)。
+
+**planned快照(2026-11-18)**: closed: P-retrieval-upgrade/P-matrix-feed/P-skill-synthesize; 合并运维待启动: P-e9-path-config/P-nightly-timeout; 远期: P-doc-map。
