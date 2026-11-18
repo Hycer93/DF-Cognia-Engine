@@ -51,6 +51,11 @@ class ThinkState:
     # 行为与旧版等价); 仅 run_atomic 入口与 anchor_target 两处可写(R13 素材只读红线:
     # 写入后链中任何技能禁止修改/覆盖/二次截断); 不落盘、不进 trail 防日志膨胀
     ref_material: str = ""
+    # P-matrix-feed(2026-11-18 段二契约): 外部领域知识矩阵注入条目。
+    # 独立字段, 绝不混入 ref_material(隔离红线); 仅 executor 在 scan 后一次性装载,
+    # 仅 f_reason/weakest_link 只读消费; sufficiency 判据零读取(R15a)。
+    # 任何降级(文件缺失/零命中/超限)恒 [], 链路行为与改造前一致。
+    matrix_knowledge: list = field(default_factory=list)
     sub_questions: list = field(default_factory=list)
     summary: str = ""
     trail: list = field(default_factory=list)       # [(skill_id, chosen, candidates, reason, ts)]

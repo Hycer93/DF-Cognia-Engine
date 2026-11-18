@@ -2,7 +2,7 @@
   "_schema": "atomic_meta_core_adjacency_v1",
   "_doc": "原子化元核·中心化邻接表(2026-11-16 用户定案)。规约: ①技能只能在 next_options 暴露逻辑连通后继, 禁止硬编码写死在技能内部; ②本文件是唯一权威源, 技能实现不得自带旁路连通表; ③加载时与文件变更时双触发校验(见 eval/experiment/adjacency_validator.py), 校验不过拒绝加载; ④v1 为地基试点版: 只登记骨架结构 + 首批试点技能(skill_anchor_target), 其余节点逐个讨论达成共识后登记(一次一个节点, 禁一次性批量定义)。",
   "version": 1,
-  "updated_ts": "2026-11-16T20:10:00",
+  "updated_ts": "2026-11-18T13:32:00",
   "global": {
     "max_steps": 24,
     "_doc_max_steps": "全局最大思考步数上限(强制终止兜底, 与 state 轨迹去重构成两层循环防护)",
@@ -134,7 +134,8 @@
         "goal_anchored",
         "sub_questions",
         "summary",
-        "ref_material"
+        "ref_material",
+        "matrix_knowledge"
       ],
       "state_outputs": [
         "weakest_link",
@@ -206,7 +207,8 @@
         "goal_anchored",
         "sub_questions",
         "summary",
-        "ref_material"
+        "ref_material",
+        "matrix_knowledge"
       ],
       "state_outputs": [
         "hypotheses",

@@ -222,6 +222,29 @@ class ChainExecutor:
             ref_material = ""
         state = ThinkState(goal=user_input, ref_material=ref_material)
         report = RouterAtomic(self.llm, adjacency).run(state)
+        # ---- P-matrix-feed(2026-11-18 段二契约2): scan 后一次性统一装载 ----
+        # 时机=router run 返回后(此时 scan 已完成, goal+scan_summary 完备);
+        # 一次性装载, f_reason/weakest_link 复用同一份(输出可复现, trail 可比对)。
+        # 降级契约: 任何异常/零命中/超限 → 恒 [], 链路行为与改造前一致;
+        # 只埋 trail 观测标记(matrix_injected / matrix: degraded), 不抛业务告警。
+        try:
+            from cgraph.matrix_knowledge import load_matrix, matrix_tokens
+            _scan_sum = ""
+            for _e in state.trail:
+                if isinstance(_e, dict) and _e.get("skill_id") == "skill_scope_scan":
+                    _scan_sum = str(_e.get("step_summary") or "")
+                    break
+            _mk = load_matrix(state.goal or "", _scan_sum)
+            state.matrix_knowledge = _mk
+            _mk_note = ("matrix_injected: %s (tokens=%d)" %
+                        ([e.get("matrix_id") for e in _mk], matrix_tokens(_mk))) if _mk \
+                else "matrix: degraded(零命中或降级)"
+            state.trail.append({"skill_id": "matrix_feed", "chosen": "matrix_feed",
+                                "candidates": [], "reason": "P-matrix-feed外部知识装载(scan后一次性)",
+                                "step_summary": _mk_note[:120], "result_fields": {},
+                                "ts": __import__("time").strftime("%Y-%m-%dT%H:%M:%S")})
+        except Exception:
+            state.matrix_knowledge = []
         # ---- P-C5 后置时序(段二2.5裁决): 补汇编(病灶A) → sufficiency → gate ----
         # 后置段整体 try/except: 任何后置故障不污染主链结果(fail-safe, 段五5.2)
         try:
