@@ -1239,5 +1239,53 @@ class R18_WlToFReasonCrossCheck(RouterTestBase):
                 SKILL_REGISTRY["skill_f_reason"] = _saved
 
 
+class R19_DkDeductionChain(RouterTestBase):
+    """R19: P-skeleton Dk 演绎链——织链/4步截断/unsupported 派生/前置守卫/降级/写回。"""
+    def test(self):
+        import json as _j
+        from cgraph.skill_dk_deduction import SkillDkDeduction
+        adj = {"entries": {"skill_dk_deduction": {
+            "state_inputs": ["goal_anchored", "hypotheses", "weakest_link",
+                             "ref_material", "matrix_knowledge", "summary"],
+            "state_outputs": ["deduction_chains", "summary"],
+            "result_fields": ["chains", "unsupported_premises", "applicable",
+                              "summary", "confidence"]}}}
+        ok = _j.dumps({"chains": [
+            {"target_ref": "H1", "steps": [
+                {"premise": "p%d" % i, "evidence_ref": "ref-A" if i % 2 == 0 else "",
+                 "note": ""} for i in range(7)],                      # 7步->截4
+                "verdict_ready": True}],
+            "applicable": True, "summary": "s", "confidence": 0.8})
+        try:
+            # ① 正常: 4步截断 + unsupported(空evidence_ref)派生 + 写回
+            llm = MockLLM(ok)
+            sk = SkillDkDeduction(llm=llm, adjacency=adj)
+            st = ThinkState(goal="g", goal_anchored="目标",
+                            hypotheses=[{"hypothesis": "H1", "support": "s"}])
+            st.weakest_link = {"location": "L1", "dimension": "d", "score": 0.5,
+                               "evidence": "e"}
+            r = sk.run(st)
+            self.assertNotIn("_degraded", r.result)
+            ch = r.result["chains"][0]
+            self.assertEqual(len(ch["steps"]), 4)                     # 4步硬截断
+            self.assertIn("上限截断", ch["steps"][-1]["note"])
+            self.assertEqual(len(ch["unsupported_premises"]), 2)      # 4步中2步空引用
+            self.assertEqual(len(r.result["unsupported_premises"]), 2)
+            self.assertTrue(st.deduction_chains and st.deduction_chains[0]["target_ref"] == "H1")
+            # ② 前置守卫: hypotheses+wl 全空 -> applicable=false 跳过(非降级)
+            st2 = ThinkState(goal="g", goal_anchored="x")
+            r2 = SkillDkDeduction(llm=MockLLM("任意"), adjacency=adj).run(st2)
+            self.assertFalse(r2.result["applicable"])
+            self.assertNotIn("_degraded", r2.result)
+            # ③ 降级: JSON 全坏 -> _degraded + 链路不炸
+            st3 = ThinkState(goal="g", goal_anchored="x",
+                             hypotheses=[{"hypothesis": "H1"}])
+            r3 = SkillDkDeduction(llm=MockLLM("不是JSON"), adjacency=adj).run(st3)
+            self.assertIn("_degraded", r3.result)
+            self.assertFalse(r3.result["chains"])   # 基类schema补空串, falsy即降级契约
+        finally:
+            pass
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
