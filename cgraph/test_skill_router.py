@@ -1419,5 +1419,77 @@ class R21_BdCrosscheck(RouterTestBase):
             pass
 
 
+class R22_G24Topology(RouterTestBase):
+    """R22: P-skeleton G24——四图Python投影/三类缺口合并/降级保图/无子问题守卫。"""
+    def test(self):
+        import json as _j
+        from cgraph.skill_g24_topology import SkillG24Topology
+        adj = {"entries": {
+            "skill_g24_topology": {
+                "state_inputs": ["goal_anchored", "sub_questions", "summary",
+                                 "weakest_link", "hypotheses", "trail",
+                                 "matrix_knowledge", "bd_matrix", "unaddressed",
+                                 "deduction_chains"],
+                "state_outputs": ["topology", "gaps", "summary"],
+                "result_fields": ["skeleton_family", "tool_topology", "knowledge_map",
+                                  "path_status", "topology", "uncovered_subquestions",
+                                  "gaps", "summary", "confidence", "applicable"]},
+            "skill_f_reason": {"state_inputs": ["goal"], "state_outputs": []}}}
+        mk_state = lambda: ThinkState(
+            goal="g", goal_anchored="专利授权前景审查",
+            sub_questions=[{"q": "是否存在说明书公开不充分风险"}],
+            hypotheses=[{"hypothesis": "H1公开不足", "support": "s"}])
+        try:
+            st = mk_state()
+            st.weakest_link = {"location": "说明书2.2节", "dimension": "A26.3", "score": 0.25}
+            st.trail = [{"skill_id": "skill_f_reason", "reason": "假设谱生成"}]
+            st.matrix_knowledge = [{"matrix_id": "pa-005", "tech_name": "区分度驳回锚"}]
+            st.unaddressed = ["说明书3.1节"]                  # Bd来源(state键)
+            st.deduction_chains = [{"target_ref": "H1公开不足",
+                                    "steps": [{"premise": "p", "evidence_ref": "", "note": ""}],
+                                    "unsupported_premises": [{"premise": "p"}]}]
+            # ① 正常: LLM检出1条uncovered -> gaps三类齐全(1+1+1)
+            ok = _j.dumps({"uncovered_subquestions": [
+                {"q": "创造性风险子问题", "why_missed": "无假设回应", "suggest_next": "补推演"}],
+                "applicable": True, "summary": "s", "confidence": 0.8})
+            r = SkillG24Topology(llm=MockLLM(ok), adjacency=adj).run(st)
+            self.assertNotIn("_degraded", r.result)
+            topo = r.result["topology"]
+            self.assertEqual(len(topo["skeleton_family"]), 1)       # 图1: trail投影
+            self.assertIn("skill_f_reason", topo["tool_topology"]["ran"])
+            self.assertIn("skill_g24_topology", topo["tool_topology"]["not_ran"])  # 图2: 自身未执行
+            self.assertEqual(topo["knowledge_map"][0]["matrix_id"], "pa-005")     # 图3
+            self.assertTrue(topo["path_status"]["hypotheses_exist"])              # 图4
+            types = [g["gap_type"] for g in r.result["gaps"]]
+            self.assertEqual(types.count("uncovered_subquestion"), 1)
+            self.assertEqual(types.count("unaddressed_weakpoint"), 1)   # Bd
+            self.assertEqual(types.count("unsupported_premise"), 1)     # Dk
+            self.assertEqual(len(r.result["gaps"]), 3)
+            self.assertTrue(r.result["gaps"][0]["reflow_allowed"])       # 回流标记
+            self.assertIsNotNone(st.topology); self.assertIsNotNone(st.gaps)  # 写回
+            # ② 降级: LLM全坏 -> 四图保留+uncovered空+Bd/Dk缺口照常合并
+            st2 = mk_state()
+            st2.unaddressed = ["L2"]
+            st2.deduction_chains = [{"target_ref": "H1", "steps": [],
+                                     "unsupported_premises": [{"premise": "p"}]}]
+            r2 = SkillG24Topology(llm=MockLLM("非JSON"), adjacency=adj).run(st2)
+            self.assertIn("_degraded", r2.result)
+            self.assertIsNotNone(r2.result["topology"]["skeleton_family"])  # 图还在
+            self.assertEqual(r2.result["uncovered_subquestions"], [])
+            types2 = [g["gap_type"] for g in r2.result["gaps"]]
+            self.assertIn("unaddressed_weakpoint", types2)                  # Bd合并不受影响
+            self.assertIn("unsupported_premise", types2)                    # Dk同
+            # ③ 守卫: 无子问题 -> applicable=false 非降级(遗漏检测无对象)
+            st3 = ThinkState(goal="g", goal_anchored="x")
+            st3.unaddressed = ["L3"]
+            r3 = SkillG24Topology(llm=MockLLM("任意"), adjacency=adj).run(st3)
+            self.assertFalse(r3.result["applicable"])
+            self.assertNotIn("_degraded", r3.result)
+            self.assertEqual([g["gap_type"] for g in r3.result["gaps"]],
+                             ["unaddressed_weakpoint"])                     # Bd缺口仍合并
+        finally:
+            pass
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
