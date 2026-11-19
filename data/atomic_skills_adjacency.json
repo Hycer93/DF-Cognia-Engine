@@ -40,6 +40,11 @@
      "skill": "skill_terminate",
      "gain": "目标已清晰且无需推理, 直接收敛",
      "cost": "零"
+    },
+    {
+     "skill": "skill_gs_review",
+     "gain": "过程检查点(软挂候选, router自主选路)",
+     "cost": "低"
     }
    ],
    "terminate_suggest": "goal 已唯一锚定且为简单查询型任务(无衍生子问题)",
@@ -85,6 +90,11 @@
      "skill": "skill_f_reason",
      "gain": "对子问题中的关键不确定点生成竞争假设谱(向外探索候选空间)",
      "cost": "高: LLM多假设推演, F20封装"
+    },
+    {
+     "skill": "skill_gs_review",
+     "gain": "过程检查点(软挂候选, router自主选路)",
+     "cost": "低"
     }
    ],
    "terminate_suggest": "sub_questions 为空(任务空间单点闭合)",
@@ -158,9 +168,9 @@
      "cost": "零"
     },
     {
-     "skill": "__planned__",
-     "gain": "后续深挖节点(skill_f_reason 等)待讨论登记开放",
-     "cost": "待登记"
+     "skill": "skill_gs_review",
+     "gain": "长链中途全局回视(漂移告警+精简视图)",
+     "cost": "低"
     },
     {
      "skill": "skill_f_reason",
@@ -190,15 +200,6 @@
    ],
    "next_options": [],
    "terminate_suggest": "恒真(本技能即终止)",
-   "dfcp_link": "无"
-  },
-  "__planned__": {
-   "role": "占位通道(非技能): 登记未来逐节点讨论达成的后继方向; 讨论共识落地时以真实技能 id 替换本占位并同步增补该技能 entries 条目——禁止提前批量登记未讨论节点(用户裁决: 一次只聊一个)",
-   "state_inputs": [],
-   "state_outputs": [],
-   "result_fields": [],
-   "next_options": [],
-   "terminate_suggest": "不可执行(占位符, 编排器跳过并告警)",
    "dfcp_link": "无"
   },
   "skill_f_reason": {
@@ -235,9 +236,14 @@
      "cost": "零"
     },
     {
-     "skill": "__planned__",
-     "gain": "skill_source_trust(信源可信度)等后续深挖节点待登记开放",
-     "cost": "待登记"
+     "skill": "skill_dk_deduction",
+     "gain": "为假设谱织证据->前提演绎链(主线第1站)",
+     "cost": "中"
+    },
+    {
+     "skill": "skill_gs_review",
+     "gain": "过程检查点(软挂候选, router自主选路)",
+     "cost": "低"
     }
    ],
    "terminate_suggest": "恒False(深挖分支无自身终止逻辑, 收敛决策交由terminate节点综合完整state完成)",
@@ -321,6 +327,198 @@
    ],
    "terminate_suggest": false,
    "dfcp_link": "F20/P-skill-synthesize"
+  },
+  "skill_dk_deduction": {
+   "role": "Dk演绎链(P-skeleton-complete段一定稿): 关键结论的证据->前提->结论可追溯链构建; 只织链不裁决不生成新假设; f_reason->Dk->En->Bd->G24主线第1站",
+   "state_inputs": [
+    "goal_anchored",
+    "hypotheses",
+    "weakest_link",
+    "ref_material",
+    "matrix_knowledge",
+    "summary"
+   ],
+   "state_outputs": [
+    "deduction_chains",
+    "summary"
+   ],
+   "result_fields": [
+    "chains",
+    "unsupported_premises",
+    "applicable",
+    "summary",
+    "confidence"
+   ],
+   "next_options": [
+    {
+     "skill": "skill_en_evidence_net",
+     "gain": "链内证据引用集喂横向织网",
+     "cost": "中"
+    },
+    {
+     "skill": "skill_g24_topology",
+     "gain": "链完整性并入全局视野",
+     "cost": "低"
+    },
+    {
+     "skill": "skill_terminate",
+     "gain": "链就绪直接收敛",
+     "cost": "零"
+    }
+   ],
+   "terminate_suggest": "恒False(工具型节点无自身终止逻辑)",
+   "dfcp_link": "无(纯思考技能不读记忆库; 未来接入须重走七段)"
+  },
+  "skill_en_evidence_net": {
+   "role": "En证据网(P-skeleton-complete段一定稿): 多源证据横向交叉关联(印证/矛盾/补充); 只判Dk链已引用证据对, 空集跳过; 只织网不裁决证据真伪",
+   "state_inputs": [
+    "goal_anchored",
+    "hypotheses",
+    "deduction_chains",
+    "ref_material",
+    "matrix_knowledge",
+    "summary"
+   ],
+   "state_outputs": [
+    "evidence_net",
+    "isolated_evidence",
+    "contradiction_pairs",
+    "summary"
+   ],
+   "result_fields": [
+    "net",
+    "isolated_evidence",
+    "contradiction_pairs",
+    "applicable",
+    "summary",
+    "confidence"
+   ],
+   "next_options": [
+    {
+     "skill": "skill_bd_crosscheck",
+     "gain": "横向网+纵向链齐备, 交叉判定更扎实",
+     "cost": "中"
+    },
+    {
+     "skill": "skill_g24_topology",
+     "gain": "网完整性并入全局视野",
+     "cost": "低"
+    },
+    {
+     "skill": "skill_terminate",
+     "gain": "网就绪直接收敛",
+     "cost": "零"
+    }
+   ],
+   "terminate_suggest": "恒False",
+   "dfcp_link": "无"
+  },
+  "skill_bd_crosscheck": {
+   "role": "Bd双维交叉验证(P-skeleton-complete段一定稿): 假设谱x薄弱点逐对判定(回应/竞争解释/无关三档); 只判关系不评对错; unaddressed送G24合并单事实源",
+   "state_inputs": [
+    "goal_anchored",
+    "hypotheses",
+    "weakest_link",
+    "summary"
+   ],
+   "state_outputs": [
+    "bd_matrix",
+    "unaddressed",
+    "summary"
+   ],
+   "result_fields": [
+    "cross_matrix",
+    "unaddressed_points",
+    "applicable",
+    "summary",
+    "confidence"
+   ],
+   "next_options": [
+    {
+     "skill": "skill_g24_topology",
+     "gain": "交叉结果并入全局视野(优先流向)",
+     "cost": "低"
+    },
+    {
+     "skill": "skill_terminate",
+     "gain": "交叉完成直接收敛(旁路兜底)",
+     "cost": "零"
+    }
+   ],
+   "terminate_suggest": "恒False",
+   "dfcp_link": "无"
+  },
+  "skill_g24_topology": {
+   "role": "G24全局拓扑构建(P-skeleton-complete段一定稿): terminate前四图投影(纯Python)+遗漏语义检测(LLM); 唯一对外缺口出口gaps(合并uncovered+unaddressed+unsupported); 只投影不生产新证据",
+   "state_inputs": [
+    "goal_anchored",
+    "sub_questions",
+    "summary",
+    "weakest_link",
+    "hypotheses",
+    "trail",
+    "matrix_knowledge"
+   ],
+   "state_outputs": [
+    "topology",
+    "gaps",
+    "summary"
+   ],
+   "result_fields": [
+    "skeleton_family",
+    "tool_topology",
+    "knowledge_map",
+    "path_status",
+    "uncovered_subquestions",
+    "summary",
+    "confidence",
+    "applicable"
+   ],
+   "next_options": [
+    {
+     "skill": "skill_terminate",
+     "gain": "全局视野已固化, 汇总引用gaps补漏",
+     "cost": "低"
+    },
+    {
+     "skill": "skill_f_reason",
+     "gain": "对uncovered子问题补推演(单子问题最多回流1次)",
+     "cost": "高"
+    }
+   ],
+   "terminate_suggest": "恒False(工具型节点无自身终止逻辑)",
+   "dfcp_link": "无"
+  },
+  "skill_gs_review": {
+   "role": "Gs全局回视(P-skeleton-complete段一定稿): 长链过程态检查点(软挂全技能router自主选路); 漂移告警+续链精简视图(resume_view双消费: 注入后续prompt+落state供terminate); 只观测不纠偏",
+   "state_inputs": [
+    "goal_anchored",
+    "sub_questions",
+    "summary",
+    "trail",
+    "steps"
+   ],
+   "state_outputs": [
+    "gs_view",
+    "summary"
+   ],
+   "result_fields": [
+    "drift_warnings",
+    "resume_view",
+    "checkpoint_note",
+    "applicable",
+    "summary",
+    "confidence"
+   ],
+   "next_options": [
+    {
+     "skill": "skill_terminate",
+     "gain": "漂移严重建议收敛(软性建议, 终裁router)",
+     "cost": "零"
+    }
+   ],
+   "terminate_suggest": "drift_warnings非空时标记倾向收敛(软性; 最终是否terminate由router决定)",
+   "dfcp_link": "无"
   }
  },
  "_reserved": {

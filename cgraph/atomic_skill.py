@@ -71,7 +71,24 @@ class ThinkState:
     selection_rationale: object = None              # 路线权衡(引用假设编号)
     final_deliverable: object = None                # 终稿推演(交付内容)
     alternatives_appendix: object = None            # 备选假设完整留存
-    source_intents: list = None                      # skill_source_intent 意图清单
+    source_intents: list = None                     # skill_source_intent 意图清单
+    # ---- P-skeleton-complete(2026-11-19 段一定稿 v1.0, docs/design_skeleton_skills_v01.md) ----
+    # 契约: 以下 9 字段各由对应技能独写(邻接表 state_outputs), 其余技能只读禁覆盖;
+    # 默认 None=未写入态; 全家族混合范式——LLM 降级时产出置空+_degraded, 链路不阻塞
+    topology: object = None          # skill_g24_topology 独写: 四图投影快照
+    gaps: list = None                # skill_g24_topology 独写: 唯一对外缺口出口
+                                     #   (合并 uncovered_subquestions+unaddressed+unsupported)
+    bd_matrix: list = None           # skill_bd_crosscheck 独写: 假设×薄弱点关联矩阵
+    unaddressed: list = None         # skill_bd_crosscheck 独写: 无假设承接的薄弱点
+                                     #   (Python 派生, 送 G24 合并; state 独立留观测)
+    deduction_chains: list = None    # skill_dk_deduction 独写: 证据→前提→结论链
+                                     #   (unsupported_premises 并入本容器字段)
+    evidence_net: list = None        # skill_en_evidence_net 独写: 证据横向关联边
+    isolated_evidence: list = None   # skill_en_evidence_net 独写: 引用计数=0 证据(Python 派生)
+    contradiction_pairs: list = None # skill_en_evidence_net 独写: 矛盾对
+                                     #   (不进 gaps——terminate 汇编独立"证据冲突说明"章节)
+    gs_view: object = None           # skill_gs_review 独写: 过程检查点
+                                     #   (drift_warnings+resume_view; 每次执行覆盖=最新检查点)
 
     def read(self, key: str):
         """state 读取(编排层控制: 只允许技能读邻接表 state_inputs 声明的键)"""
