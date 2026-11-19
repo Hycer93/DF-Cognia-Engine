@@ -102,9 +102,14 @@ def smoke_memory_gate(llm) -> dict:
 
 def main():
     llm = _llm()
-    results = [smoke_f_reason(llm), smoke_memory_gate(llm)]
+    results = [smoke_f_reason(llm), smoke_memory_gate(llm),
+               # P-skeleton-complete 五技能冒烟(2026-11-19 段二编码完成后接入)
+               smoke_dk_deduction(llm), smoke_en_evidence_net(llm),
+               smoke_bd_crosscheck(llm), smoke_g24_topology(llm),
+               smoke_gs_review(llm)]
     ok = all(r["ok"] for r in results)
-    report = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "ok": ok, "results": results}
+    report = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "ok": ok, "results": results,
+              "usage": getattr(llm, "last_usage", None)}
     with io.open(LOG, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
     for r in results:
@@ -114,6 +119,205 @@ def main():
               f"{'' if r['ok'] else '失败项: ' + ','.join(failed)}", flush=True)
     print(f"[E11] 总判定: {'PASS' if ok else 'FAIL'} | 明细 {LOG}")
     sys.exit(0 if ok else 1)
+
+
+# ============ P-skeleton-complete 五技能冒烟(2026-11-19 段一定稿v1.0 §5) ============
+# 共享冒烟语境: round6 专利审查真题同源(锚点安全专利), 保证五技能链路连贯:
+# f_reason 产假设谱 -> Dk 织链 -> En 织网 -> Bd 交叉 -> G24 全局拓扑。
+
+PSK_GOAL = "审查基于唯一身份锚点的AI行为追溯专利的授权风险"
+PSK_SUBS = [{"q": "身份锚点不可伪造断言是否有说明书支撑?"},
+            {"q": "行为追溯链路是否具备创造性?"}]
+PSK_HYPS = [
+    {"hypothesis": "H1 不可伪造断言缺实验数据支撑", "support": "说明书仅断言",
+     "contradicting": [], "test_next": "核对实施例"},
+    {"hypothesis": "H2 哈希链锚定构成创造性贡献", "support": "对比文件未覆盖",
+     "contradicting": [], "test_next": "检索现有技术"}]
+PSK_WL = {"location": "说明书-创新点一 不可伪造性公开充分性",
+          "dimension": "公开充分性", "score": 0.25, "risk": "high",
+          "evidence": "技术效果仅断言无实验数据"}
+PSK_MAT = [{"matrix_id": "pa-004", "tech_name": "哈希链/不可篡改",
+            "mapping_note": "锚点防篡改映射", "audit_risk": "创造性争辩点"},
+           {"matrix_id": "pa-005", "tech_name": "区分度驳回锚",
+            "mapping_note": "区分度不足驳回", "audit_risk": "驳回锚"}]
+
+
+def smoke_dk_deduction(llm) -> dict:
+    """Dk: 断言织链非空、单链<=4步、unsupported 派生可命中(样例含1条空引用)。"""
+    from cgraph.atomic_skill import ThinkState
+    from cgraph.skill_dk_deduction import SkillDkDeduction
+    t0 = time.time()
+    state = ThinkState(goal=PSK_GOAL, goal_anchored=PSK_GOAL,
+                       sub_questions=PSK_SUBS, summary="专利审查冒烟语境",
+                       hypotheses=PSK_HYPS, steps=3)
+    state.weakest_link = PSK_WL
+    state.ref_material = ("[pa-004] 哈希链提供不可篡改的时间有序记录; "
+                          "[pa-005] 权利要求区分度不足时构成驳回锚。")
+    state.matrix_knowledge = PSK_MAT
+    r = SkillDkDeduction(llm=llm).run(state)
+    res = r.result
+    chains = res.get("chains") or []
+    checks = {
+        "non_degraded": not res.get("_degraded"),
+        "applicable": res.get("applicable") is True,
+        "chains_nonempty": bool(chains),
+        "chains_cap_steps": all(len(c.get("steps", [])) <= 4 for c in chains),
+        "full_coverage": len({c.get("target_ref") for c in chains}) >= 2,  # 全量织链
+        "has_evidence_ref": any(s.get("evidence_ref") for c in chains for s in c.get("steps", [])),
+        "unsupported_derived": all(
+            isinstance(c.get("unsupported_premises"), list) for c in chains),
+        "state_written": state.deduction_chains is not None,
+    }
+    return {"skill": "skill_dk_deduction", "secs": round(time.time() - t0, 1),
+            "degraded": res.get("_degraded"), "checks": checks,
+            "n_chains": len(chains),
+            "n_unsupported": len(res.get("unsupported_premises") or []),
+            "ok": all(checks.values())}
+
+
+def smoke_en_evidence_net(llm) -> dict:
+    """En: 断言织网只消费 Dk 链引用、矛盾对独立字段、孤立检出。"""
+    from cgraph.atomic_skill import ThinkState
+    from cgraph.skill_en_evidence_net import SkillEnEvidenceNet
+    t0 = time.time()
+    # 预置 Dk 链产物(直接构造, 单技能冒烟不串真实 Dk——链路联动归 E12)
+    chains = [
+        {"target_ref": PSK_HYPS[0]["hypothesis"], "steps": [
+            {"premise": "断言无实验数据", "evidence_ref": "pa-005", "note": ""},
+            {"premise": "哈希链可支撑不可篡改", "evidence_ref": "pa-004", "note": ""}],
+         "unsupported_premises": []},
+        {"target_ref": "创造性", "steps": [
+            {"premise": "对比文件未覆盖锚定", "evidence_ref": "pa-004", "note": ""}],
+         "unsupported_premises": []}]
+    state = ThinkState(goal=PSK_GOAL, goal_anchored=PSK_GOAL,
+                       summary="专利审查冒烟语境", steps=4)
+    state.hypotheses = PSK_HYPS
+    state.deduction_chains = chains
+    state.ref_material = "[pa-004] 哈希链不可篡改; [pa-005] 区分度驳回锚。"
+    state.matrix_knowledge = PSK_MAT
+    r = SkillEnEvidenceNet(llm=llm).run(state)
+    res = r.result
+    net = res.get("net") or []
+    refs = {"pa-004", "pa-005"}
+    checks = {
+        "non_degraded": not res.get("_degraded"),
+        "applicable": res.get("applicable") is True,
+        "net_whitelist": all(e["src_a"] in refs and e["src_b"] in refs for e in net),
+        "relations_valid": all(e["relation"] in ("印证", "矛盾", "补充") for e in net),
+        "contradiction_indep": (len(res.get("contradiction_pairs") or []) ==
+                                sum(1 for e in net if e["relation"] == "矛盾")),
+        "state_written": state.evidence_net is not None,
+    }
+    return {"skill": "skill_en_evidence_net", "secs": round(time.time() - t0, 1),
+            "degraded": res.get("_degraded"), "checks": checks,
+            "n_edges": len(net),
+            "n_contradictions": len(res.get("contradiction_pairs") or []),
+            "n_isolated": len(res.get("isolated_evidence") or []),
+            "ok": all(checks.values())}
+
+
+def smoke_bd_crosscheck(llm) -> dict:
+    """Bd: 断言矩阵非空、relation 三档、unaddressed 派生一致。"""
+    from cgraph.atomic_skill import ThinkState
+    from cgraph.skill_bd_crosscheck import SkillBdCrosscheck
+    t0 = time.time()
+    state = ThinkState(goal=PSK_GOAL, goal_anchored=PSK_GOAL,
+                       summary="专利审查冒烟语境", steps=4)
+    state.hypotheses = PSK_HYPS
+    state.weakest_link = PSK_WL
+    state.deduction_chains = [{"target_ref": PSK_HYPS[0]["hypothesis"],
+                               "steps": [{"premise": "断言无数据", "evidence_ref": "pa-005", "note": ""}]}]
+    state.evidence_net = [{"src_a": "pa-004", "src_b": "pa-005", "relation": "补充", "note": ""}]
+    r = SkillBdCrosscheck(llm=llm).run(state)
+    res = r.result
+    m = res.get("cross_matrix") or []
+    wl_loc = PSK_WL["location"]
+    checks = {
+        "non_degraded": not res.get("_degraded"),
+        "applicable": res.get("applicable") is True,
+        "matrix_nonempty": bool(m),
+        "relations_valid": all(e["relation"] in ("回应", "竞争解释", "无关") for e in m),
+        "unaddressed_consistent": (
+            (wl_loc in [e["wl_location"] for e in m if e["relation"] in ("回应", "竞争解释")])
+            == (wl_loc not in (res.get("unaddressed_points") or []))),
+        "state_written": state.bd_matrix is not None,
+    }
+    return {"skill": "skill_bd_crosscheck", "secs": round(time.time() - t0, 1),
+            "degraded": res.get("_degraded"), "checks": checks,
+            "n_pairs": len(m),
+            "n_unaddressed": len(res.get("unaddressed_points") or []),
+            "ok": all(checks.values())}
+
+
+def smoke_g24_topology(llm) -> dict:
+    """G24: 断言四图非空、gaps 三类合并、矛盾/漂移不入 gaps。"""
+    from cgraph.atomic_skill import ThinkState
+    from cgraph.skill_g24_topology import SkillG24Topology
+    t0 = time.time()
+    state = ThinkState(goal=PSK_GOAL, goal_anchored=PSK_GOAL,
+                       sub_questions=PSK_SUBS, summary="专利审查冒烟语境",
+                       hypotheses=PSK_HYPS, steps=5)
+    state.weakest_link = PSK_WL
+    state.trail = [{"skill_id": "skill_anchor_target", "reason": "锚定审查目标"},
+                   {"skill_id": "skill_scope_scan", "reason": "拆解子问题"},
+                   {"skill_id": "skill_f_reason", "reason": "生成假设谱"},
+                   {"skill_id": "skill_dk_deduction", "reason": "织演绎链"}]
+    state.matrix_knowledge = PSK_MAT
+    state.unaddressed = [PSK_WL["location"]]          # 模拟 Bd 已产
+    state.deduction_chains = [{"target_ref": "创造性",
+                               "steps": [{"premise": "p", "evidence_ref": "", "note": ""}],
+                               "unsupported_premises": [{"premise": "p"}]}]
+    r = SkillG24Topology(llm=llm).run(state)
+    res = r.result
+    topo = res.get("topology") or {}
+    gaps = res.get("gaps") or []
+    types = [g.get("gap_type") for g in gaps]
+    checks = {
+        "non_degraded": not res.get("_degraded"),
+        "four_maps": all(k in topo for k in
+                         ("skeleton_family", "tool_topology", "knowledge_map", "path_status")),
+        "gaps_merged": ("unaddressed_weakpoint" in types and "unsupported_premise" in types),
+        "gaps_clean": all(t in ("uncovered_subquestion", "unaddressed_weakpoint",
+                                "unsupported_premise") for t in types),
+        "state_written": state.topology is not None and state.gaps is not None,
+    }
+    return {"skill": "skill_g24_topology", "secs": round(time.time() - t0, 1),
+            "degraded": res.get("_degraded"), "checks": checks,
+            "n_gaps": len(gaps), "gap_types": types,
+            "n_uncovered": len(res.get("uncovered_subquestions") or []),
+            "ok": all(checks.values())}
+
+
+def smoke_gs_review(llm) -> dict:
+    """Gs: 断言检查点产出、resume_view 截断保护、漂移告警形态合法。"""
+    from cgraph.atomic_skill import ThinkState
+    from cgraph.skill_gs_review import SkillGsReview
+    t0 = time.time()
+    state = ThinkState(goal=PSK_GOAL, goal_anchored=PSK_GOAL,
+                       sub_questions=PSK_SUBS, summary="专利审查冒烟语境", steps=5)
+    state.trail = [{"skill_id": "skill_anchor_target", "reason": "锚定审查目标"},
+                   {"skill_id": "skill_scope_scan", "reason": "拆解子问题"},
+                   {"skill_id": "skill_f_reason", "reason": "生成假设谱"},
+                   {"skill_id": "skill_dk_deduction", "reason": "织演绎链"},
+                   {"skill_id": "skill_en_evidence_net", "reason": "织证据网"}]
+    r = SkillGsReview(llm=llm).run(state)
+    res = r.result
+    drifts = res.get("drift_warnings") or []
+    view = res.get("resume_view") or ""
+    checks = {
+        "non_degraded": not res.get("_degraded"),
+        "applicable": res.get("applicable") is True,
+        "view_nonempty": bool(view),
+        "view_capped": len(view) <= 3100,
+        "drift_schema": all("warning" in d for d in drifts),
+        "state_written": state.gs_view is not None,
+    }
+    return {"skill": "skill_gs_review", "secs": round(time.time() - t0, 1),
+            "degraded": res.get("_degraded"), "checks": checks,
+            "n_drifts": len(drifts),
+            "view_chars": len(view),
+            "checkpoint": (state.gs_view or {}).get("last_checkpoint_step"),
+            "ok": all(checks.values())}
 
 
 if __name__ == "__main__":
