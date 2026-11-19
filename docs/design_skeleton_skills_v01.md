@@ -1,10 +1,13 @@
-# P-skeleton-complete 段一：技能设计草案 v0.5（节点①②③④已冻结）
+# P-skeleton-complete 段一：技能设计定稿 v1.0（五节点全部冻结，2026-11-19）
 
 > 输入：docs/design_skeleton_complete_v01.md（侦察三输入）。
 > 规约：__planned__ 占位通道——一次只聊一个节点，达成共识后落地该节点
-> entries 条目，再开下一个。本文档随节点评审逐节增补冻结。
+> entries 条目，再开下一个。五节点已全部完成逐项评审冻结。
 >
-> 评审顺序：①G24_topology（✅冻结）→ ②Bd（✅冻结）→ ③Dk（✅冻结）→ ④En（✅冻结）→ ⑤Gs（评审中）
+> 评审顺序：①G24_topology（✅）→ ②Bd（✅）→ ③Dk（✅）→ ④En（✅）→ ⑤Gs（✅）
+>
+> **标准链路主线**：f_reason → Dk → En → Bd → G24 → terminate
+> （Gs 为散布任意位置的可选过程检查点，软挂全技能 next_options）
 
 ## 节点①：skill_g24_topology（G24 全局拓扑构建）【2026-11-19 用户逐项裁决冻结】
 
@@ -102,7 +105,7 @@ uncovered_subquestions 含未回应子问题、非降级、gaps 写回 state。
 ---
 （节点⑤Gs 评审中，草案见下节）
 
-## 节点⑤：skill_gs_review（Gs 全局回视）【草案 v0，待评审】
+## 节点⑤：skill_gs_review（Gs 全局回视）【2026-11-19 用户逐项裁决冻结】
 
 ### 定位与角色
 
@@ -156,19 +159,112 @@ router 强制插入 Gs 检查点（N 建议 4）。这是**首个 router 层干�
 - 纯 Python 兜底：steps 计数、检查点间隔、resume_view 长度上限截断
 - 前置守卫：steps < 4（链太短无需回视）→ applicable=false 跳过
 
-### 裁决点（待用户）
+### 裁决记录（2026-11-19 用户逐项裁决，三项全裁）
 
-1. **触发机制**：(a) router 周期钩子强制插入（steps%4==0，首个 router
-   层干预，对齐 G24 裁决 2 的反面）；(b) 邻接表软挂全技能（自然选路
-   观测触发率）；(c) 折中——软挂上线+router 侧只加"提示"不打断（trail
-   里标记"该回视了"供路由 LLM 参考）？【建议：(b) 先软挂——与 G24
-   裁决 2 家族一致，不碰内核；Gs 的价值先验证再议强制】
-2. **resume_view 的消费**：只给后续业务节点 prompt 注入（解决 trail
-  不读病根）？还是同时落 state 供 terminate 汇编？【建议：双消费——
-   这就是延后项"trail 精简视图"的正式形态，一步交付】
-3. **Gs 与 G24 职责冲突检查**：Gs 产 drift_warnings，G24 产 uncovered/
-  gaps——两者都是"检查"，terminate 汇编怎么摆？【建议：Gs=过程性
-   （方向对不对），G24=终结性（覆盖全不全），汇编分两章披露】
+**裁决1——触发机制：邻接表软挂全技能 ✅**：对齐 G24 裁决基线，初期
+不侵入 router 内核、不加强制周期钩子，骨架技能家族统一契约。落地：Gs
+加入所有上游技能 next_options 候选，router 自主判断是否中途回视。先放量
+跑 E11/E12 采集触发率/漂移告警命中率/token 开销，数据证明收益稳定后再
+议是否升级 router 强制检查点。前置守卫保留：steps < 4 → applicable=false
+跳过。
+
+**裁决2——resume_view 双消费 ✅**：①注入后续技能 prompt 上下文（解决
+长链 trail 膨胀、下游读不全历史痛点）；②持久写 state.gs_view 供
+terminate 汇编复用。一次产出两处消费，把延后项"trail 精简视图"一并闭环。
+
+**裁决3——Gs/G24 职责划界 ✅**：Gs=过程漂移告警（方向有没有偏），
+G24=终态覆盖缺口（有没有回答全），terminate 汇编分独立两章披露。语义
+边界锁死：drift_warnings=方向类风险（偏离锚定目标/子问题跑偏/论证主题
+偏移）；G24.gaps=覆盖类缺口（子问题无假设承接/前提无证据支撑）。两者
+不合并、不互相覆盖。Gs 定位重申：只观测只告警，不自动纠偏、不修改
+trail/state 任何推理结论；drift_warnings 仅提示，是否终止/重启分支
+裁决权交 router。
+
+### 锁定契约（用户补充，冻结）
+
+1. 混合范式对齐家族规范：LLM 生成 resume_view、判定 drift；steps 计数、
+   长度截断 Python 兜底；LLM 降级时 drift_warnings 为空、resume_view
+   降级为极简摘要 + `_degraded` 标记，链路不阻断
+2. gs_view 字段仅 Gs 写入，其余技能只读；每次执行覆盖 gs_view，保存
+   最新检查点
+3. terminate_suggest 仅软性建议：drift_warnings 非空时标记倾向收敛，
+   最终走不走 terminate 由 router 决定
+4. E11 新增 smoke_gs_review：构造 step=5 方向偏移 trail，断言输出 drift
+   告警与合规 resume_view；短链 step=3 命中守卫直接跳过
+
+---
+
+## 定稿汇总（五节点全冻结，2026-11-19）
+
+### 1. 标准链路主线
+
+```
+anchor → scan → weakest_link → f_reason → Dk → En → Bd → G24 → terminate
+                                       （Gs：任意位置可选过程检查点，软挂全技能）
+```
+
+主链条新增 4 站（Dk/En/Bd/G24）+ Gs 散布。每站保留 terminate 直达
+旁路兜底；router 全程自主选路。
+
+### 2. 五技能邻接与字段契约总表
+
+| 技能 | state_inputs | state_outputs（独写） | LLM 部分 | Python 派生 |
+|---|---|---|---|---|
+| g24_topology | goal_anchored, sub_questions, summary, weakest_link, hypotheses, trail, matrix_knowledge | topology, gaps | 遗漏语义检测 | 四图投影（骨架族谱/工具拓扑/知识关联/路径状态） |
+| bd_crosscheck | goal_anchored, hypotheses, weakest_link, summary | bd_matrix, unaddressed | cross_matrix 关联判定 | unaddressed 派生 |
+| dk_deduction | goal_anchored, hypotheses, weakest_link, ref_material, matrix_knowledge, summary | deduction_chains | 链步拆解构建 | unsupported_premises 检出 |
+| en_evidence_net | goal_anchored, hypotheses, deduction_chains, ref_material, matrix_knowledge, summary | evidence_net, isolated_evidence, contradiction_pairs | 证据边关系判定 | 引用计数/孤立证据/配对集合 |
+| gs_review | goal_anchored, sub_questions, summary, trail, steps | gs_view | resume_view 生成 + drift 判定 | steps 守卫/长度截断 |
+
+ThinkState 新增 8 字段：topology, gaps, bd_matrix, unaddressed,
+deduction_chains, evidence_net, isolated_evidence, contradiction_pairs,
+gs_view（含派生容器共 9 项，unsupported_premises 并入
+deduction_chains 容器字段）。
+
+### 3. 缺口/风险消费总架构（单事实源纪律）
+
+- **G24.gaps = 唯一对外缺口出口**，合并三类：G24 原生 uncovered_subquestions
+  + Bd.unaddressed + Dk.unsupported_premises
+- **En.contradiction_pairs 不进 gaps**——terminate 汇编独立"证据冲突说明"
+  章节披露（事实≠缺口）
+- **Gs.drift_warnings 不进 gaps**——terminate 汇编独立"过程漂移"章节
+- terminate 报告章节结构：正文 → 过程漂移（Gs）→ 证据冲突说明（En）→
+  覆盖缺口（G24.gaps）
+
+### 4. 家族统一红线（五技能共享）
+
+- 只投影/只织链/只织网/只判定关系/只观测——**全家族零裁决权**，
+  结论裁决权在 router + terminate（终裁人闸）
+- dfcp_link=无（纯思考技能不读记忆库，未来接入须重走七段）
+- 混合范式统一：语义模糊判断走 LLM，确定性统计走 Python；LLM 降级
+  → 对应产出置空 + `_degraded`，链路永不阻塞
+- 前置守卫统一：关键输入空 → applicable=false 跳过（不降级不报错）
+- evidence_ref 白名单（Dk/En）：只允许 ref_material 命中段/matrix 卡
+  id/trail 事实，禁凭空引用
+- G24 补推演循环防护：单子问题最多回流 f_reason 1 次（trail 计数）
+- topology/gaps/bd_matrix/unaddressed/deduction_chains/evidence_net/
+  isolated_evidence/contradiction_pairs/gs_view 各字段仅对应技能独写，
+  其余技能只读
+
+### 5. E11 冒烟新增 5 用例
+
+smoke_g24_topology / smoke_bd_crosscheck / smoke_dk_deduction /
+smoke_en_evidence_net / smoke_gs_review（各断言见各节点锁定契约第 4 条）
+
+### 6. 验收（对齐侦察阶段固化基线）
+
+P-skeleton-complete 上线后按 design_skeleton_complete_v01.md §② 复测
+协议重跑 round6 A/B（同一专利+新专利），门槛：覆盖律（管线覆盖维度 ≥
+裸模型）+ 深度底 50%（任一维度证据密度比 ≥ 0.5）。
+
+### 7. 编码排期（段二）
+
+1. ThinkState 新字段 + 邻接表 5 entries + f_reason/synthesize 等上游
+   next_options 更新（含 __planned__ 占位替换）
+2. 5 技能实现（序：Dk→En→Bd→G24→Gs——按主链依赖序，Dk 的
+   deduction_chains 是 En/Bd 的输入）
+3. E11 5 冒烟用例 + router 回归全绿
+4. 夜跑放量观测：Gs 触发率/漂移命中/token 开销 → 回头议 router 强制
 
 ## 节点④：skill_en_evidence_net（En 证据网）【2026-11-19 用户逐项裁决冻结】
 
