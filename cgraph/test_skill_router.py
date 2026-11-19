@@ -1287,5 +1287,75 @@ class R19_DkDeductionChain(RouterTestBase):
             pass
 
 
+class R20_EnEvidenceNet(RouterTestBase):
+    """R20: P-skeleton En 证据网——白名单配对/去重/矛盾派生/孤立检出/守卫/降级。"""
+    def test(self):
+        import json as _j
+        from cgraph.skill_en_evidence_net import SkillEnEvidenceNet
+        adj = {"entries": {"skill_en_evidence_net": {
+            "state_inputs": ["goal_anchored", "hypotheses", "deduction_chains",
+                             "ref_material", "matrix_knowledge", "summary"],
+            "state_outputs": ["evidence_net", "isolated_evidence",
+                              "contradiction_pairs", "summary"],
+            "result_fields": ["net", "isolated_evidence", "contradiction_pairs",
+                              "applicable", "summary", "confidence"]}}}
+        # Dk链: M001两处引用, M002一处, M003零引用(不在链内)
+        chains = [
+            {"target_ref": "H1", "steps": [
+                {"premise": "p1", "evidence_ref": "M001", "note": ""},
+                {"premise": "p2", "evidence_ref": "M002", "note": ""}]},
+            {"target_ref": "WL-1", "steps": [
+                {"premise": "p3", "evidence_ref": "M001", "note": ""}]}]
+        ok = _j.dumps({"net": [
+            {"src_a": "M001", "src_b": "M002", "relation": "矛盾", "note": "冲突"},
+            {"src_a": "M001", "src_b": "M002", "relation": "补充", "note": "重复对"},
+            {"src_a": "M001", "src_b": "M999", "relation": "印证", "note": "白名单外"},
+            {"src_a": "M002", "src_b": "M001", "relation": "补充", "note": "反向同对"}],
+            "applicable": True, "summary": "s", "confidence": 0.8})
+        try:
+            # ① 正常: 白名单过滤(M999丢)+去重(3条重复丢) -> 只留1条矛盾边
+            llm = MockLLM(ok)
+            sk = SkillEnEvidenceNet(llm=llm, adjacency=adj)
+            st = ThinkState(goal="g", goal_anchored="专利风险评估")
+            st.deduction_chains = chains
+            st.matrix_knowledge = [{"matrix_id": "M001"}, {"matrix_id": "M002"}]
+            r = sk.run(st)
+            self.assertNotIn("_degraded", r.result)
+            self.assertTrue(r.result["applicable"])
+            self.assertEqual(len(r.result["net"]), 1)                 # 4->1
+            self.assertEqual(r.result["net"][0]["relation"], "矛盾")
+            # 矛盾对纯Python派生(从net筛"矛盾", 非LLM单独数组)
+            self.assertEqual(len(r.result["contradiction_pairs"]), 1)
+            self.assertEqual(r.result["contradiction_pairs"][0]["src_a"], "M001")
+            # 孤立证据: 链内引用但无net边 (M003不在链内不参与; M001/M002有边)
+            self.assertEqual(r.result["isolated_evidence"], [])
+            self.assertTrue(st.evidence_net)                          # 写回state
+            self.assertTrue(st.contradiction_pairs)
+            # ② 孤立检出: LLM只判M001-M002, 则M002无边? 用单证据链更直接——
+            # 链只有M003引用, LLM返回空net -> M003孤立
+            st2 = ThinkState(goal="g", goal_anchored="x")
+            st2.deduction_chains = [{"target_ref": "H1", "steps": [
+                {"premise": "p", "evidence_ref": "M003", "note": ""}]}]
+            r2 = SkillEnEvidenceNet(llm=MockLLM(_j.dumps(
+                {"net": [], "applicable": True, "summary": "s", "confidence": 0.5})),
+                adjacency=adj).run(st2)
+            self.assertEqual(r2.result["isolated_evidence"], ["M003"])
+            # ③ 守卫: 链内无任何非空evidence_ref -> applicable=false(非降级)
+            st3 = ThinkState(goal="g", goal_anchored="x")
+            st3.deduction_chains = [{"target_ref": "H1", "steps": [
+                {"premise": "p", "evidence_ref": "", "note": ""}]}]
+            r3 = SkillEnEvidenceNet(llm=MockLLM("任意"), adjacency=adj).run(st3)
+            self.assertFalse(r3.result["applicable"])
+            self.assertNotIn("_degraded", r3.result)
+            # ④ 降级: JSON全坏 -> _degraded + 链路不炸
+            st4 = ThinkState(goal="g", goal_anchored="x")
+            st4.deduction_chains = chains
+            r4 = SkillEnEvidenceNet(llm=MockLLM("不是JSON"), adjacency=adj).run(st4)
+            self.assertIn("_degraded", r4.result)
+            self.assertFalse(r4.result["net"])
+        finally:
+            pass
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

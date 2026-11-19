@@ -36,6 +36,7 @@ from cgraph.skill_source_intent import SkillSourceIntent
 from cgraph.skill_weakest_link import SkillWeakestLink
 from cgraph.skill_f_reason import SkillFReason
 from cgraph.skill_dk_deduction import SkillDkDeduction    # P-skeleton(Dk)
+from cgraph.skill_en_evidence_net import SkillEnEvidenceNet   # P-skeleton(En)
 from cgraph.skill_terminate import SkillTerminate
 from cgraph.skill_synthesize import SkillSynthesize
 
@@ -64,6 +65,7 @@ SKILL_REGISTRY = {                            # 与探针一致; router 只消�
     "skill_weakest_link": SkillWeakestLink,
     "skill_f_reason": SkillFReason,
     "skill_dk_deduction": SkillDkDeduction,     # P-skeleton(Dk): 演绎链
+    "skill_en_evidence_net": SkillEnEvidenceNet,  # P-skeleton(En): 证据网
     "skill_synthesize": SkillSynthesize,
     "skill_terminate": SkillTerminate,
 }
