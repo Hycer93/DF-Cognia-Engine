@@ -496,7 +496,7 @@ def main():
     # 夜跑前图快照（E6回滚守护：跑前定格基线，漂移可对照回滚）
     try:
         sys.path.insert(0, HERE)
-        from eval.e6_mind_graph_patrol import snapshot_for_nightly
+        from eval.core.e6_mind_graph_patrol import snapshot_for_nightly
         snap = snapshot_for_nightly()
         print(f"[NIGHT] 图快照: {snap}", flush=True)
     except Exception as e:
