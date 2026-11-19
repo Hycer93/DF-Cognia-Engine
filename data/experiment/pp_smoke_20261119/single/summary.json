@@ -1,0 +1,32 @@
+{
+ "mode": "single",
+ "workers": 4,
+ "tasks": 3,
+ "total_secs": 1533.0,
+ "results": [
+  {
+   "slug": "t1",
+   "ok": true,
+   "secs": 863.5,
+   "exit": "llm_terminate",
+   "steps": 4,
+   "error": null
+  },
+  {
+   "slug": "t2",
+   "ok": true,
+   "secs": 338.0,
+   "exit": "terminate_suggest",
+   "steps": 2,
+   "error": null
+  },
+  {
+   "slug": "t3",
+   "ok": true,
+   "secs": 331.1,
+   "exit": "terminate_suggest",
+   "steps": 2,
+   "error": null
+  }
+ ]
+}

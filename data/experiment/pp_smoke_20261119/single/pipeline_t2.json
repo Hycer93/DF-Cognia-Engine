@@ -1,0 +1,17 @@
+{
+ "slug": "t2",
+ "secs": 338.0,
+ "ok": true,
+ "exit_channel": "terminate_suggest",
+ "fallback_count": 0,
+ "steps": 2,
+ "trail": [
+  "skill_anchor_target",
+  "matrix_feed",
+  "skill_terminate"
+ ],
+ "hypotheses": null,
+ "weakest_link": null,
+ "deduction_chains": null,
+ "gaps": null
+}

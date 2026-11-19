@@ -1,0 +1,18 @@
+{
+ "slug": "t1",
+ "secs": 863.5,
+ "ok": true,
+ "exit_channel": "llm_terminate",
+ "fallback_count": 0,
+ "steps": 4,
+ "trail": [
+  "skill_anchor_target",
+  "skill_scope_scan",
+  "matrix_feed",
+  "skill_terminate"
+ ],
+ "hypotheses": null,
+ "weakest_link": null,
+ "deduction_chains": null,
+ "gaps": null
+}

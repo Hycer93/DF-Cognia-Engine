@@ -1,0 +1,32 @@
+{
+ "mode": "parallel",
+ "workers": 4,
+ "tasks": 3,
+ "total_secs": 724.5,
+ "results": [
+  {
+   "slug": "t1",
+   "ok": true,
+   "secs": 515.6,
+   "exit": "llm_terminate",
+   "steps": 2,
+   "error": null
+  },
+  {
+   "slug": "t2",
+   "ok": true,
+   "secs": 559.4,
+   "exit": "llm_terminate",
+   "steps": 2,
+   "error": null
+  },
+  {
+   "slug": "t3",
+   "ok": true,
+   "secs": 723.7,
+   "exit": "llm_terminate",
+   "steps": 2,
+   "error": null
+  }
+ ]
+}
