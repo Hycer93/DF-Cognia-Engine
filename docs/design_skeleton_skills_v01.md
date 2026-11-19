@@ -1,10 +1,10 @@
-# P-skeleton-complete 段一：技能设计草案 v0.4（节点①②③已冻结）
+# P-skeleton-complete 段一：技能设计草案 v0.5（节点①②③④已冻结）
 
 > 输入：docs/design_skeleton_complete_v01.md（侦察三输入）。
 > 规约：__planned__ 占位通道——一次只聊一个节点，达成共识后落地该节点
 > entries 条目，再开下一个。本文档随节点评审逐节增补冻结。
 >
-> 评审顺序：①G24_topology（✅冻结）→ ②Bd（✅冻结）→ ③Dk（✅冻结）→ ④En（评审中）→ ⑤Gs
+> 评审顺序：①G24_topology（✅冻结）→ ②Bd（✅冻结）→ ③Dk（✅冻结）→ ④En（✅冻结）→ ⑤Gs（评审中）
 
 ## 节点①：skill_g24_topology（G24 全局拓扑构建）【2026-11-19 用户逐项裁决冻结】
 
@@ -100,9 +100,77 @@ skill_terminate 与 skill_f_reason，router 自主选路。硬防护：**单个�
 uncovered_subquestions 含未回应子问题、非降级、gaps 写回 state。
 
 ---
-（节点④En 评审中，草案见下节）
+（节点⑤Gs 评审中，草案见下节）
 
-## 节点④：skill_en_evidence_net（En 证据网）【草案 v0，待评审】
+## 节点⑤：skill_gs_review（Gs 全局回视）【草案 v0，待评审】
+
+### 定位与角色
+
+Gs = 长链任务的过程态轻量全局回顾——G24 的运行时版。专利里 G22/G24 是
+"决策前一次性全局回视"，但 v3 链路 8 步以上时（round6 B 侧 8 步），
+等到 terminate 前才回视，中途各节点只能靠 60 字 summary 接力（案卷第
+4 条病根）。Gs 补**过程中的周期性全局回顾**：每隔 N 步，把当前 trail
+投影成精简视图，检查方向漂移/遗漏早暴露。
+
+关键差异化（与 G24 划界）：Gs 是**过程检查点**（轻量、周期触发、看
+方向），G24 是**决策前终检**（全量四图+遗漏检测）。Gs 不产四图，产
+`drift_warnings`（方向漂移告警）+ `resume_view`（续链精简视图——
+顺带解决延后项"业务节点 trail 精简视图"的交付形态）。
+
+### 邻接表 entry 草案
+
+```json
+"skill_gs_review": {
+  "role": "Gs全局回视(P-skeleton-complete): 长链过程态周期检查点; 方向漂移告警+续链精简视图; 只观测不纠偏",
+  "state_inputs": ["goal_anchored", "sub_questions", "summary", "trail", "steps"],
+  "state_outputs": ["gs_view", "summary"],
+  "result_fields": ["drift_warnings", "resume_view", "checkpoint_note",
+                    "applicable", "summary", "confidence"],
+  "next_options": [
+    {"skill": "__planned__", "gain": "后续节点待登记开放", "cost": "待登记"},
+    {"skill": "skill_terminate", "gain": "漂移严重建议收敛", "cost": "零"}
+  ],
+  "terminate_suggest": "drift_warnings 非空时可建议终止(终裁在router)",
+  "dfcp_link": "无"
+}
+```
+
+### ThinkState 新增字段
+
+```python
+gs_view: object = None   # {drift_warnings: [], resume_view: str, last_checkpoint_step: int}
+```
+
+### 触发机制（本节点核心裁决点）
+
+路由器侧周期钩子（非邻接表 next_options 选路）：steps % N == 0 时
+router 强制插入 Gs 检查点（N 建议 4）。这是**首个 router 层干预**——
+与 G24 裁决 2"软挂不碰 router"形成对冲，需用户定夺。
+备选：邻接表软挂（所有业务技能 next_options 加 Gs），router 自然选路
+——观测自然触发率，不碰内核。
+
+### 执行架构（混合范式第五例）
+
+- resume_view 生成走 LLM（把 trail 压缩成结构化精简视图，非 60 字白话）
+- drift 判定走 LLM（当前步骤 vs goal_anchored 的方向比对）
+- 纯 Python 兜底：steps 计数、检查点间隔、resume_view 长度上限截断
+- 前置守卫：steps < 4（链太短无需回视）→ applicable=false 跳过
+
+### 裁决点（待用户）
+
+1. **触发机制**：(a) router 周期钩子强制插入（steps%4==0，首个 router
+   层干预，对齐 G24 裁决 2 的反面）；(b) 邻接表软挂全技能（自然选路
+   观测触发率）；(c) 折中——软挂上线+router 侧只加"提示"不打断（trail
+   里标记"该回视了"供路由 LLM 参考）？【建议：(b) 先软挂——与 G24
+   裁决 2 家族一致，不碰内核；Gs 的价值先验证再议强制】
+2. **resume_view 的消费**：只给后续业务节点 prompt 注入（解决 trail
+  不读病根）？还是同时落 state 供 terminate 汇编？【建议：双消费——
+   这就是延后项"trail 精简视图"的正式形态，一步交付】
+3. **Gs 与 G24 职责冲突检查**：Gs 产 drift_warnings，G24 产 uncovered/
+  gaps——两者都是"检查"，terminate 汇编怎么摆？【建议：Gs=过程性
+   （方向对不对），G24=终结性（覆盖全不全），汇编分两章披露】
+
+## 节点④：skill_en_evidence_net（En 证据网）【2026-11-19 用户逐项裁决冻结】
 
 ### 定位与角色
 
@@ -151,20 +219,35 @@ isolated_evidence: list = None # 引用计数=0 的证据源(纯Python派生)
 - `contradiction_pairs`（矛盾对）是 terminate 汇编的高价值输入——
   汇总时"证据冲突未决"必须披露
 
-### 裁决点（待用户）
+### 裁决记录（2026-11-19 用户逐项裁决，三项全裁）
 
-1. **挂接位置**：Dk→En→Bd→G24（网在链后、交叉前——Bd 判 relation 时
-   连证据横向关系也能看到）？还是 Bd→En（交叉后再织网，网只服务
-   汇总）？【建议：前者，与 Dk 同理——信息越全判定越扎实；但多一站
-   前置，链路变长】
-2. **两两配对成本控制**：证据源 n 条则配对 n(n-1)/2 次 LLM 判定，10 条
-   素材=45 对。方案：(a) 单次 LLM 调用批量判全部对（一次 prompt 全网，
-   靠 JSON 输出）；(b) 只判 Dk 链已引用的证据对（未进链的素材不织网）；
-   (c) 硬上限（如只取引用频次 top-K 证据织网）。【建议：(a) 单次批量
-   ——一次调用内部并行判定，成本可控且覆盖全】
-3. **矛盾对消费**：contradiction_pairs 进 G24 gaps（作为"证据冲突未决"
-   缺口）还是只进 terminate 汇编上下文（不是缺口是事实）？
-   【建议：进汇编上下文不进 gaps——矛盾是事实披露不是覆盖缺口】
+**裁决1——挂接顺序：Dk→En→Bd→G24 ✅**：Bd 判定时纵向链+横向网
+信息双全，语义判定质量更高；接受链路+1 站代价。next_options 保留兜底：
+En 跑完可直达 G24 / terminate，给 router 留逃逸通道。
+
+**裁决2——配对方案 (b)：只判 Dk 链已引用证据对 ✅**：否决 (a) 全量
+45 对（未进链素材的关系判定是无效开销，token 爆炸）；否决 (c) top-K
+频次截断（丢低频但关键的矛盾证据）。契约：只取 deduction_chains 内
+出现过的 evidence_ref 集合生成两两对；**集合为空 → En 直接
+applicable=false 跳过**；单 prompt 批量输出本组全部配对关系，减少
+调用轮次。
+
+**裁决3——矛盾对不进 G24.gaps ✅**：gaps 语义统一为「覆盖缺口、未被
+回应」；矛盾是已有多条证据互相冲突，属另一种信息形态，不是没覆盖。
+state 保留 contradiction_pairs、isolated_evidence 独立字段（观测）；
+G24 不合并；**terminate 汇编单独读取矛盾对，输出开辟"证据冲突说明"
+章节如实披露**。
+
+### 锁定契约（用户补充，冻结）
+
+1. En 定位：只编织证据横向关联网络，**不新增证据、不裁决哪一方证据为真**
+2. 混合范式对齐家族规范：LLM 判定证据边关系；isolated_evidence、引用
+   计数纯 Python 统计派生；LLM 降级时 evidence_net、contradiction_pairs
+   置空 + `_degraded` 标记，链路不阻塞
+3. 前置守卫：ref_material、matrix_knowledge **两者全部为空**时
+   applicable=false 直接跳过
+4. E11 新增 smoke_en_evidence_net：输入带矛盾/孤立/印证关系的证据与
+   Dk 链，断言关系输出正确、孤立证据正常检出
 
 ## 节点③：skill_dk_deduction（Dk 演绎链）【2026-11-19 用户逐项裁决冻结】
 
