@@ -1,10 +1,10 @@
-# P-skeleton-complete 段一：技能设计草案 v0.3（节点①②已冻结）
+# P-skeleton-complete 段一：技能设计草案 v0.4（节点①②③已冻结）
 
 > 输入：docs/design_skeleton_complete_v01.md（侦察三输入）。
 > 规约：__planned__ 占位通道——一次只聊一个节点，达成共识后落地该节点
 > entries 条目，再开下一个。本文档随节点评审逐节增补冻结。
 >
-> 评审顺序：①G24_topology（✅冻结）→ ②Bd（✅冻结）→ ③Dk（评审中）→ ④En → ⑤Gs
+> 评审顺序：①G24_topology（✅冻结）→ ②Bd（✅冻结）→ ③Dk（✅冻结）→ ④En（评审中）→ ⑤Gs
 
 ## 节点①：skill_g24_topology（G24 全局拓扑构建）【2026-11-19 用户逐项裁决冻结】
 
@@ -100,9 +100,73 @@ skill_terminate 与 skill_f_reason，router 自主选路。硬防护：**单个�
 uncovered_subquestions 含未回应子问题、非降级、gaps 写回 state。
 
 ---
-（节点③Dk 评审中，草案见下节）
+（节点④En 评审中，草案见下节）
 
-## 节点③：skill_dk_deduction（Dk 演绎链）【草案 v0，待评审】
+## 节点④：skill_en_evidence_net（En 证据网）【草案 v0，待评审】
+
+### 定位与角色
+
+En = 多源证据交叉关联网。与 Dk 的分工：Dk 织**单条结论的纵向链**
+（假设→前提→证据），En 织**证据之间的横向网**（同一证据被几条链引用/
+多条证据是否互相印证或矛盾/孤立证据有哪些）。round6 病根"A 胜证据密度"
+的直接对策——裸模型赢在把一堆对比文件编织成密实证据网，管线缺这个
+横向编织层。
+
+产出：`evidence_net`——节点=素材来源（ref_material 段/matrix 卡），
+边=印证/矛盾/补充关系；`isolated_evidence` = 无任何边的孤立证据。
+
+### 邻接表 entry 草案
+
+```json
+"skill_en_evidence_net": {
+  "role": "En证据网(P-skeleton-complete): 多源证据横向交叉关联(印证/矛盾/补充); 只织网不裁决",
+  "state_inputs": ["goal_anchored", "hypotheses", "deduction_chains",
+                   "ref_material", "matrix_knowledge", "summary"],
+  "state_outputs": ["evidence_net", "summary"],
+  "result_fields": ["net", "isolated_evidence", "contradiction_pairs",
+                    "applicable", "summary", "confidence"],
+  "next_options": [
+    {"skill": "skill_g24_topology", "gain": "网完整性并入全局视野", "cost": "低"},
+    {"skill": "skill_terminate", "gain": "网就绪直接收敛", "cost": "零"}
+  ],
+  "terminate_suggest": "恒False",
+  "dfcp_link": "无"
+}
+```
+
+### ThinkState 新增字段
+
+```python
+evidence_net: list = None      # [{src_a, src_b, relation: "印证|矛盾|补充", note}]
+isolated_evidence: list = None # 引用计数=0 的证据源(纯Python派生)
+```
+
+### 执行架构（混合范式第四例）
+
+- 边关系判定走 LLM（两两证据对的语义关系，模糊判断）
+- `isolated_evidence` 与引用计数纯 Python 派生（统计 Dk 链 + Bd 矩阵 +
+  hypotheses 的 evidence_ref 出现次数，零次=孤立）
+- 前置守卫：ref_material 与 matrix_knowledge 全空 → applicable=false
+  跳过
+- `contradiction_pairs`（矛盾对）是 terminate 汇编的高价值输入——
+  汇总时"证据冲突未决"必须披露
+
+### 裁决点（待用户）
+
+1. **挂接位置**：Dk→En→Bd→G24（网在链后、交叉前——Bd 判 relation 时
+   连证据横向关系也能看到）？还是 Bd→En（交叉后再织网，网只服务
+   汇总）？【建议：前者，与 Dk 同理——信息越全判定越扎实；但多一站
+   前置，链路变长】
+2. **两两配对成本控制**：证据源 n 条则配对 n(n-1)/2 次 LLM 判定，10 条
+   素材=45 对。方案：(a) 单次 LLM 调用批量判全部对（一次 prompt 全网，
+   靠 JSON 输出）；(b) 只判 Dk 链已引用的证据对（未进链的素材不织网）；
+   (c) 硬上限（如只取引用频次 top-K 证据织网）。【建议：(a) 单次批量
+   ——一次调用内部并行判定，成本可控且覆盖全】
+3. **矛盾对消费**：contradiction_pairs 进 G24 gaps（作为"证据冲突未决"
+   缺口）还是只进 terminate 汇编上下文（不是缺口是事实）？
+   【建议：进汇编上下文不进 gaps——矛盾是事实披露不是覆盖缺口】
+
+## 节点③：skill_dk_deduction（Dk 演绎链）【2026-11-19 用户逐项裁决冻结】
 
 ### 定位与角色
 
@@ -150,16 +214,35 @@ deduction_chains: list = None  # [{target_ref(H1/wl位置), steps:[{premise, evi
 - evidence_ref 校验白名单：只允许引用 ref_material 命中段/matrix 卡 id
   /trail 中已出现的事实，禁止凭空引用（防幻觉引用）
 
-### 裁决点（待用户）
+### 裁决记录（2026-11-19 用户逐项裁决，三项全裁）
 
-1. **挂接位置**：f_reason→Dk→Bd→G24（链先行再交叉）？还是 Bd→Dk
-   （先交叉找 gap 再给 gap 织链）？【建议：前者——链是 Bd 交叉判定
-   relation 的输入之一，有链的 relation 判定更扎实】
-2. **织链对象范围**：全部 hypotheses（最多 5 条）还是只织 wl 定位薄弱点
-   关联的假设？全织成本高，选织可能漏。【建议：全部 hypotheses 织，
-   但链长截断（每链最多 4 步）控制成本】
-3. **unsupported_premise 的消费**：进 G24 gaps（同 unaddressed 合并），
-   还是独立字段只做观测？
+**裁决1——挂接顺序：f_reason→Dk→Bd→G24 ✅**：Dk 产出的证据-前提链是
+Bd 做「回应/竞争解释/无关」判定的核心依据——Bd 看不到假设背后的演绎
+步骤，语义判定只能浮在假设字面，容易误判；先织链再交叉，Bd 判定质量
+扎实。保留兜底：Dk 跑完可直达 G24 或 terminate，路由灵活选路。
+
+**裁决2——织链范围：全部 hypotheses + 单链 4 步截断 ✅**：只给 wl 关联
+假设织链会丢独立衍生假设的证据溯源（审计盲区）；全量织链 + 4 步上限
+锁死成本，平衡溯源完整性与 token 开销。附加契约：空证据引用的前提
+直接标记进 unsupported_premises；evidence_ref 严格走白名单校验，禁止
+凭空编造素材索引。
+
+**裁决3——unsupported_premises 送 G24 合并进 gaps ✅**：对齐 Bd/G24
+单事实源契约——state 保留 unsupported_premises 独立字段（观测/调试/
+指标统计）；G24 汇总三类缺口（原生 uncovered_subquestions + Bd 的
+unaddressed + Dk 的 unsupported_premises）；terminate 只读 G24.gaps
+对外输出，报告统一、审计口径唯一。
+
+### 锁定契约（用户补充，冻结）
+
+1. Dk 定位：只编织推理链路，**不修改、不生成新假设、不做真假裁决**
+2. 混合范式对齐家族规范：LLM 拆解构建 step 链，unsupported_premises
+   纯 Python 派生检出；LLM 降级时 chains 置空 + `_degraded` 标记，
+   链路继续不阻塞
+3. 前置守卫：hypotheses、weakest_link **两者全空**时 applicable=false
+   直接跳过
+4. E11 新增 smoke_dk_deduction：构造带无证据前提的假设，断言链条生成
+   正常、unsupported_premises 命中检出
 
 ## 节点②：skill_bd_crosscheck（Bd 双维交叉验证）【2026-11-19 用户逐项裁决冻结】
 
