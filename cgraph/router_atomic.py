@@ -39,6 +39,7 @@ from cgraph.skill_dk_deduction import SkillDkDeduction    # P-skeleton(Dk)
 from cgraph.skill_en_evidence_net import SkillEnEvidenceNet   # P-skeleton(En)
 from cgraph.skill_bd_crosscheck import SkillBdCrosscheck     # P-skeleton(Bd)
 from cgraph.skill_g24_topology import SkillG24Topology      # P-skeleton(G24)
+from cgraph.skill_gs_review import SkillGsReview           # P-skeleton(Gs)
 from cgraph.skill_terminate import SkillTerminate
 from cgraph.skill_synthesize import SkillSynthesize
 
@@ -70,6 +71,7 @@ SKILL_REGISTRY = {                            # 与探针一致; router 只消�
     "skill_en_evidence_net": SkillEnEvidenceNet,  # P-skeleton(En): 证据网
     "skill_bd_crosscheck": SkillBdCrosscheck,     # P-skeleton(Bd): 双维交叉
     "skill_g24_topology": SkillG24Topology,       # P-skeleton(G24): 全局拓扑
+    "skill_gs_review": SkillGsReview,             # P-skeleton(Gs): 过程回视
     "skill_synthesize": SkillSynthesize,
     "skill_terminate": SkillTerminate,
 }

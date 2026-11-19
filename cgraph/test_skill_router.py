@@ -1491,5 +1491,65 @@ class R22_G24Topology(RouterTestBase):
             pass
 
 
+class R23_GsReview(RouterTestBase):
+    """R23: P-skeleton Gs 过程回视——漂移检出/视图截断/steps守卫/降级兜底/软终止。"""
+    def test(self):
+        import json as _j
+        from cgraph.skill_gs_review import SkillGsReview
+        adj = {"entries": {"skill_gs_review": {
+            "state_inputs": ["goal_anchored", "sub_questions", "summary",
+                             "trail", "steps"],
+            "state_outputs": ["gs_view", "summary"],
+            "result_fields": ["drift_warnings", "resume_view", "checkpoint_note",
+                              "gs_view", "applicable", "summary", "confidence"]}}}
+        mk_state = lambda steps: ThinkState(
+            goal="g", goal_anchored="专利授权风险评估",
+            sub_questions=[{"q": "识别公开不充分驳回风险"}],
+            summary="已完成假设与演绎链构建", steps=steps)
+        trail4 = [{"skill_id": "skill_anchor_target", "reason": "锚定"},
+                  {"skill_id": "skill_scope_scan", "reason": "拆解"},
+                  {"skill_id": "skill_f_reason", "reason": "假设谱"},
+                  {"skill_id": "skill_dk_deduction", "reason": "演绎链"}]
+        try:
+            # ① 正常: 漂移检出+gs_view写回+软终止建议
+            st = mk_state(4); st.trail = trail4
+            ok = _j.dumps({"drift_warnings": [
+                {"warning": "推理偏离原始子问题", "reason": "过多讨论训练细节"}],
+                "resume_view": "【检查点steps=4】目标:专利风险; 已完成:拆解/假设/链",
+                "checkpoint_note": "steps=4", "applicable": True,
+                "summary": "s", "confidence": 0.8})
+            sk = SkillGsReview(llm=MockLLM(ok), adjacency=adj)
+            r = sk.run(st)
+            self.assertNotIn("_degraded", r.result)
+            self.assertEqual(len(r.result["drift_warnings"]), 1)
+            self.assertTrue(sk.decide_terminate(st, r.result))    # 软建议True
+            self.assertIsNotNone(st.gs_view)                       # 双消费②落state
+            self.assertEqual(st.gs_view["last_checkpoint_step"], 4)
+            self.assertIn("检查点steps=4", r.result["resume_view"])
+            # 无漂移 -> 软建议False
+            r0 = SkillGsReview(llm=MockLLM(_j.dumps(
+                {"drift_warnings": [], "resume_view": "v", "applicable": True,
+                 "summary": "s", "confidence": 0.8})), adjacency=adj).run(st)
+            self.assertFalse(sk.decide_terminate(st, r0.result))
+            # ② 截断: 超长resume_view Python硬截断
+            long = _j.dumps({"drift_warnings": [], "resume_view": "x" * 5000,
+                             "applicable": True, "summary": "s", "confidence": 0.5})
+            r2 = SkillGsReview(llm=MockLLM(long), adjacency=adj).run(st)
+            self.assertLessEqual(len(r2.result["resume_view"]), 3100)
+            self.assertIn("长度截断", r2.result["resume_view"])
+            # ③ 守卫: steps=3 -> applicable=false 非降级(短链跳过)
+            st3 = mk_state(3); st3.trail = trail4[:3]
+            r3 = SkillGsReview(llm=MockLLM("任意"), adjacency=adj).run(st3)
+            self.assertFalse(r3.result["applicable"])
+            self.assertNotIn("_degraded", r3.result)
+            # ④ 降级: JSON全坏 -> 极简兜底视图+_degraded+不炸
+            r4 = SkillGsReview(llm=MockLLM("不是JSON"), adjacency=adj).run(st)
+            self.assertIn("_degraded", r4.result)
+            self.assertIn("解析失败", r4.result["resume_view"])
+            self.assertEqual(r4.result["drift_warnings"], [])
+        finally:
+            pass
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
