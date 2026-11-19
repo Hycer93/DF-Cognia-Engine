@@ -1,10 +1,10 @@
-# P-skeleton-complete 段一：技能设计草案 v0.2（节点①已冻结）
+# P-skeleton-complete 段一：技能设计草案 v0.3（节点①②已冻结）
 
 > 输入：docs/design_skeleton_complete_v01.md（侦察三输入）。
 > 规约：__planned__ 占位通道——一次只聊一个节点，达成共识后落地该节点
 > entries 条目，再开下一个。本文档随节点评审逐节增补冻结。
 >
-> 评审顺序（用户可调）：①G24_topology（✅冻结）→ ②Bd（评审中）→ ③Dk → ④En → ⑤Gs
+> 评审顺序：①G24_topology（✅冻结）→ ②Bd（✅冻结）→ ③Dk（评审中）→ ④En → ⑤Gs
 
 ## 节点①：skill_g24_topology（G24 全局拓扑构建）【2026-11-19 用户逐项裁决冻结】
 
@@ -100,9 +100,68 @@ skill_terminate 与 skill_f_reason，router 自主选路。硬防护：**单个�
 uncovered_subquestions 含未回应子问题、非降级、gaps 写回 state。
 
 ---
-（节点②Bd 评审中，草案见下节）
+（节点③Dk 评审中，草案见下节）
 
-## 节点②：skill_bd_crosscheck（Bd 双维交叉验证）【草案 v0，待评审】
+## 节点③：skill_dk_deduction（Dk 演绎链）【草案 v0，待评审】
+
+### 定位与角色
+
+Dk = 证据→前提→结论的可追溯演绎链。案卷第 3 条（f_reason 假设深度不足）
+与第 4 条（证据无累积区）的直接对策：round6 实测管线假设"有谱无肉"——
+H1 公开不充分成立但 support 证据密度塌到 0。Dk 补的是**每条关键假设/
+结论的演绎前提链**：从证据到结论走了哪几步、每步依据是什么，让
+terminate 汇编时有链可织。
+
+产出：`deduction_chains`——对 hypotheses（或 wl 薄弱点）逐条挂
+`[{premise, evidence_ref, step_note}]` 链。
+
+### 邻接表 entry 草案
+
+```json
+"skill_dk_deduction": {
+  "role": "Dk演绎链(P-skeleton-complete): 关键结论的证据->前提->结论可追溯链构建; 只织链不裁决",
+  "state_inputs": ["goal_anchored", "hypotheses", "weakest_link", "ref_material",
+                   "matrix_knowledge", "summary"],
+  "state_outputs": ["deduction_chains", "summary"],
+  "result_fields": ["chains", "unsupported_premises", "applicable",
+                    "summary", "confidence"],
+  "next_options": [
+    {"skill": "skill_bd_crosscheck", "gain": "链条与薄弱点交叉验证", "cost": "中"},
+    {"skill": "skill_g24_topology", "gain": "链完整性并入全局视野", "cost": "低"},
+    {"skill": "skill_terminate", "gain": "链就绪直接收敛", "cost": "零"}
+  ],
+  "terminate_suggest": "恒False",
+  "dfcp_link": "无"
+}
+```
+
+### ThinkState 新增字段
+
+```python
+deduction_chains: list = None  # [{target_ref(H1/wl位置), steps:[{premise, evidence_ref, note}], verdict_ready}]
+```
+
+### 执行架构（混合范式第三例）
+
+- 链步生成走 LLM（从 ref_material/matrix_knowledge 中为每条假设找前提）
+- `unsupported_premises` 纯 Python 派生：evidence_ref 为空或引用不存在的
+  素材 id 的前提——确定性检出"空中楼阁"步骤
+- 前置守卫：hypotheses 与 weakest_link 全空 → applicable=false 跳过
+- evidence_ref 校验白名单：只允许引用 ref_material 命中段/matrix 卡 id
+  /trail 中已出现的事实，禁止凭空引用（防幻觉引用）
+
+### 裁决点（待用户）
+
+1. **挂接位置**：f_reason→Dk→Bd→G24（链先行再交叉）？还是 Bd→Dk
+   （先交叉找 gap 再给 gap 织链）？【建议：前者——链是 Bd 交叉判定
+   relation 的输入之一，有链的 relation 判定更扎实】
+2. **织链对象范围**：全部 hypotheses（最多 5 条）还是只织 wl 定位薄弱点
+   关联的假设？全织成本高，选织可能漏。【建议：全部 hypotheses 织，
+   但链长截断（每链最多 4 步）控制成本】
+3. **unsupported_premise 的消费**：进 G24 gaps（同 unaddressed 合并），
+   还是独立字段只做观测？
+
+## 节点②：skill_bd_crosscheck（Bd 双维交叉验证）【2026-11-19 用户逐项裁决冻结】
 
 ### 定位与角色
 
@@ -148,12 +207,33 @@ unaddressed: list = None # wl 定位但无任何假设回应的薄弱点
 - 前置条件守卫：hypotheses 或 weakest_link 任一为空 → applicable=false
   直接跳过（不硬跑），不降级不报错
 
-### 裁决点（待用户）
+### 裁决记录（2026-11-19 用户逐项裁决，三项全裁）
 
-1. **挂接位置**：f_reason 的 next_options（推演完立刻交叉）还是 G24 之后
-   （全局视野里再看交叉）？【建议：f_reason→Bd→G24，交叉先行——gap
-   发现越早补漏成本越低】
-2. **与 G24 的关系**：Bd 的 unaddressed 直接写 state.unaddressed，G24
-   遗漏检测时合并进 uncovered 清单？还是分开两字段独立上报？
-   【建议：G24 合并读取，terminate 汇总统一披露，单一事实源】
-3. **relation 三档**（回应/竞争解释/无关）是否够用？要不要加"部分回应"？
+**裁决1——挂接位置：f_reason→Bd→G24 ✅**：推演刚产出假设谱立刻与
+weakest_link 就近交叉校验，gap 提前暴露交 G24 汇总；放 G24 后会退化成
+事后复盘，丢失"提前补漏"时序价值，不符 Bd"双维互证"定位。
+next_options 约束：**Bd 跑完优先流向 G24，保留直达 terminate 的旁路兜底**。
+
+**裁决2——与 G24 关系：unaddressed 交 G24 合并，单事实源 ✅**：
+- Bd 产「薄弱点维度缺口」（wl 定位、无假设承接）
+- G24 汇总两类缺口：Bd 的 unaddressed + G24 自检的子问题 uncovered
+- **terminate 只消费 G24 的 gaps 一套出口**，避免两套缺口打架、审计混淆
+- 存储区分：state 保留 bd_matrix、unaddressed 独立字段（观测调试用）；
+  仅合并视图送 G24 的 gaps
+
+**裁决3——relation 维持三档 ✅**：回应/竞争解释/无关，不增"部分回应"
+（第四档放大 LLM 语义模糊性、边界歧义、单测膨胀）。中间态处理：note
+备注描述覆盖残缺，relation 主标签仍打"回应"。三值主分类规则稳定，便于
+矩阵统计与自动化观测告警。
+
+### 锁定契约（用户补充，冻结）
+
+1. Bd 只做假设与薄弱点**关系判定**，不评判假设对错、不新增假设、不新增
+   薄弱点
+2. 前置守卫严格生效：hypotheses 为空 或 weakest_link 为空 →
+   applicable=false 直接跳过，链路正常往下走
+3. 沿用混合范式：LLM 输出 cross_matrix，unaddressed 由 Python 确定性
+   派生；LLM 降级时 matrix 空、unaddressed 空、标记 `_degraded`，
+   链路不阻断
+4. E11 新增 smoke_bd_crosscheck：给定 wl 条目+若干假设，断言矩阵关系
+   标签正确、unaddressed 正确检出无匹配薄弱点
