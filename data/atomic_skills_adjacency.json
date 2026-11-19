@@ -414,11 +414,13 @@
    "dfcp_link": "无"
   },
   "skill_bd_crosscheck": {
-   "role": "Bd双维交叉验证(P-skeleton-complete段一定稿): 假设谱x薄弱点逐对判定(回应/竞争解释/无关三档); 只判关系不评对错; unaddressed送G24合并单事实源",
+   "role": "Bd双维交叉验证(P-skeleton-complete段一定稿): 假设谱x薄弱点逐对判定(回应/竞争解释/无关三档); 只判关系不评对错; unaddressed送G24合并单事实源; 输入消费Dk演绎链+En证据网(纵向+横向背景, 裁决1)",
    "state_inputs": [
     "goal_anchored",
     "hypotheses",
     "weakest_link",
+    "deduction_chains",
+    "evidence_net",
     "summary"
    ],
    "state_outputs": [

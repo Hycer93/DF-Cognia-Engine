@@ -1357,5 +1357,67 @@ class R20_EnEvidenceNet(RouterTestBase):
             pass
 
 
+class R21_BdCrosscheck(RouterTestBase):
+    """R21: P-skeleton Bd 双维交叉——矩阵清洗/unaddressed派生/守卫/降级/写回。"""
+    def test(self):
+        import json as _j
+        from cgraph.skill_bd_crosscheck import SkillBdCrosscheck
+        adj = {"entries": {"skill_bd_crosscheck": {
+            "state_inputs": ["goal_anchored", "hypotheses", "weakest_link",
+                             "deduction_chains", "evidence_net", "summary"],
+            "state_outputs": ["bd_matrix", "unaddressed", "summary"],
+            "result_fields": ["cross_matrix", "unaddressed_points", "applicable",
+                              "summary", "confidence"]}}}
+        mk_state = lambda: ThinkState(
+            goal="g", goal_anchored="专利授权风险评估",
+            hypotheses=[{"hypothesis": "H1身份锚点公开不足", "support": "s"}])
+        try:
+            # ① 正常: 回应关系 -> unaddressed 空, 写回 state
+            st = mk_state()
+            st.weakest_link = {"location": "说明书-创新点一", "dimension": "d",
+                               "score": 0.25, "evidence": "e"}
+            st.deduction_chains = [{"target_ref": "H1身份锚点公开不足",
+                                    "steps": [{"premise": "p", "evidence_ref": "M1", "note": ""}]}]
+            st.evidence_net = [{"src_a": "M1", "src_b": "M2", "relation": "补充", "note": ""}]
+            ok = _j.dumps({"cross_matrix": [
+                {"hypothesis_ref": "H1身份锚点公开不足", "wl_location": "说明书-创新点一",
+                 "relation": "回应", "note": "覆盖"},
+                {"hypothesis_ref": "H1身份锚点公开不足", "wl_location": "不存在的位置",
+                 "relation": "回应", "note": "白名单外"},
+                {"hypothesis_ref": "H1身份锚点公开不足", "wl_location": "说明书-创新点一",
+                 "relation": "部分回应", "note": "非法档位"}],
+                "applicable": True, "summary": "s", "confidence": 0.8})
+            r = SkillBdCrosscheck(llm=MockLLM(ok), adjacency=adj).run(st)
+            self.assertNotIn("_degraded", r.result)
+            self.assertEqual(len(r.result["cross_matrix"]), 1)     # 3->1(白名单+档位过滤)
+            self.assertEqual(r.result["unaddressed_points"], [])   # 被回应
+            self.assertTrue(st.bd_matrix and st.unaddressed == []) # 写回
+            # ② 无关关系 -> unaddressed 命中该薄弱点
+            st2 = mk_state()
+            st2.weakest_link = {"location": "说明书-创新点一", "dimension": "d",
+                                "score": 0.25, "evidence": "e"}
+            r2 = SkillBdCrosscheck(llm=MockLLM(_j.dumps({
+                "cross_matrix": [{"hypothesis_ref": "H1身份锚点公开不足",
+                                  "wl_location": "说明书-创新点一",
+                                  "relation": "无关", "note": "主题不匹配"}],
+                "applicable": True, "summary": "s", "confidence": 0.7})),
+                adjacency=adj).run(st2)
+            self.assertEqual(r2.result["unaddressed_points"], ["说明书-创新点一"])
+            self.assertTrue(st2.unaddressed)                       # 写回state供G24合并
+            # ③ 守卫: weakest_link 空 -> applicable=false(非降级)
+            st3 = mk_state()
+            r3 = SkillBdCrosscheck(llm=MockLLM("任意"), adjacency=adj).run(st3)
+            self.assertFalse(r3.result["applicable"])
+            self.assertNotIn("_degraded", r3.result)
+            # ④ 降级: JSON全坏 -> _degraded + 不炸
+            st4 = mk_state()
+            st4.weakest_link = {"location": "L", "dimension": "d", "score": 0.5, "evidence": "e"}
+            r4 = SkillBdCrosscheck(llm=MockLLM("不是JSON"), adjacency=adj).run(st4)
+            self.assertIn("_degraded", r4.result)
+            self.assertFalse(r4.result["cross_matrix"])
+        finally:
+            pass
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
