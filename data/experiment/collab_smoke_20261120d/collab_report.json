@@ -1,0 +1,667 @@
+{
+ "formula": "F50 v2.1: Y=Σ W_k·Y_k(仅抽象指标); S_T 禁平均→原生分支清单",
+ "tau": 0.5,
+ "n_live": 3,
+ "n_dead": 0,
+ "dead_errors": [],
+ "y_hat": {
+  "converged": 1.0,
+  "has_deliverable": 0.0,
+  "confidence": 0.7953,
+  "n_gaps": 12.5406,
+  "n_contradictions": 0.0
+ },
+ "branches": [
+  {
+   "rank": 1,
+   "weight": 0.3649,
+   "raw_score": 0.7,
+   "branch": 0,
+   "view": "【协同分支 S1·机制边界】三路子分析师共研同一目标，你主责机制与边界切面：优先厘清该事物的内在机制、成立条件与作用边界（什么情况下成立/失效）。其他切面有队友负责，但你认可的机制结论要写明依据，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 907.5,
+   "S_native": {
+    "summary": "针对多进程并行上限约束的量化论证缺失实测数据这一最弱环节，提出开销主导、串行占比、资源上限及前提未验证四条竞争假设与验证",
+    "hypotheses": [
+     {
+      "hypothesis": "上限约束的真实主瓶颈是任务粒度过小导致的调度与IPC序列化开销占比过高，而非CPU核数",
+      "supporting": [
+       "任务级多进程并行的典型失效模式：单任务耗时与 fork/spawn+pickle 往返开销同量级时加速比趋近或低于1",
+       "任务空间摘要提及任务粒度作为候选约束之一",
+       "上游最弱环节指出缺乏实测数据，若任务粒度分布偏小，串行占比会被开销放大"
+      ],
+      "contradicting": [
+       "无实测单任务耗时与序列化开销数据，开销占比纯属推测",
+       "若认知引擎任务为重计算型（推理/大上下文处理），单任务可能远大于开销，此假设不成立"
+      ],
+      "test_next": "对典型负载做微基准：测量单任务平均耗时 vs 进程创建+任务提交+结果回传的端到端开销，计算开销占比；再测 1/2/4/8/16 进程下的实际加速比曲线拐点"
+     },
+     {
+      "hypothesis": "主瓶颈是可并行任务占比不足（Amdahl串行部分），即流水线中存在结构性串行阶段（如结果汇聚、全局状态更新、依赖任务图）",
+      "supporting": [
+       "摘要中列有嵌套并行、动态任务图等边界条件，暗示任务间可能存在依赖使并行度受限",
+       "Amdahl 定律下即使核数无限，串行占比直接封顶加速比"
+      ],
+      "contradicting": [
+       "若任务分发为独立 map 形态（无依赖），串行部分仅剩分发/汇聚，占比可能很小",
+       "无代码证据表明存在共享状态或依赖图实现"
+      ],
+      "test_next": "获取 parallel_pipeline 源码或运行日志，统计并行窗口内可并发执行的任务数与被串行阻塞阶段的墙钟时间占比，用 Amdahl 反推串行比例"
+     },
+     {
+      "hypothesis": "主瓶颈是内存与子进程资源上限（进程池规模受内存约束、进程泄漏/僵尸进程累积导致可用并行度随时间衰减）",
+      "supporting": [
+       "摘要明确列有进程泄漏、僵尸进程、资源竞争等已识别风险方向",
+       "每个子进程若加载完整引擎上下文，内存随进程数线性增长，实际可用进程数远低于核数"
+      ],
+      "contradicting": [
+       "同样无进程内存占用实测数据；若子进程为轻量 worker（fork 写时复制），内存可能不是约束",
+       "泄漏是稳定性风险，未必是吞吐上限的直接约束因素"
+      ],
+      "test_next": "长时运行压测，监控进程数、RSS 曲线与僵尸进程计数；测量单 worker 常驻内存，推算内存允许的最大并发度并对比核数"
+     },
+     {
+      "hypothesis": "上游分析链整体建立在未验证的架构推断上——parallel_pipeline 的实际实现形态（进程池模型、分发汇聚机制）可能与假设不符，量化结论的方向性都可能错误",
+      "supporting": [
+       "任务空间摘要明确指出'当前未见 parallel_pipeline 实际实现细节，架构描述本身也是推断'",
+       "最弱环节风险分0.35，全链结论依赖此未验证前提",
+       "若实现实为线程池/协程而非多进程，GIL/IPC 开销的整条分析前提失效"
+      ],
+      "contradicting": [
+       "方案名称与问题描述均明确为'任务级多进程并行'，实现形态大概率存在对应代码",
+       "即便细节推断有偏差，CPU/内存/Amdahl 等约束框架仍方向性正确"
+      ],
+      "test_next": "优先定位认知引擎 v3 代码库中 parallel_pipeline 的实现文件，确认进程创建方式（fork/spawn）、池化策略、任务序列化协议与结果回传路径，将机制推断替换为代码事实"
+     }
+    ],
+    "weakest_link": {
+     "location": "上限约束因素的量化论证环节（Amdahl 定律对各瓶颈贡献的量化）",
+     "dimension": "数据支撑度",
+     "score": 0.35,
+     "evidence": "整个论证链条依赖对加速比上限的量化，但任务空间摘要中未见任何实测数据（核数、任务粒度分布、IPC 序列化开销占比、实测吞吐），约束因素分析完全建立在假设性机制推理上；一旦串行占比或序列化开销实测值偏离假设，全链结论（最弱瓶颈判定、改进优先级）将整体失效。且当前未见 parallel_pipeline 实际实现细节，架构描述本身也是推断。"
+    },
+    "gaps": [
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "parallel_pipeline 当前的任务级多进程并行架构是什么（进程模型、任务分发与汇聚机制）？",
+       "why_missed": "H4 仅质疑架构描述不可靠（可能非 fork/join 模型），但没有任何假设或薄弱点实际给出架构本身的构成（进程模型、分发/汇聚机制），架构事实层面仍是空白",
+       "suggest_next": "直接审查 parallel_pipeline 源码/调用链，确认进程创建方式（fork/spawn/池）、任务分发与结果汇聚的实际机制"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "该并行方案的成立条件是什么（何种任务形态、何种负载下多进程并行优于串行）？",
+       "why_missed": "假设谱聚焦瓶颈归因，但均未界定方案成立的前提条件（任务粒度阈值、负载特征），H1 隐含粒度条件但未系统化为成立边界",
+       "suggest_next": "结合 H1 的粒度假设，推导并实测使多进程优于串行的任务粒度/负载 crossover 点"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "机制在哪些边界条件下会失效（任务过小、嵌套并行、共享状态、动态任务图）？",
+       "why_missed": "H1 覆盖了任务过小这一情形，但嵌套并行、共享状态、动态任务图三个边界条件未被任何假设或薄弱点回应",
+       "suggest_next": "针对嵌套并行、共享状态、动态任务图分别设计触发场景，检验机制失效模式"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "针对识别出的主瓶颈，下一步改进方案应如何设计（如进程池调优、共享内存、任务粒度合并、异步化）？",
+       "why_missed": "假设谱停在瓶颈归因层面（IPC 开销、串行汇聚、进程管理、架构存疑），四者互斥且未落到任何具体改进方案设计",
+       "suggest_next": "先通过源码审查+实测裁决 H1–H4 哪个瓶颈假设成立，再据此选择对应改进路径（粒度合并/汇聚异步化/进程池加固）"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "改进方案如何验证（基准测试、监控指标、回归对比）？",
+       "why_missed": "唯一薄弱点只指出量化缺实测数据，但未涉及改进方案的验证方法（基准设计、监控指标、回归对比）",
+       "suggest_next": "设计前后对比基准（吞吐/延迟/加速比曲线）与稳定性监控指标（进程数、内存、异常率），用于验证所选改进"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "unaddressed_weakpoint",
+      "payload": {
+       "location": "上限约束因素的量化论证环节（Amdahl 定律对各瓶颈贡献的量化）",
+       "why_missed": "无任何假设回应该薄弱点"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1(IPC/序列化开销主导，串行占比被低估)",
+       "premise": "任务级多进程并行中，每个任务需经 pickle 序列化跨进程传输参数与结果，单任务粒度越细，IPC 开销占比越高",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1(IPC/序列化开销主导，串行占比被低估)",
+       "premise": "Amdahl 定律中串行占比若仅计显式汇聚段而漏计 IPC 串行化部分，理论上限将被高估",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1(IPC/序列化开销主导，串行占比被低估)",
+       "premise": "故真实上限约束为 IPC/序列化开销主导的隐式串行段",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2(串行汇聚段为真实瓶颈)",
+       "premise": "随进程数增加，归并与全局状态更新（含锁竞争）时间不随并行度摊薄而可能增长",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2(串行汇聚段为真实瓶颈)",
+       "premise": "当并行执行段加速接近核数上限后，汇聚段成为剩余主要耗时",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2(串行汇聚段为真实瓶颈)",
+       "premise": "故上限约束为串行汇聚段而非并行执行段",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3(进程生命周期管理开销与稳定性缺陷主导)",
+       "premise": "若长期运行中出现进程泄漏或池耗尽，表现为吞吐下降或停滞，形似性能上限问题",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3(进程生命周期管理开销与稳定性缺陷主导)",
+       "premise": "性能上限实为稳定性问题表象，改进方向应以健壮性优先",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4(架构描述不可靠，量化推理对象错误)",
+       "premise": "若实际实现为 IO 驱动、线程混合或协程调度，则 IPC/Amdahl 推理的机制前提整体不适用",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4(架构描述不可靠，量化推理对象错误)",
+       "premise": "故全部量化结论建立在可能错误的对象模型上，应先核实架构再谈上限",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "weakest_link(上限约束量化论证环节·数据支撑度0.35)",
+       "premise": "当前任务空间摘要中无任何上述实测数据，亦无 parallel_pipeline 实现细节",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "weakest_link(上限约束量化论证环节·数据支撑度0.35)",
+       "premise": "任一关键参数实测值偏离假设，最弱瓶颈判定与改进优先级排序将整体失效",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "weakest_link(上限约束量化论证环节·数据支撑度0.35)",
+       "premise": "故必须先补齐实测画像（含架构核实）再重构上限约束结论",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     }
+    ],
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  },
+  {
+   "rank": 2,
+   "weight": 0.3649,
+   "raw_score": 0.7,
+   "branch": 1,
+   "view": "【协同分支 S2·度量验证】三路子分析师共研同一目标，你主责度量与验证切面：优先识别现有结论缺哪些实证数据/指标才能成立，评估证据充分性与可测性。你认可的底层机制应与队友表述对齐而非另起炉灶，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 793.0,
+   "S_native": {
+    "summary": "四图投影完成, 缺口合并5条",
+    "hypotheses": [
+     {
+      "hypothesis": "parallel_pipeline上限约束结论正确但证据未采集，即机制推测（CPU/内存/fd/进程池调度）方向无误，只缺实测数据补强",
+      "supporting": [
+       "上游机制链条逻辑自洽，约束因素清单覆盖了常见资源维度",
+       "子问题清单已明确吞吐、延迟、内存峰值、故障率四类待补指标",
+       "若机制推测本身可靠，补做基准实验即可闭环，修复成本低"
+      ],
+      "contradicting": [
+       "全链无任何实测数据时，无法排除机制推测本身偏离真实瓶颈（如实际受序列化开销或锁竞争限制而非资源上限）",
+       "失败模式不可观测意味着即使机制正确，其触发条件与阈值也可能与推测不符"
+      ],
+      "test_next": "对单一瓶颈资源做受控压力测试（固定其他资源），观测吞吐拐点是否与推测的约束因素对应"
+     },
+     {
+      "hypothesis": "真实瓶颈不在资源上限而在实现层隐性约束，如进程池固定max_workers、任务序列化、结果聚合锁或IPC开销成为实际天花板",
+      "supporting": [
+       "任务级多进程框架中常见隐式配置（如multiprocessing.Pool硬编码、spawn开销）先于物理资源到达上限",
+       "失败模式不可观测暗示异常被静默吞没或降级，更像实现层行为而非资源耗尽的显式报错",
+       "若物理资源是瓶颈，通常有OOM/fd耗尽等可观测信号，与现状矛盾"
+      ],
+      "contradicting": [
+       "无代码证据表明存在硬编码上限或静默降级逻辑",
+       "缺乏实测数据同样无法证实实现层约束的存在"
+      ],
+      "test_next": "审计parallel_pipeline源码中worker数来源与异常处理路径；在递增并发时同时监控CPU/内存/fd与吞吐曲线，定位拐点对应的层面"
+     },
+     {
+      "hypothesis": "压测不可复现是主风险根源：上限表现为非确定性（受任务负载形态、机器环境、调度时机影响），单一上限数字本身不成立",
+      "supporting": [
+       "任务级并发的资源消耗高度依赖单任务负载特征，不同任务混合比下上限会漂移",
+       "当前缺少可复现压测方案，说明团队尚未建立控制变量的实验设计",
+       "非确定性可解释为何失败模式难以观测——触发窗口窄且随机"
+      ],
+      "contradicting": [
+       "也可能只是尚未做过压测，而非本质上不可复现",
+       "若系统有明确配置上限，其行为应是确定性的"
+      ],
+      "test_next": "构建固定负载谱（轻/中/重任务混合）+ 固定环境的基准脚本，多次运行测方差，验证上限是稳定值还是分布"
+     },
+     {
+      "hypothesis": "超过上限时系统采取静默降级（排队、串行回退、丢弃重试）而非失败，导致风险被掩盖且数据更难采集",
+      "supporting": [
+       "上游标注'失败模式不可观测'，与静默降级行为特征吻合",
+       "生产管道系统常设计为背压/排队而非硬失败",
+       "静默降级会使得压测中吞吐饱和点难以与错误点区分"
+      ],
+      "contradicting": [
+       "若存在排队机制，延迟应随并发上升单调恶化，属可观测信号，与'不可观测'表述不完全一致",
+       "无日志或代码证据确认降级路径存在"
+      ],
+      "test_next": "审查日志与指标埋点中是否有队列深度、降级计数；压测时同步追踪端到端延迟分布的尾部形态"
+     }
+    ],
+    "weakest_link": {
+     "location": "parallel_pipeline上限约束论证链条的实证度量环节",
+     "dimension": "证据充分性(实证数据缺口)",
+     "score": 0.25,
+     "evidence": "关于上限约束因素(CPU/内存/fd/进程池调度)的结论缺乏任何吞吐、延迟、内存峰值、故障率等实测数据支撑，全部依赖机制推测；论证体系的根基未经验证，属最脆弱一环"
+    },
+    "gaps": [
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "认知引擎v3中parallel_pipeline的任务级多进程上限当前配置或实现是什么？",
+       "why_missed": "假设谱仅推测实现层隐性约束（如固定max_workers），薄弱点仅指出实证数据缺失，均未基于代码或配置给出上限的当前实际取值与实现方式",
+       "suggest_next": "直接阅读parallel_pipeline源码/配置，确认进程池创建方式、max_workers来源及默认值，建立事实基线"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "如何设计可复现的压测/基准实验来验证上限约束因素？",
+       "why_missed": "假设3仅指出压测不可复现是风险根源，未给出具体的实验设计（变量控制、负载形态矩阵、度量采集方案）",
+       "suggest_next": "设计受控压测方案：固定负载形态与机器环境、按并发度梯度扫描、记录吞吐/延迟/内存峰值/故障率四类指标"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "针对上限约束与风险，下一步优化或加固的优先级建议是什么？",
+       "why_missed": "假设谱与薄弱点均未对各类约束与风险的修复顺序或优先级做出排序性回应",
+       "suggest_next": "在获得当前配置事实与初步实测数据后，按风险影响度与修复成本对加固项（显式失败、降级可观测、资源监控）排定优先级"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "因此H1成立条件等价于:缺口仅为数据采集而非机制误判",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "实现层约束会先于OS级资源上限触发,形成低于资源上限的实际天花板",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     }
+    ],
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  },
+  {
+   "rank": 3,
+   "weight": 0.2703,
+   "raw_score": 0.55,
+   "branch": 2,
+   "view": "【协同分支 S3·依赖风险】三路子分析师共研同一目标，你主责依赖与风险切面：优先排查外部依赖、隐含假设与失效风险路径。风险判断仍须给证据支撑，不预设立场；与其他切面重叠的结论保持可对照的措辞，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 935.4,
+   "S_native": {
+    "summary": "四图投影完成, 缺口合并14条",
+    "hypotheses": [
+     {
+      "hypothesis": "parallel_pipeline 尚无完整的多进程实现，并发正确性环节无证据是因为该方案仍处于设计/规划阶段而非实现缺陷",
+      "supporting": [
+       "参考素材中竞态、死锁、结果汇聚失效路径均无任何实现证据或测试记录",
+       "任务空间摘要描述该环节为'完全无证据锚定'，符合未落地方案的典型特征",
+       "子问题以'应如何设计'式问句为主（上限策略、熔断机制、下一步落地项），指向设计期而非运行期问题"
+      ],
+      "contradicting": [
+       "摘要称其为'并行方案最脆弱一环'，暗示方案已有一定实现度，只是验证缺失",
+       "若纯为设计稿，'风险分0.35'与'失效传导中枢'的运行性表述缺乏对象"
+      ],
+      "test_next": "直接检索代码库中 parallel_pipeline 的实现文件与测试目录，确认是否存在可执行代码、单元/集成测试覆盖记录"
+     },
+     {
+      "hypothesis": "实现已存在但并发正确性验证从未执行，风险源于测试盲区而非代码缺陷",
+      "supporting": [
+       "两处薄弱点（竞态/死锁、部分失败/孤儿进程）均指向'无验证记录'，与'代码存在但无测试'模式吻合",
+       "多进程竞态具有非确定性，未做压力/并发测试时通常长期潜伏不被发现"
+      ],
+      "contradicting": [
+       "无法区分'无测试'与'无实现'，证据同样兼容假设1",
+       "若实现成熟，通常至少有结果汇聚的happy-path测试痕迹"
+      ],
+      "test_next": "检查任务级进程管理的代码路径（进程池创建、结果收集、异常分支），并以并发压力测试（故意注入子任务失败/超时）观察汇聚行为"
+     },
+     {
+      "hypothesis": "多进程上限由单一硬性资源约束主导（如CPU核数或物理内存），而非多因素耦合",
+      "supporting": [
+       "典型 parallel pipeline 实现中，worker 数常直接绑定 os.cpu_count() 或固定配置值",
+       "任务级并行（而非数据级）通常任务粒度大、单进程内存占用高，内存易成为先到的瓶颈"
+      ],
+      "contradicting": [
+       "无任何配置或实现细节证据，无法排除动态自适应（如基于队列积压调整）的可能",
+       "句柄数、序列化开销、OS调度等次级约束在任务数大时同样可能先触发"
+      ],
+      "test_next": "定位上限常量/配置的来源（硬编码、环境变量、Config对象），并用资源监控（内存/句柄/fd）在递增并发数下测量实际先饱和的资源"
+     },
+     {
+      "hypothesis": "结果汇聚采用同步阻塞式收集（如 pool.map/join 后统一聚合），部分失败或孤儿进程将导致整体汇聚失效或无限等待",
+      "supporting": [
+       "上游最弱环节定位明确指出'单点失败污染整体汇聚'，与同步全量汇聚模式特征一致",
+       "'孤儿进程'被列为失效路径，通常出现在父进程无超时回收机制时"
+      ],
+      "contradicting": [
+       "也可能采用逐任务回调/异步收集，单点失败仅污染局部——无证据排除该形态",
+       "可能已存在 per-task timeout 包装，只是未测试"
+      ],
+      "test_next": "审查汇聚代码是否使用带超时的 join/get，注入一个挂起子进程验证是否触发整体卡死；确认是否有进程回收与部分结果保留逻辑"
+     }
+    ],
+    "weakest_link": {
+     "location": "parallel_pipeline 任务级多进程并发下的共享状态与结果汇聚环节",
+     "dimension": "并发正确性(竞态与结果汇聚失效路径)",
+     "score": 0.35,
+     "evidence": "子问题清单中'共享状态竞争/竞态条件/死锁路径'与'部分失败/超时/孤儿进程'两问在参考素材中均无任何实现证据或测试记录支撑；多进程方案中该环节是失效传导中枢(单点失败污染整体汇聚)，且外部分析师无法从任务空间摘要中获得其已验证的信息，属于论证链中唯一完全无证据锚定的环节"
+    },
+    "gaps": [
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "parallel_pipeline 中任务级多进程上限由哪些资源约束决定（CPU核数、内存、句柄、队列容量等）？",
+       "why_missed": "假设谱仅假设单一资源约束主导，未列举或回应具体约束项（句柄、队列容量等），也未给出多因素耦合的覆盖",
+       "suggest_next": "逐项核查 CPU、内存、文件句柄、队列容量等约束的实际存在性与量化依据"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "当前实现中多进程数量是硬编码、配置化还是动态自适应？",
+       "why_missed": "假设谱未涉及多进程数量的实现方式（硬编码/配置化/自适应），存在事实盲区",
+       "suggest_next": "检查 parallel_pipeline 相关代码或配置，确认进程数来源"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "进程池调度对延迟与吞吐的量化影响是否已被测量或有基准依据？",
+       "why_missed": "假设谱与薄弱点均未涉及性能测量或基准数据",
+       "suggest_next": "查找已有基准测试结果，若无则设计延迟/吞吐对比实验"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "外部依赖（操作系统调度、Python多进程机制、序列化方式）的隐含假设是否成立？",
+       "why_missed": "假设谱未涉及外部依赖层面（OS调度、multiprocessing机制、序列化）的隐含前提",
+       "suggest_next": "梳理外部依赖清单，逐项验证隐含假设（如 picklability、fork/spawn 差异）"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "如何设计上限的自适应策略与降级/熔断机制以控制风险？",
+       "why_missed": "假设谱与薄弱点只描述风险存在，未回应上限自适应与降级/熔断的设计方案",
+       "suggest_next": "提出基于资源探测的上限自适应方案与超时熔断、部分失败降级策略"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "下一步应优先落地哪些改进项及其验证方式？",
+       "why_missed": "无假设或薄弱点涉及改进项优先级排序与验证方式",
+       "suggest_next": "按风险分与实现阶段（设计/实现）排定改进优先级并给出对应验证手段（如并发压测、故障注入）"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "若方案已实现但未测试，素材中通常仍会残留实现痕迹（接口定义、部署记录、代码摘要）",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "综上，无证据状态更可能源于方案尚未落地实现而非实现缺陷",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "素材中同样不存在证明 parallel_pipeline 代码已存在的证据",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "任务级多进程上限通常受 CPU 核数与物理内存共同影响",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "素材未提供 parallel_pipeline 的进程池参数、资源配额或硬件规格",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "结论：上限约束源在当前证据下不可判定",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "同步阻塞式汇聚在部分失败时会导致整体汇聚失效或无限等待",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "结论：H4 与薄弱点描述方向一致，但汇聚机制本身无证据锚定",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     }
+    ],
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  }
+ ],
+ "reference_baseline_branch": 0,
+ "divergence_notes": [
+  "各路收敛一致性: 全收敛",
+  "缺口数极差=14(大=视角正交性好, 小=同质冗余)",
+  "有终稿分支: 无"
+ ],
+ "f60": {
+  "dx_candidates": {
+   "consensus_hypotheses": [
+    {
+     "statement": "parallel_pipeline上限约束结论正确但证据未采集，即机制推测（CPU/内存/fd/进程池调度）方向无误，只缺实测数据补强",
+     "topic": "资源约束",
+     "branches": [
+      0,
+      1,
+      2
+     ],
+     "votes": 3,
+     "shared_evidence": [
+      "cpu",
+      "内存",
+      "序列化",
+      "核数"
+     ]
+    },
+    {
+     "statement": "主瓶颈是可并行任务占比不足（Amdahl串行部分），即流水线中存在结构性串行阶段（如结果汇聚、全局状态更新、依赖任务图）",
+     "topic": "串行结构瓶颈",
+     "branches": [
+      0,
+      2
+     ],
+     "votes": 2,
+     "shared_evidence": [
+      "map",
+      "汇聚"
+     ]
+    }
+   ],
+   "shared_weak_points": [],
+   "candidate_actions_dedup": [
+    {
+     "weight": 0.3649,
+     "branch": 0,
+     "action": "针对多进程并行上限约束的量化论证缺失实测数据这一最弱环节，提出开销主导、串行占比、资源上限及前提未验证四条竞争假设与验证"
+    },
+    {
+     "weight": 0.3649,
+     "branch": 1,
+     "action": "四图投影完成, 缺口合并5条"
+    },
+    {
+     "weight": 0.2703,
+     "branch": 2,
+     "action": "四图投影完成, 缺口合并14条"
+    }
+   ],
+   "divergent_hypotheses": [
+    "主瓶颈是内存与子进程资源上限（进程池规模受内存约束、进程泄漏/僵尸进程累积导致可用并行度随时间衰减）",
+    "上游分析链整体建立在未验证的架构推断上——parallel_pipeline 的实际实现形态（进程池模型、分发汇聚机制）可能与假设不符，量化结论的方向性都可能错误",
+    "真实瓶颈不在资源上限而在实现层隐性约束，如进程池固定max_workers、任务序列化、结果聚合锁或IPC开销成为实际天花板",
+    "压测不可复现是主风险根源：上限表现为非确定性（受任务负载形态、机器环境、调度时机影响），单一上限数字本身不成立",
+    "超过上限时系统采取静默降级（排队、串行回退、丢弃重试）而非失败，导致风险被掩盖且数据更难采集",
+    "parallel_pipeline 尚无完整的多进程实现，并发正确性环节无证据是因为该方案仍处于设计/规划阶段而非实现缺陷",
+    "实现已存在但并发正确性验证从未执行，风险源于测试盲区而非代码缺陷"
+   ]
+  },
+  "vote_stats": {
+   "n_live": 3,
+   "hyp_clusters": 9,
+   "consensus_clusters": 2
+  },
+  "single_branch_mode": false,
+  "note": "ΔX 为候选(F40 粗解语义), 未经正演校验不得直接执行"
+ },
+ "forward_check_static": {
+  "goal_keyword_coverage": {
+   "parallel_pipeline": true,
+   "分析认知": false,
+   "析认知引": false,
+   "认知引擎": false,
+   "分析认": false,
+   "析认知": false
+  },
+  "covered": "1/6",
+  "verdict": "PASS_WITH_GAPS"
+ },
+ "meta": {
+  "wall_secs": 937.4,
+  "task_file": "data/experiment/collab_task_20261120.txt",
+  "results": [
+   {
+    "branch": 0,
+    "ok": true,
+    "secs": 907.5,
+    "error": null
+   },
+   {
+    "branch": 1,
+    "ok": true,
+    "secs": 793.0,
+    "error": null
+   },
+   {
+    "branch": 2,
+    "ok": true,
+    "secs": 935.4,
+    "error": null
+   }
+  ]
+ }
+}
