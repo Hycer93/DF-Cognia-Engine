@@ -1,0 +1,514 @@
+{
+ "formula": "F50 v2.1: Y=Σ W_k·Y_k(仅抽象指标); S_T 禁平均→原生分支清单",
+ "tau": 0.5,
+ "n_live": 3,
+ "n_dead": 0,
+ "dead_errors": [],
+ "y_hat": {
+  "converged": 1.0,
+  "has_deliverable": 0.0,
+  "confidence": 0.8234,
+  "n_gaps": 7.4785,
+  "n_contradictions": 0.0
+ },
+ "branches": [
+  {
+   "rank": 1,
+   "weight": 0.3399,
+   "raw_score": 0.55,
+   "branch": 1,
+   "view": "【协同分支 S2·度量验证】三路子分析师共研同一目标，你主责度量与验证切面：优先识别现有结论缺哪些实证数据/指标才能成立，评估证据充分性与可测性。你认可的底层机制应与队友表述对齐而非另起炉灶，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 1831.3,
+   "S_native": {
+    "summary": "清单内仅有一条证据（协同分支S2·度量验证，且素材原文未定位），无法构成任何两两证据对，本轮织网为空，后续需补证后再关联。",
+    "hypotheses": [
+     {
+      "hypothesis": "任务级多进程上限的实际生效约束在 OS 资源层（文件描述符/内存/进程调度配额），配置值并非真实瓶颈，上调上限仍会被物理资源封顶",
+      "supporting": [
+       "多进程管线场景中 fd 与内存通常先于进程数限制耗尽，fork 繁殖的子进程会成倍放大 fd/内存占用",
+       "若历史压测中出现过 fd 报错、OOM 或 load 飙升，则 OS 层生效有直接痕迹可循"
+      ],
+      "contradicting": [
+       "若运行时进程数远低于 ulimit/内存安全水位且监控无告警，OS 层约束未触发",
+       "素材中无任何 OS 层告警或资源曲线证据，此假设与另外三层同样缺乏实证"
+      ],
+      "test_next": "在现有上限与上调一档两种配置下分别压测，同步采集 fd 数、RSS、load、错误率曲线，观察资源是否先于进程数上限触顶"
+     },
+     {
+      "hypothesis": "实际生效的是进程池/框架层的隐式默认值（如 Pool 默认 cpu_count、队列容量），显式配置的'任务级上限'可能根本未被加载或被覆盖",
+      "supporting": [
+       "框架默认值常被无感继承，配置加载链路存在覆盖/回退路径是常见工程事实",
+       "若配置文件中的值与运行时实际并发数不一致，即可证明生效层在框架而非配置"
+      ],
+      "contradicting": [
+       "若代码路径中显式配置明确传入进程池构造参数且有日志可查，框架默认值不生效",
+       "素材未提供任何配置加载链路信息，无法确认覆盖路径是否存在"
+      ],
+      "test_next": "溯源配置加载链路（配置文件→代码→进程池构造点），并在运行时打印实际进程数与配置值做比对"
+     },
+     {
+      "hypothesis": "上限是代码硬编码或人为设定的保守业务值，物理与框架层均远未饱和，属于无实证依据的经验数字，上调即有收益空间",
+      "supporting": [
+       "团队为安全常设保守上限，素材称四类约束'仅定性平铺'，暗示无人给出量化依据",
+       "若上限值与机器核数/内存无对应关系（如取整、取 2 的幂），更像人为拍定"
+      ],
+      "contradicting": [
+       "若 git 历史或文档显示该值源自某次故障后的回调设定，则保守值有实证背景，上调需先复核当时故障",
+       "无压测数据支撑'上调即有收益'，此假设与另一侧（OS 层封顶）对同一现象给出互斥解释"
+      ],
+      "test_next": "考古该值的定义出处与变更历史（git log/配置变更记录/故障复盘文档），再做上限逐级上调的对照压测并监控错误率"
+     },
+     {
+      "hypothesis": "'进程数上限'根本不是当前瓶颈——真实瓶颈在管线阶段间的串行依赖与通信/序列化开销，上调上限对吞吐无显著改善，瓶颈归因前提本身待证伪",
+      "supporting": [
+       "管线并行的经典瓶颈在阶段间数据传递与序列化，而非并行度上限；上游最弱环节正是'瓶颈判定无实证'",
+       "若各阶段耗时统计中跨阶段等待/序列化占比高，进程数无论多大都无法提升端到端吞吐"
+      ],
+      "contradicting": [
+       "若打点显示阶段内计算占主导、跨阶段等待可忽略，则瓶颈确在并行度侧，此假设不成立",
+       "素材定义中 parallel_pipeline 的上限问题被显式提出，可能已有粗粒度观察支撑并行度侧归因（但素材未给出该观察的量化内容）"
+      ],
+      "test_next": "对各阶段做耗时打点，分解串行等待段与并行计算段，计算阶段间队列等待时间占比，直接检验瓶颈位置"
+     }
+    ],
+    "weakest_link": {
+     "location": "parallel_pipeline 任务级多进程上限的瓶颈归因环节（四类约束来源中哪一层实际生效的判定）",
+     "dimension": "瓶颈归因实证性",
+     "score": 0.12,
+     "evidence": "OS 资源、进程池/框架限制、业务配额、代码硬编码四类约束来源仅停留在定性平铺，无任何实测、压测或日志证据证明哪一层实际生效；瓶颈判定是整条论证链的承重假设，下游'先补度量还是先调上限'的排序决策完全悬置于该未验证断言之上，一旦归因错误则全部后续动作失效。"
+    },
+    "gaps": null,
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  },
+  {
+   "rank": 2,
+   "weight": 0.3399,
+   "raw_score": 0.55,
+   "branch": 2,
+   "view": "【协同分支 S3·依赖风险】三路子分析师共研同一目标，你主责依赖与风险切面：优先排查外部依赖、隐含假设与失效风险路径。风险判断仍须给证据支撑，不预设立场；与其他切面重叠的结论保持可对照的措辞，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 1927.4,
+   "S_native": {
+    "summary": "四图投影完成, 缺口合并22条",
+    "hypotheses": [
+     {
+      "hypothesis": "任务级多进程上限由 parallel_pipeline 进程池创建处的显式静态配置决定（硬编码常量或配置文件参数），数值可直接从代码核验",
+      "supporting": [
+       "任务级多进程上限的常见实现是进程池构造参数（max_workers / processes），属代码内静态值",
+       "若存在独立配置文件，数值与来源可直接定位，与'配置来源未验证'的薄弱点天然对齐"
+      ],
+      "contradicting": [
+       "本次环境工具调用失败，未获取任何代码或配置文件实证，该假设处于零证据状态",
+       "若上限实际由运行时资源或外部框架派生，静态配置假设整体落空"
+      ],
+      "test_next": "检索 parallel_pipeline 中进程池构造代码（multiprocessing.Pool / ProcessPoolExecutor 等）及配置文件中的 worker 数字段，确认具体数值、默认值与配置加载优先级"
+     },
+     {
+      "hypothesis": "代码内上限缺省或宽松，实际有效上限由运行环境资源（CPU 核数、内存、容器/cgroup 配额）动态决定，逼近上限时以资源耗尽形式失效",
+      "supporting": [
+       "multiprocessing 生态默认按 os.cpu_count() 派生进程数，无显式配置时上限即资源面",
+       "容器环境配额常低于宿主核数，存在派生数与真实配额错配的隐含假设，与依赖切面'隐含假设'主责方向一致"
+      ],
+      "contradicting": [
+       "若代码确有硬编码任务级上限，资源约束退化为次要因素而非决定因素",
+       "零实证下无法排除静态配置与资源约束并存且静态值更小的情形"
+      ],
+      "test_next": "核对部署环境容器/cgroup 配额与 os.cpu_count() 的差异；执行逐步加压压测，观察吞吐拐点及 OOM、进程派生失败日志"
+     },
+     {
+      "hypothesis": "上限行为与失效模式由外部依赖决定（multiprocessing 库版本、start method fork/spawn、调度组件），同一代码在不同环境下上限含义不同",
+      "supporting": [
+       "fork 与 spawn 在派生开销与死锁敏感性（与线程/锁混用场景）上差异显著，版本间进程池行为有变更记录",
+       "调度组件若自带并发闸门，任务级上限实为外部组件施加，而非 pipeline 自身"
+      ],
+      "contradicting": [
+       "若 parallel_pipeline 未使用标准 multiprocessing 而用自研或第三方进程管理，库版本假设针对性失效",
+       "调度组件闸门假设与'配置来源未验证'同样无实证可对照"
+      ],
+      "test_next": "锁定依赖清单版本与运行环境实际 start method；在目标环境做最小复现实验（多进程+共享锁）验证行为与预期是否一致"
+     },
+     {
+      "hypothesis": "逼近/突破上限时主导失效模式存在竞争解释：资源耗尽型（OOM、派生失败）与阻塞型（队列堆积、进程泄漏累积、死锁），二者对监控告警优先级设计指向不同",
+      "supporting": [
+       "队列满无超时、子进程异常退出未回收是任务级多进程的典型失效模式，属于阻塞型",
+       "容器环境下资源型失效更常见，与 H2 的资源约束方向互洽"
+      ],
+      "contradicting": [
+       "当前全部失效路径均为理论推演，无日志样本支撑任一方向",
+       "实际失效可能是组合型或另有模式（如上游任务分配不均导致的伪阻塞）"
+      ],
+      "test_next": "采集历史运行日志中进程数、内存、队列深度时序数据；注入故障演练（人为占满上限），观察首个失效信号归属资源型还是阻塞型"
+     }
+    ],
+    "weakest_link": {
+     "location": "上限约束论证与失效风险主张的证据核验环节（主张→代码/日志实证）",
+     "dimension": "证据支撑",
+     "score": 0.2,
+     "evidence": "全部失效路径（资源耗尽、进程泄漏、死锁、排队阻塞）与约束因素（CPU核数、内存、进程池实现）均为理论推演；上限具体数值与配置来源未经代码或日志验证；本次环境工具调用失败，无法获取任何代码实证，风险主张处于零实证状态，是整个论证链条中最薄弱单点。"
+    },
+    "gaps": [
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "认知引擎 v3 的 parallel_pipeline 中'任务级多进程上限'的具体数值与配置来源是什么？",
+       "why_missed": "假设谱仅主张上限来自显式静态配置或环境资源动态决定，但均停留在机制假设层面，未给出任何具体数值或配置来源的实证定位（历史摘要显示证据链为空，跳过织网）",
+       "suggest_next": "在代码库中定位 parallel_pipeline 进程池创建点，核验上限常量/配置参数的具体数值与文件位置，形成主张→代码位置的实证引用"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "各风险主张是否有代码或日志证据支撑，与协同分支其他切面结论是否可对照互证？",
+       "why_missed": "薄弱点仅笼统覆盖'证据支撑不足'（风险分0.2），但未覆盖'与协同分支其他切面结论互证'这一交叉对照维度；且历史摘要显示 Dk 链无有效证据引用，互证完全未发生",
+       "suggest_next": "为每个风险主张建立代码/日志证据锚点，并与协同分支（资源、调度、监控等切面）的结论做交叉对照表，标记可互证与冲突点"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "下一步应优先采取什么动作（如压测验证上限、引入动态资源感知、增加监控告警）？",
+       "why_missed": "假设谱第4条仅指出两类失效模式'对监控告警优先级设计指向不同'，未落到具体优先级排序的行动建议；无任何薄弱点或假设给出压测、动态资源感知等候选动作的取舍依据",
+       "suggest_next": "基于实证后的上限数值与主导失效模式判断，输出排序的下一步行动清单（如先压测确定真实上限，再据此选择资源感知或告警策略）"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "若上限由显式静态配置决定，则 parallel_pipeline 进程池创建处应存在可直接读出的常量或配置参数定义",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "该配置数值与来源（硬编码常量或配置文件参数）可通过直接检索代码核验，无需运行时观测",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "结论：上限数值可直接从代码核验这一主张成立与否，完全取决于代码检索能否恢复执行",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "代码内上限缺省或宽松是运行时资源成为实际有效上限的先决条件",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "CPU 核数、内存、容器/cgroup 配额共同构成进程池可创建实例数的动态边界",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "逼近动态上限时，失效以资源耗尽形式（OOM、进程派生失败）出现而非配置报错",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "结论：实际有效上限由环境动态决定的主张需环境资源观测数据方可裁决",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "multiprocessing 库版本与 start method（fork/spawn）决定进程创建与继承行为",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "fork 与 spawn 在状态继承、启动开销上的差异会使同一上限数值在不同环境下语义不同",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "调度组件（任务分发与结果回收机制）的行为同样构成上限含义的变量",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "结论：上限行为与失效模式由外部依赖决定，需固定代码、变更环境做对照实验才能验证",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "资源耗尽型失效（OOM、派生失败）与阻塞型失效（队列堆积、进程泄漏累积、死锁）的发生机理和可观测信号不同",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "资源耗尽型指向资源水位指标告警，阻塞型指向队列深度/进程存活数指标告警，二者监控优先级设计不同",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "在缺乏失效日志的情况下，无法判定哪种失效模式在逼近上限时占主导",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "结论：主导失效模式的裁决需失效样本或压力测试数据，当前只能并列保留两种解释",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "W1:上限约束论证与失效风险主张的证据核验环节",
+       "premise": "全部失效路径（资源耗尽、进程泄漏、死锁、排队阻塞）与约束因素（CPU核数、内存、进程池实现）均停留在理论推演层面",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "W1:上限约束论证与失效风险主张的证据核验环节",
+       "premise": "本次环境工具调用失败（uname/pwd/git status 均返回 Worker index not found），无法获取任何代码或环境实证",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "W1:上限约束论证与失效风险主张的证据核验环节",
+       "premise": "上限具体数值与配置来源未经代码或日志验证，主张→实证的映射链断开",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "W1:上限约束论证与失效风险主张的证据核验环节",
+       "premise": "结论：需恢复环境工具调用或引入代码片段/日志素材后回填证据，才能解除该单点薄弱",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     }
+    ],
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  },
+  {
+   "rank": 3,
+   "weight": 0.3201,
+   "raw_score": 0.52,
+   "branch": 0,
+   "view": "【协同分支 S1·机制边界】三路子分析师共研同一目标，你主责机制与边界切面：优先厘清该事物的内在机制、成立条件与作用边界（什么情况下成立/失效）。其他切面有队友负责，但你认可的机制结论要写明依据，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 1875.6,
+   "S_native": {
+    "summary": "证据清单仅含单条切面标记(S1·机制边界)，无其他证据可与之构成两两关联，本轮不织网。",
+    "hypotheses": [
+     {
+      "hypothesis": "任务级多进程上限来自引擎内部硬编码常量或默认值（如固定 worker 数的进程池），属策略性约束，与机器规格无关。",
+      "supporting": [
+       "认知引擎类系统为结果可复现常固定并行度，ProcessPoolExecutor(max_workers=常量) 或 multiprocessing.Pool(n) 是常见实现签名",
+       "任务描述将\"引擎硬编码\"列为约束来源候选之一",
+       "若上限在多台不同规格机器上实测数值一致，即符合此假设"
+      ],
+      "contradicting": [
+       "若上限数值随 CPU 核数变化则不成立",
+       "若配置文件或运行时参数可修改该上限则非纯硬编码",
+       "当前无任何直接代码证据，仅为典型实现惯例推断"
+      ],
+      "test_next": "在代码中检索 parallel_pipeline 相关模块，定位 ProcessPoolExecutor / Pool / Semaphore 的实例化参数来源；修改该常量后压测，观察最大并发进程数是否随之线性变化"
+     },
+     {
+      "hypothesis": "上限由底层资源派生（CPU 核数、信号量许可数或 OS 进程数限制），属资源性约束，数值随部署环境浮动。",
+      "supporting": [
+       "任务描述将 CPU 核数/信号量列为候选来源",
+       "若代码以 os.cpu_count() 或按核数初始化信号量即符合；多进程管线通常需防超额订阅",
+       "容器化部署中 cgroup CPU 配额也常被用作并行度依据"
+      ],
+      "contradicting": [
+       "若在不同核数机器上实测上限相同则不成立",
+       "若上限远超核数（I/O 密集场景常见）则另有来源",
+       "无跨机器实测数据，纯条件性推断"
+      ],
+      "test_next": "在至少两台不同核数/配额的机器上运行同一负载，记录峰值进程数，与 os.cpu_count()、ulimit -u、容器 CPU 配额及信号量初值逐一比对"
+     },
+     {
+      "hypothesis": "上限是暴露给用户的可配置项（配置文件/接口参数），引擎仅提供默认值与钳制校验，运行时可调且可能被设到危险值。",
+      "supporting": [
+       "任务子问将\"用户配置\"列为候选来源",
+       "工程惯例上并行度常作为 config 键暴露；若存在上限钳制逻辑，恰说明它是策略约束而非物理限制",
+       "风险面：若缺少资源感知校验，用户配置超核数值会引发进程爆炸或资源争用"
+      ],
+      "contradicting": [
+       "若配置 schema 中不存在并行度相关键则不成立",
+       "若用户配置值被内部静默覆盖则约束仍在引擎层",
+       "无代码或文档证据支持配置键存在"
+      ],
+      "test_next": "检查配置 schema 与文档中的 parallel 相关键；分别设为 1、默认值、超核数值运行，观察实际进程数变化及超限时行为（排队/报错/崩溃）"
+     },
+     {
+      "hypothesis": "观测到的\"任务级上限\"并非单一来源，而是管线级与任务级两级并行叠加后的表观上限——真实约束是二者乘积受某层资源封顶。",
+      "supporting": [
+       "任务描述将\"管线并行\"与\"任务级多进程\"并列表述，暗示可能是同一层两种称呼之外的分层结构",
+       "两级并行（stage 级 × 数据级）是管线并行系统的常见架构；若每 stage 各持进程池，总进程数为乘积",
+       "该假设可解释\"上限数值与任何单一候选来源都对不上\"的潜在观测"
+      ],
+      "contradicting": [
+       "若 parallel_pipeline 与任务级多进程实为同一机制两种称呼，则无叠加，退化为前三条假设",
+       "若引擎明确串行化 stage 与任务调度则乘积不成立",
+       "当前无调度路径代码可查，分层假设完全待验证"
+      ],
+      "test_next": "追读 parallel_pipeline 调度路径，确认每个管线 stage 是否各自 spawn 独立进程池；端到端压测统计峰值进程总数，与任务级单池上限对比是否出现乘积放大"
+     }
+    ],
+    "weakest_link": null,
+    "gaps": null,
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  }
+ ],
+ "reference_baseline_branch": 1,
+ "divergence_notes": [
+  "各路收敛一致性: 全收敛",
+  "缺口数极差=22(大=视角正交性好, 小=同质冗余)",
+  "有终稿分支: 无"
+ ],
+ "f60": {
+  "dx_candidates": {
+   "consensus_hypotheses": [
+    {
+     "statement": "代码内上限缺省或宽松，实际有效上限由运行环境资源（CPU 核数、内存、容器/cgroup 配额）动态决定，逼近上限时以资源耗尽形式失效",
+     "topic": "资源约束",
+     "branches": [
+      1,
+      2,
+      0
+     ],
+     "votes": 3,
+     "shared_evidence": [
+      "cgroup",
+      "cpu",
+      "cpu_count",
+      "内存",
+      "核数",
+      "配置",
+      "配额"
+     ]
+    },
+    {
+     "statement": "逼近/突破上限时主导失效模式存在竞争解释：资源耗尽型（OOM、派生失败）与阻塞型（队列堆积、进程泄漏累积、死锁），二者对监控告警优先级设计指向不同",
+     "topic": "资源约束",
+     "branches": [
+      1,
+      2
+     ],
+     "votes": 2,
+     "shared_evidence": [
+      "队列"
+     ]
+    },
+    {
+     "statement": "任务级多进程上限由 parallel_pipeline 进程池创建处的显式静态配置决定（硬编码常量或配置文件参数），数值可直接从代码核验",
+     "topic": "硬编码默认",
+     "branches": [
+      2,
+      0
+     ],
+     "votes": 2,
+     "shared_evidence": [
+      "max_workers",
+      "常量",
+      "硬编码",
+      "配置"
+     ]
+    }
+   ],
+   "shared_weak_points": [],
+   "candidate_actions_dedup": [
+    {
+     "weight": 0.3399,
+     "branch": 1,
+     "action": "清单内仅有一条证据（协同分支S2·度量验证，且素材原文未定位），无法构成任何两两证据对，本轮织网为空，后续需补证后再关联。"
+    },
+    {
+     "weight": 0.3399,
+     "branch": 2,
+     "action": "四图投影完成, 缺口合并22条"
+    },
+    {
+     "weight": 0.3201,
+     "branch": 0,
+     "action": "证据清单仅含单条切面标记(S1·机制边界)，无其他证据可与之构成两两关联，本轮不织网。"
+    }
+   ],
+   "divergent_hypotheses": [
+    "上限是代码硬编码或人为设定的保守业务值，物理与框架层均远未饱和，属于无实证依据的经验数字，上调即有收益空间",
+    "'进程数上限'根本不是当前瓶颈——真实瓶颈在管线阶段间的串行依赖与通信/序列化开销，上调上限对吞吐无显著改善，瓶颈归因前提本身待证伪",
+    "上限行为与失效模式由外部依赖决定（multiprocessing 库版本、start method fork/spawn、调度组件），同一代码在不同环境下上限含义不同",
+    "上限是暴露给用户的可配置项（配置文件/接口参数），引擎仅提供默认值与钳制校验，运行时可调且可能被设到危险值。",
+    "观测到的\"任务级上限\"并非单一来源，而是管线级与任务级两级并行叠加后的表观上限——真实约束是二者乘积受某层资源封顶。"
+   ]
+  },
+  "vote_stats": {
+   "n_live": 3,
+   "hyp_clusters": 8,
+   "consensus_clusters": 3
+  },
+  "single_branch_mode": false,
+  "note": "ΔX 为候选(F40 粗解语义), 未经正演校验不得直接执行"
+ },
+ "forward_check_static": {
+  "goal_keyword_coverage": {
+   "parallel_pipeline": true,
+   "分析认知": false,
+   "析认知引": false,
+   "认知引擎": false,
+   "分析认": false,
+   "析认知": false
+  },
+  "covered": "1/6",
+  "verdict": "PASS_WITH_GAPS"
+ }
+}

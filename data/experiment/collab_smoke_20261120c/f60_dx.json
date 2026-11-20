@@ -1,0 +1,98 @@
+{
+ "f60": {
+  "dx_candidates": {
+   "consensus_hypotheses": [
+    {
+     "statement": "代码内上限缺省或宽松，实际有效上限由运行环境资源（CPU 核数、内存、容器/cgroup 配额）动态决定，逼近上限时以资源耗尽形式失效",
+     "topic": "资源约束",
+     "branches": [
+      1,
+      2,
+      0
+     ],
+     "votes": 3,
+     "shared_evidence": [
+      "cgroup",
+      "cpu",
+      "cpu_count",
+      "内存",
+      "核数",
+      "配置",
+      "配额"
+     ]
+    },
+    {
+     "statement": "逼近/突破上限时主导失效模式存在竞争解释：资源耗尽型（OOM、派生失败）与阻塞型（队列堆积、进程泄漏累积、死锁），二者对监控告警优先级设计指向不同",
+     "topic": "资源约束",
+     "branches": [
+      1,
+      2
+     ],
+     "votes": 2,
+     "shared_evidence": [
+      "队列"
+     ]
+    },
+    {
+     "statement": "任务级多进程上限由 parallel_pipeline 进程池创建处的显式静态配置决定（硬编码常量或配置文件参数），数值可直接从代码核验",
+     "topic": "硬编码默认",
+     "branches": [
+      2,
+      0
+     ],
+     "votes": 2,
+     "shared_evidence": [
+      "max_workers",
+      "常量",
+      "硬编码",
+      "配置"
+     ]
+    }
+   ],
+   "shared_weak_points": [],
+   "candidate_actions_dedup": [
+    {
+     "weight": 0.3399,
+     "branch": 1,
+     "action": "清单内仅有一条证据（协同分支S2·度量验证，且素材原文未定位），无法构成任何两两证据对，本轮织网为空，后续需补证后再关联。"
+    },
+    {
+     "weight": 0.3399,
+     "branch": 2,
+     "action": "四图投影完成, 缺口合并22条"
+    },
+    {
+     "weight": 0.3201,
+     "branch": 0,
+     "action": "证据清单仅含单条切面标记(S1·机制边界)，无其他证据可与之构成两两关联，本轮不织网。"
+    }
+   ],
+   "divergent_hypotheses": [
+    "上限是代码硬编码或人为设定的保守业务值，物理与框架层均远未饱和，属于无实证依据的经验数字，上调即有收益空间",
+    "'进程数上限'根本不是当前瓶颈——真实瓶颈在管线阶段间的串行依赖与通信/序列化开销，上调上限对吞吐无显著改善，瓶颈归因前提本身待证伪",
+    "上限行为与失效模式由外部依赖决定（multiprocessing 库版本、start method fork/spawn、调度组件），同一代码在不同环境下上限含义不同",
+    "上限是暴露给用户的可配置项（配置文件/接口参数），引擎仅提供默认值与钳制校验，运行时可调且可能被设到危险值。",
+    "观测到的\"任务级上限\"并非单一来源，而是管线级与任务级两级并行叠加后的表观上限——真实约束是二者乘积受某层资源封顶。"
+   ]
+  },
+  "vote_stats": {
+   "n_live": 3,
+   "hyp_clusters": 8,
+   "consensus_clusters": 3
+  },
+  "single_branch_mode": false,
+  "note": "ΔX 为候选(F40 粗解语义), 未经正演校验不得直接执行"
+ },
+ "forward_check_static": {
+  "goal_keyword_coverage": {
+   "parallel_pipeline": true,
+   "分析认知": false,
+   "析认知引": false,
+   "认知引擎": false,
+   "分析认": false,
+   "析认知": false
+  },
+  "covered": "1/6",
+  "verdict": "PASS_WITH_GAPS"
+ }
+}
