@@ -52,7 +52,7 @@ EXIT_CHANNELS = ("terminate_suggest", "llm_terminate", "collapse", "max_steps")
 # R9 受控例外(P-C3 豁免注记): c3_preempt 是唯一非故障审计 kind——router 掰弯了
 # LLM 菜单内合法选择, 必须强制留痕; 是"干预必须可追溯"精神的延伸。
 AUDIT_KINDS = ("route_fallback_parse", "route_fallback_illegal", "route_collapse",
-               "menu_anomaly", "c3_preempt")
+               "menu_anomaly", "c3_preempt", "synthesize_gate")
 AUDIT_OP = "orchestrate:skill_router"        # 段六⑤: 调度异常归编排, 同表不同 op 前缀
 
 # ---- P-C3 段三(b2+b1): task_type 五枚举 + 词表兜底(仅归 root_cause, R12 封闭) ----
@@ -250,9 +250,14 @@ class RouterAtomic:
         # 菜单含 skill_synthesize 且 goal_type != scheme_design → 剔除。
         # analysis/review/simple_query/unknown_ambiguous/读取失败 全部不进
         # synthesize, 链路字节级回归。R9 例外注记: 剔除留审计行可追溯。
+        # #9 collab 旁路(2026-11-20 用户裁决): state.collab_synthesize_override=True
+        # 时放行(仅 collab_pipeline 多路协同注入, 普通任务恒 False), 留审计可追溯。
         if state is not None and any(o.get("skill") == "skill_synthesize"
                                      for o in next_options or []):
-            if self._anchor_goal_type(state) != "scheme_design":
+            if getattr(state, "collab_synthesize_override", False):
+                self._audit("synthesize_gate", "collab_override_pass",
+                            self._ids(next_options or []) or [], len(self.steps_log))
+            elif self._anchor_goal_type(state) != "scheme_design":
                 next_options = [o for o in (next_options or [])
                                 if o.get("skill") != "skill_synthesize"]
                 self._audit("synthesize_gate", "goal_type!=scheme_design",
@@ -284,6 +289,12 @@ class RouterAtomic:
         # P-C3 段四边界5(a案): 提示与拦截资格共用同一套六条件
         if self._c3_should_preempt(state, menu):
             user += "\n【任务标记】评估/根因分析类: 已定位薄弱环节, 建议优先推演竞争假设谱(选 skill_f_reason); 若判断证据已充分可直接收口。"
+        # #9 collab 旁路提示(2026-11-20): 仅 override 场景注入, 普通任务 prompt 字节级不变。
+        # 实测(ab_20261120)门开后 LLM 仍自主走主线不选 synthesize → 显式提示协同目标要求终稿交付。
+        if getattr(state, "collab_synthesize_override", False) and \
+                any(o.get("skill") == "skill_synthesize" for o in menu):
+            user += ("\n【协同模式】多路协同推演要求最终产出可交付终稿: 假设谱已成形时, "
+                     "选 skill_synthesize 收敛竞争假设并撰写终稿(而非直接 terminate)。")
         try:
             raw = self.llm.chat([{"role": "system", "content": ROUTE_SYSTEM},
                                  {"role": "user", "content": user}])

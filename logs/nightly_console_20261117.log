@@ -1,0 +1,479 @@
+[NIGHT] 开始于 2026-11-17 23:16:44
+[NIGHT] 图快照失败(不阻断夜跑): No module named 'eval.e6_mind_graph_patrol'
+
+============================================================
+[NIGHT] >>> E0 topic锚开关守卫
+============================================================
+[E0] topic_layer 开关守卫探针
+  ✓ ① TOPIC_LAYER_ON=1(topic_enabled 为 True)
+  ✓ ② 守卫卡写入成功(全id=5595be0b)
+  ✓ ③ report['topic'] 存在(mount_topic 自动触发)
+  ✓ ④ 新卡锚判定返回 verdict(hold/anchor)
+  ✓ ⑤ hold 判定卡落 hold 池 jsonl
+  ✓ ⑥ 守卫卡自清理(card+hold+memories.jsonl 三侧)
+[E0] 守卫结论: PASS
+[NIGHT] <<< E0 topic锚开关守卫 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=284 negative=8
+[E2 pos 1/284] me=0.807 hit
+[E2 pos 2/284] me=0.795 hit
+[E2 pos 3/284] me=0.793 hit
+[E2 pos 4/284] me=0.804 hit
+[E2 pos 5/284] me=0.784 hit
+[E2 pos 6/284] me=0.795 hit
+[E2 pos 7/284] me=0.704 hit
+[E2 pos 8/284] me=0.703 hit
+[E2 pos 9/284] me=0.702 hit
+[E2 pos 10/284] me=0.694 hit
+[E2 pos 11/284] me=0.825 hit
+[E2 pos 12/284] me=0.796 hit
+[E2 pos 13/284] me=0.812 hit
+[E2 pos 14/284] me=0.803 hit
+[E2 pos 15/284] me=0.798 hit
+[E2 pos 16/284] me=0.811 hit
+[E2 pos 17/284] me=0.809 hit
+[E2 pos 18/284] me=0.798 hit
+[E2 pos 19/284] me=0.696 hit
+[E2 pos 20/284] me=0.806 hit
+[E2 pos 21/284] me=0.808 hit
+[E2 pos 22/284] me=0.804 hit
+[E2 pos 23/284] me=0.706 hit
+[E2 pos 24/284] me=0.820 hit
+[E2 pos 25/284] me=0.795 hit
+[E2 pos 26/284] me=0.703 hit
+[E2 pos 27/284] me=0.825 hit
+[E2 pos 28/284] me=0.759 hit
+[E2 pos 29/284] me=0.776 hit
+[E2 pos 30/284] me=0.823 hit
+[E2 pos 31/284] me=0.709 hit
+[E2 pos 32/284] me=0.808 hit
+[E2 pos 33/284] me=0.797 hit
+[E2 pos 34/284] me=0.693 hit
+[E2 pos 35/284] me=0.707 hit
+[E2 pos 36/284] me=0.693 hit
+[E2 pos 37/284] me=0.704 hit
+[E2 pos 38/284] me=0.711 hit
+[E2 pos 39/284] me=0.678 hit
+[E2 pos 40/284] me=0.697 hit
+[E2 pos 41/284] me=0.691 hit
+[E2 pos 42/284] me=0.675 hit
+[E2 pos 43/284] me=0.806 hit
+[E2 pos 44/284] me=0.684 hit
+[E2 pos 45/284] me=0.786 hit
+[E2 pos 46/284] me=0.701 hit
+[E2 pos 47/284] me=0.686 hit
+[E2 pos 48/284] me=0.804 hit
+[E2 pos 49/284] me=0.806 hit
+[E2 pos 50/284] me=0.670 hit
+[E2 pos 51/284] me=0.708 hit
+[E2 pos 52/284] me=0.699 hit
+[E2 pos 53/284] me=0.694 hit
+[E2 pos 54/284] me=0.687 hit
+[E2 pos 55/284] me=0.682 hit
+[E2 pos 56/284] me=0.816 hit
+[E2 pos 57/284] me=0.830 hit
+[E2 pos 58/284] me=0.691 hit
+[E2 pos 59/284] me=0.789 hit
+[E2 pos 60/284] me=0.785 hit
+[E2 pos 61/284] me=0.764 hit
+[E2 pos 62/284] me=0.711 hit
+[E2 pos 63/284] me=0.707 hit
+[E2 pos 64/284] me=0.698 hit
+[E2 pos 65/284] me=0.796 hit
+[E2 pos 66/284] me=0.803 hit
+[E2 pos 67/284] me=0.794 hit
+[E2 pos 68/284] me=0.785 hit
+[E2 pos 69/284] me=0.785 hit
+[E2 pos 70/284] me=0.712 hit
+[E2 pos 71/284] me=0.711 hit
+[E2 pos 72/284] me=0.687 hit
+[E2 pos 73/284] me=0.690 hit
+[E2 pos 74/284] me=0.720 hit
+[E2 pos 75/284] me=0.693 hit
+[E2 pos 76/284] me=0.665 hit
+[E2 pos 77/284] me=0.702 hit
+[E2 pos 78/284] me=0.795 hit
+[E2 pos 79/284] me=0.727 hit
+[E2 pos 80/284] me=0.642 hit
+[E2 pos 81/284] me=0.677 hit
+[E2 pos 82/284] me=0.705 hit
+[E2 pos 83/284] me=0.736 hit
+[E2 pos 84/284] me=0.657 hit
+[E2 pos 85/284] me=0.703 hit
+[E2 pos 86/284] me=0.704 hit
+[E2 pos 87/284] me=0.644 hit
+[E2 pos 88/284] me=0.620 hit
+[E2 pos 89/284] me=0.703 hit
+[E2 pos 90/284] me=0.635 hit
+[E2 pos 91/284] me=0.625 hit
+[E2 pos 92/284] me=0.643 hit
+[E2 pos 93/284] me=0.683 hit
+[E2 pos 94/284] me=0.704 hit
+[E2 pos 95/284] me=0.689 hit
+[E2 pos 96/284] me=0.778 hit
+[E2 pos 97/284] me=0.625 hit
+[E2 pos 98/284] me=0.727 hit
+[E2 pos 99/284] me=0.280 hit
+[E2 pos 100/284] me=0.581 hit
+[E2 pos 101/284] me=0.576 hit
+[E2 pos 102/284] me=0.592 hit
+[E2 pos 103/284] me=0.622 hit
+[E2 pos 104/284] me=0.612 hit
+[E2 pos 105/284] me=0.740 hit
+[E2 pos 106/284] me=0.628 hit
+[E2 pos 107/284] me=0.625 hit
+[E2 pos 108/284] me=0.726 hit
+[E2 pos 109/284] me=0.623 hit
+[E2 pos 110/284] me=0.679 hit
+[E2 pos 111/284] me=0.324 hit
+[E2 pos 112/284] me=0.675 hit
+[E2 pos 113/284] me=0.718 hit
+[E2 pos 114/284] me=0.718 hit
+[E2 pos 115/284] me=0.730 hit
+[E2 pos 116/284] me=0.717 hit
+[E2 pos 117/284] me=0.709 hit
+[E2 pos 118/284] me=0.714 hit
+[E2 pos 119/284] me=0.734 hit
+[E2 pos 120/284] me=0.679 hit
+[E2 pos 121/284] me=0.729 hit
+[E2 pos 122/284] me=0.692 hit
+[E2 pos 123/284] me=0.598 hit
+[E2 pos 124/284] me=0.717 hit
+[E2 pos 125/284] me=0.721 hit
+[E2 pos 126/284] me=0.722 hit
+[E2 pos 127/284] me=0.736 hit
+[E2 pos 128/284] me=0.693 hit
+[E2 pos 129/284] me=0.708 hit
+[E2 pos 130/284] me=0.701 hit
+[E2 pos 131/284] me=0.739 hit
+[E2 pos 132/284] me=0.735 hit
+[E2 pos 133/284] me=0.719 hit
+[E2 pos 134/284] me=0.647 hit
+[E2 pos 135/284] me=0.721 hit
+[E2 pos 136/284] me=0.713 hit
+[E2 pos 137/284] me=0.721 hit
+[E2 pos 138/284] me=0.728 hit
+[E2 pos 139/284] me=0.722 hit
+[E2 pos 140/284] me=0.803 hit
+[E2 pos 141/284] me=0.652 hit
+[E2 pos 142/284] me=0.713 hit
+[E2 pos 143/284] me=0.644 hit
+[E2 pos 144/284] me=0.685 hit
+[E2 pos 145/284] me=0.679 hit
+[E2 pos 146/284] me=0.724 hit
+[E2 pos 147/284] me=0.655 hit
+[E2 pos 148/284] me=0.692 hit
+[E2 pos 149/284] me=0.667 hit
+[E2 pos 150/284] me=0.694 hit
+[E2 pos 151/284] me=0.808 hit
+[E2 pos 152/284] me=0.799 hit
+[E2 pos 153/284] me=0.676 hit
+[E2 pos 154/284] me=0.679 hit
+[E2 pos 155/284] me=0.671 hit
+[E2 pos 156/284] me=0.676 hit
+[E2 pos 157/284] me=0.709 hit
+[E2 pos 158/284] me=0.689 hit
+[E2 pos 159/284] me=0.702 hit
+[E2 pos 160/284] me=0.675 hit
+[E2 pos 161/284] me=0.000 empty
+[E2 pos 162/284] me=0.000 empty
+[E2 pos 163/284] me=0.000 empty
+[E2 pos 164/284] me=0.000 empty
+[E2 pos 165/284] me=0.000 empty
+[E2 pos 166/284] me=0.000 empty
+[E2 pos 167/284] me=0.810 hit
+[E2 pos 168/284] me=0.808 hit
+[E2 pos 169/284] me=0.799 hit
+[E2 pos 170/284] me=0.779 hit
+[E2 pos 171/284] me=0.780 hit
+[E2 pos 172/284] me=0.777 hit
+[E2 pos 173/284] me=0.801 hit
+[E2 pos 174/284] me=0.797 hit
+[E2 pos 175/284] me=0.792 hit
+[E2 pos 176/284] me=0.801 hit
+[E2 pos 177/284] me=0.783 hit
+[E2 pos 178/284] me=0.808 hit
+[E2 pos 179/284] me=0.806 hit
+[E2 pos 180/284] me=0.788 hit
+[E2 pos 181/284] me=0.811 hit
+[E2 pos 182/284] me=0.795 hit
+[E2 pos 183/284] me=0.788 hit
+[E2 pos 184/284] me=0.796 hit
+[E2 pos 185/284] me=0.798 hit
+[E2 pos 186/284] me=0.811 hit
+[E2 pos 187/284] me=0.707 hit
+[E2 pos 188/284] me=0.705 hit
+[E2 pos 189/284] me=0.787 hit
+[E2 pos 190/284] me=0.794 hit
+[E2 pos 191/284] me=0.799 hit
+[E2 pos 192/284] me=0.792 hit
+[E2 pos 193/284] me=0.800 hit
+[E2 pos 194/284] me=0.822 hit
+[E2 pos 195/284] me=0.808 hit
+[E2 pos 196/284] me=0.792 hit
+[E2 pos 197/284] me=0.714 hit
+[E2 pos 198/284] me=0.706 hit
+[E2 pos 199/284] me=0.719 hit
+[E2 pos 200/284] me=0.798 hit
+[E2 pos 201/284] me=0.706 hit
+[E2 pos 202/284] me=0.788 hit
+[E2 pos 203/284] me=0.795 hit
+[E2 pos 204/284] me=0.700 hit
+[E2 pos 205/284] me=0.701 hit
+[E2 pos 206/284] me=0.695 hit
+[E2 pos 207/284] me=0.706 hit
+[E2 pos 208/284] me=0.705 hit
+[E2 pos 209/284] me=0.683 hit
+[E2 pos 210/284] me=0.679 hit
+[E2 pos 211/284] me=0.673 hit
+[E2 pos 212/284] me=0.700 hit
+[E2 pos 213/284] me=0.810 hit
+[E2 pos 214/284] me=0.811 hit
+[E2 pos 215/284] me=0.807 hit
+[E2 pos 216/284] me=0.807 hit
+[E2 pos 217/284] me=0.700 hit
+[E2 pos 218/284] me=0.675 hit
+[E2 pos 219/284] me=0.670 hit
+[E2 pos 220/284] me=0.710 hit
+[E2 pos 221/284] me=0.709 hit
+[E2 pos 222/284] me=0.689 hit
+[E2 pos 223/284] me=0.730 hit
+[E2 pos 224/284] me=0.337 hit
+[E2 pos 225/284] me=0.794 hit
+[E2 pos 226/284] me=0.692 hit
+[E2 pos 227/284] me=0.697 hit
+[E2 pos 228/284] me=0.806 hit
+[E2 pos 229/284] me=0.712 hit
+[E2 pos 230/284] me=0.687 hit
+[E2 pos 231/284] me=0.665 hit
+[E2 pos 232/284] me=0.710 hit
+[E2 pos 233/284] me=0.692 hit
+[E2 pos 234/284] me=0.698 hit
+[E2 pos 235/284] me=0.684 hit
+[E2 pos 236/284] me=0.667 hit
+[E2 pos 237/284] me=0.658 hit
+[E2 pos 238/284] me=0.689 hit
+[E2 pos 239/284] me=0.774 hit
+[E2 pos 240/284] me=0.699 hit
+[E2 pos 241/284] me=0.797 hit
+[E2 pos 242/284] me=0.802 hit
+[E2 pos 243/284] me=0.775 hit
+[E2 pos 244/284] me=0.783 hit
+[E2 pos 245/284] me=0.783 hit
+[E2 pos 246/284] me=0.779 hit
+[E2 pos 247/284] me=0.706 hit
+[E2 pos 248/284] me=0.793 hit
+[E2 pos 249/284] me=0.776 hit
+[E2 pos 250/284] me=0.811 hit
+[E2 pos 251/284] me=0.807 hit
+[E2 pos 252/284] me=0.807 hit
+[E2 pos 253/284] me=0.700 hit
+[E2 pos 254/284] me=0.667 hit
+[E2 pos 255/284] me=0.675 hit
+[E2 pos 256/284] me=0.673 hit
+[E2 pos 257/284] me=0.711 hit
+[E2 pos 258/284] me=0.722 hit
+[E2 pos 259/284] me=0.697 hit
+[E2 pos 260/284] me=0.806 hit
+[E2 pos 261/284] me=0.659 hit
+[E2 pos 262/284] me=0.696 hit
+[E2 pos 263/284] me=0.678 hit
+[E2 pos 264/284] me=0.696 hit
+[E2 pos 265/284] me=0.679 hit
+[E2 pos 266/284] me=0.671 hit
+[E2 pos 267/284] me=0.671 hit
+[E2 pos 268/284] me=0.683 hit
+[E2 pos 269/284] me=0.683 hit
+[E2 pos 270/284] me=0.669 hit
+[E2 pos 271/284] me=0.698 hit
+[E2 pos 272/284] me=0.695 hit
+[E2 pos 273/284] me=0.707 hit
+[E2 pos 274/284] me=0.707 hit
+[E2 pos 275/284] me=0.691 hit
+[E2 pos 276/284] me=0.690 hit
+[E2 pos 277/284] me=0.681 hit
+[E2 pos 278/284] me=0.719 hit
+[E2 pos 279/284] me=0.700 hit
+[E2 pos 280/284] me=0.700 hit
+[E2 pos 281/284] me=0.706 hit
+[E2 pos 282/284] me=0.692 hit
+[E2 pos 283/284] me=0.678 hit
+[E2 pos 284/284] me=0.685 hit
+[E2 neg 1/8] me=0.091 uncertain (无任何实义（地板分）)
+[E2 neg 2/8] me=0.137 marginal_ask (无主语泛指)
+[E2 neg 3/8] me=0.138 marginal_ask (无上下文新任务)
+[E2 neg 4/8] me=0.099 uncertain (完全无关域)
+[E2 neg 5/8] me=0.115 uncertain (无主题泛任务)
+[E2 neg 6/8] me=0.419 hit (泛指无实体)
+[E2 neg 7/8] me=0.106 uncertain (无指代反问)
+[E2 neg 8/8] me=0.122 marginal_ask (单字续写)
+
+[E2] 固化回归: 15/15 全绿 ✓
+
+[E2] ===== 阈值扫描（节选） =====
+  th=0.08 recall=0.98 fp=1.00 f1=0.66
+  th=0.11 recall=0.98 fp=0.62 f1=0.75
+  th=0.14 recall=0.98 fp=0.12 f1=0.93
+  th=0.17 recall=0.98 fp=0.12 f1=0.93
+  th=0.20 recall=0.98 fp=0.12 f1=0.93
+  th=0.23 recall=0.98 fp=0.12 f1=0.93
+  th=0.26 recall=0.98 fp=0.12 f1=0.93
+  th=0.29 recall=0.97 fp=0.12 f1=0.93
+当前 0.15: recall=97.90% 误报=12.50%
+双门分层: 正例放行 278/284 (97.9%) | 负例漏报 1/8
+  负例漏报明细: ['上次说的那个 bug 修了吗']
+F1 最优: th=0.14 f1=0.931
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e2_gate_calibration.json
+[NIGHT] <<< E2 反问门标定扫描 OK 用时 6.7min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+[E1] config 快照: logs/config_snapshot_20261117_232328.yaml | 判定后端: deepseek/deepseek-chat
+[E1] probes total 123, done 123, todo 0
+
+[E1] ===== 触发率汇总 =====
+errors: 0
+[NIGHT] <<< E1 探针触发率全链回归 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+E4 维护巡逻: 4 项报警
+  [warn] 隔离区近7天新增 10 条校验拦截(拦截正常, 非管道故障)——repro来源非法:6 | 枚举非法值:4 | 骨架编码错误:1
+  [warn] 冲突评审积压 3 条（同源分叉待元思域对撞）
+  [warn] event_ts 空值存量 48 条待回填（有线索就补 backfill 叠加层）
+  [warn] watchlist 3 条在池（0 条仍 watching 未推进）——巡检是否该转正/关闭
+计数: {"multi_topic_frozen": 0, "multi_topic_suspect_rough": 0, "unclassified_expired": 0, "unclassified_near_limit": 0, "quarantine_total": 31, "quarantine_last7d": 10, "quarantine_by_cat": {"枚举非法值": 4, "repro来源非法": 6, "骨架编码错误": 1}, "conflict_pending": 3, "experiences": 19, "experience_split_pending": 0, "entities": 6, "entity_dangling_members": 0, "runtime_unlinked": 0, "event_ts_null_remaining": 48, "watchlist": 3, "alias_entries": 6, "alias_pending": 141, "alias_expired_inactive": 0, "high_value_content_without_class": 0, "mc_in_dfcp_tag": 242, "mc_legacy_top_level": 117, "mc_dual_field_conflict": 0, "corpus_hash_drift": 0, "placeholder_cards": 0, "fragile_cards": 0}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e4_maintenance.json
+[NIGHT] <<< E4 记忆库维护巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E5 记忆自动整理
+============================================================
+E5 整理: 补挂 0/0（conflict 0 skipped 0） | 经验 created=0 updated=0
+库态: {'memories': 267, 'graph_edges': 208, 'experiences': 19}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e5_consolidation.json
+[NIGHT] <<< E5 记忆自动整理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E6 思维图巡逻
+============================================================
+E6 思维图巡逻: 全绿
+计数: {"edges_over_hard_cap": 0, "edges_near_soft_cap": 0, "first_hop_concentration_top3": 0.286, "dead_edges": 24, "backup_snapshots": 5, "latest_backup": "mind_graph_backup_20261113.json", "drift_vs_backup": {"edges": -13, "nodes": 0, "max_weight": -0.0}}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e6_mind_graph_patrol.json
+[NIGHT] <<< E6 思维图巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E7 夜间治理
+============================================================
+[E7] hold分流: 自动放行 0 | 自动留置 0 | 人工队列 0 | 高频簇可疑 6 | 证据回写 0 条 | cue复检 50项/告警0条/观察12条
+
+— P2b cue样本不足观察名单 (12条, disc暂不判, 跟踪争议量) —
+  [topic_brain_region] cue: 前额叶 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_brain_region] cue: 杏仁核 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_g22_decision] cue: 方案矩阵 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_feinong_review] cue: 金价 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_memory_ops] cue: 入库断档 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_memory_ops] cue: judge管道 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_patent_matrix] cue: P33 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_patent_matrix] cue: P41 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_stock_decision] cue: 股价 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_vehicle_8397] cue: 右舵 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_atomic_metacore] cue: ThinkState (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_atomic_metacore] cue: BaseAtomicSkill (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+
+— P2 高频簇可疑混入明细 (6张) —
+  [7a499925] 簇: topic_memory_ops
+    卡: 新机制上线前伪演示基线法: 只读模拟跑一次做对比样本, 验证保守路线+存量收益判断+留验收底片
+    summary无锚词命中, 疑似混入
+  [76f6b86b] 簇: topic_memory_ops
+    卡: 未来推演公式体系v2.1折中软约束裁决: p_trait只出β推荐基准不锁死(主体特质是推演风格暗示非强制)+∏σ合规因子改衰减罚分不归零(违规分支降权留档可复…
+    summary无锚词命中, 疑似混入
+  [12a06982] 簇: topic_memory_ops
+    卡: 平行论→P7→公式体系诞生过程考古定案(跨corpus1 r959-963/corpus2 r105,108逐轮核对): 平行论双向推演=用户原创四轮传递(r9…
+    summary无锚词命中, 疑似混入
+  [7747ed4d] 簇: topic_memory_ops
+    卡: 消费侧教训: 用户问'逆向推演四权重公式是否已形成'时检索命中了正确卡(9219377d, 0.985分)但只扫summary未读detail——完整四维权重定…
+    summary无锚词命中, 疑似混入
+  [a65a500c] 簇: topic_memory_ops
+    卡: [待办] 平行论双向推演公式体系(F00-F60, v2.1)工程实现: 最小验证=F00(DFCP检索组装S_0快照+p_trait输入)→F10(固定K=3…
+    summary无锚词命中, 疑似混入
+  [f1577a38] 簇: topic_memory_ops
+    卡: 图谱还债专项定案: 全库191失挂卡盘点→冲突预检29歧义四类处置→6 manual_seed簇+152 backfill补挂+9双挂, 挂载51→182/24…
+    summary无锚词命中, 疑似混入
+[NIGHT] <<< E7 夜间治理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E10 语义离群巡检
+============================================================
+[E10] 语义离群巡检(incremental): 检查0卡 | 告警0条 | 小簇跳过3 | 未变跳过9
+[NIGHT] <<< E10 语义离群巡检 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E9 对话治理
+============================================================
+[E9] 扫描85段 | 高价值0 | 提案0(送pending) | 重复跳过1 | miss_case0 | 假阴性疑点0 | transcript兜底: 提取160/入库72/去重88
+— 旁路重复跳过 1 条(优先级规约①: 旁路已提, 夜间不重复) —
+— transcript 兜底入库 72 段, 样例: —
+  [t10130] 走记忆系统，查一下我记忆相关的专利有哪些
+  [t10131] 先处理conflict_suspect 的仲裁吧
+  [t10132] 我需要具体的信息，他们现状是谁和谁冲突，每个卡片的内容大体是啥样的
+[NIGHT] <<< E9 对话治理 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E11 原子技能冒烟
+============================================================
+[E11] PASS skill_f_reason (6.3s) 
+[E11] PASS skill_memory_gate (2.1s) 
+[E11] 总判定: PASS | 明细 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e11_atomic_smoke.json
+[NIGHT] <<< E11 原子技能冒烟 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E12 路由器冒烟
+============================================================
+[E12] G1-根因 PASS (20.1s) exit=llm_terminate type=root_cause/llm steps=4 fb=0 preempt=0 
+[E12] G1-根因 trail: skill_anchor_target→skill_scope_scan→skill_weakest_link→skill_f_reason
+[E12] G2-评估 PASS (17.7s) exit=llm_terminate type=eval/llm steps=4 fb=0 preempt=0 
+[E12] G2-评估 trail: skill_anchor_target→skill_scope_scan→skill_weakest_link→skill_f_reason
+[E12] G3-决策 PASS (11.3s) exit=llm_terminate type=decision/llm steps=3 fb=0 preempt=0 
+[E12] G3-决策 trail: skill_anchor_target→skill_scope_scan→skill_weakest_link
+[E12] S1-短材料直塞 PASS (25.4s) mode=inline mat=1500chars exit=llm_terminate 词表命中=3/5 ['可复现性', '三级分类', '闪念记忆层']
+[E12] S2-长材料检索 PASS (26.1s) mode=retrieve mat=8545chars exit=llm_terminate 词表命中=3/5 ['可复现性', '判定单元', '闪念记忆层']
+[E12] S3-超大截断 PASS (21.3s) mode=oversize mat=181000chars exit=llm_terminate 词表命中=1/5 ['可复现性']
+[E12] S4-CIPP直塞6401 PASS (29.0s) mode=cipp_inline mat=6401chars exit=llm_terminate CIPP词表命中=5/5 ['二进制', '操作码', '寻址', '扩展接口', 'CIPP']
+[llm] 第1次调用失败(<urlopen error [Errno 2] No such file or directory>)，2s 后重试
+[E12] N1-带材料后置 PASS (47.8s) trail=skill_anchor_target→skill_scope_scan→skill_weakest_link→skill_f_reason→skill_terminate 汇编=True final_output=3609字 ref=2537
+[E12] N2-直收口不适用 PASS (5.4s) trail=skill_anchor_target→skill_terminate 汇编=True final_output=263字 ref=0
+[E12] N1 FAIL: 未检出 retrieval_dependent=True 告警(段四A硬断言)
+[E12] 总判定: FAIL (warn 0条不阻断) | 明细 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e12_router_smoke.json
+[NIGHT] <<< E12 路由器冒烟 FAIL 用时 3.4min
+
+============================================================
+[NIGHT] >>> T1 trace月度归档
+============================================================
+归档完成: {'trace_cited': 0, 'trace_call': 0, 'trace_embedding': 0}
+  trace_archive_2026_08.db trace_cited: meta申报 300 vs 本库实际 300 PASS
+  trace_archive_2026_09.db trace_cited: meta申报 200 vs 本库实际 200 PASS
+trace_cited: 总 29838 行 = 主库:29338 + trace_archive_2026_08.db:300 + trace_archive_2026_09.db:200
+trace_call: 总 0 行 = 主库:0
+trace_embedding: 总 0 行 = 主库:0
+[NIGHT] <<< T1 trace月度归档 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> F20 基线守卫(experiment)
+============================================================
+[F20守卫] smoke PASS(基线PASS ⚠️位次移动) top=87f66cc1,f1577a38,58707552
+[F20守卫] explore1 PASS(基线PASS) top=04353a35
+[F20守卫] explore2 PASS(基线PASS ⚠️位次移动) top=87f66cc1,f1577a38,58707552
+[F20守卫] explore3 PASS(基线PASS) top=287e892d,b178d1f9,296e4981
+[F20守卫] explore4 FAIL(基线FAIL) top=4304794d,6ed8586c,fb674356
+⚠️ F20基线异常: 翻转=False 位次移动=True — 见 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\f20\guard_latest.json
+[NIGHT] <<< F20 基线守卫(experiment) OK 用时 0.2min
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261117_2327.md
+[NIGHT] 全部结束于 2026-11-17 23:27:25

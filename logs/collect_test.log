@@ -1,0 +1,17 @@
+[collect] 3 题，来自 C:/Users/uidq0280/AppData/Local/Temp/q3.txt
+>>> 题1/3: 从多角度分析：领导说"你很有潜力"，是夸我、鞭策我还是捧杀？
+    路径 14 节点 | 比率 0.98 | 裸答 2902字 | 395s | 闸门 过
+>>> 题2/3: 对比方案A：本地部署开源模型 vs 方案B：调用云端API。
+[llm] 第1次调用失败(HTTP Error 503: Service Temporarily Unavailable)，2s 后重试
+[llm] 第1次调用失败('NoneType' object is not subscriptable)，2s 后重试
+[llm] 第1次调用失败(HTTP Error 503: Service Temporarily Unavailable)，2s 后重试
+[llm] 第1次调用失败(HTTP Error 503: Service Temporarily Unavailable)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 503: Service Temporarily Unavailable)，4s 后重试
+[llm] 第1次调用失败(HTTP Error 503: Service Temporarily Unavailable)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 503: Service Temporarily Unavailable)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 503: Service Temporarily Unavailable
+[llm] 第1次调用失败('NoneType' object is not subscriptable)，2s 后重试
+    路径 16 节点 | 比率 None | 裸答 2723字 | 1808s | 闸门 不过
+>>> 题3/3: 我朋友借钱时说"下周一定还"，已经说了三次。从利益相关者角度
+    路径 14 节点 | 比率 0.95 | 裸答 1599字 | 282s | 闸门 过
+[traj] 落盘 3 条（过闸门 2）→ D:\uidq0280\Downloads\Agent\cognitive_engine_v3\data\trajectories\traj_train_20261103_184035.jsonl

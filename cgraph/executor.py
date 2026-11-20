@@ -162,7 +162,7 @@ class ChainExecutor:
                           event_counts=event_counts, jw_sidebranch=jw_out)
 
     # ---------- 记忆写入闸门(段一B案后置钩子) ----------
-    def run_atomic(self, user_input: str):
+    def run_atomic(self, user_input: str, collab_synthesize_override: bool = False):
         """原子技能管线薄入口(2026-11-17 skill_router 七段定稿段四②b)。
 
         职责划分: router_atomic 只做纯调度循环(R6: 零 DB 写零编排钩子);
@@ -220,7 +220,8 @@ class ChainExecutor:
             except Exception:
                 pass
             ref_material = ""
-        state = ThinkState(goal=user_input, ref_material=ref_material)
+        state = ThinkState(goal=user_input, ref_material=ref_material,
+                           collab_synthesize_override=collab_synthesize_override)
         report = RouterAtomic(self.llm, adjacency).run(state)
         # ---- P-matrix-feed(2026-11-18 段二契约2): scan 后一次性统一装载 ----
         # 时机=router run 返回后(此时 scan 已完成, goal+scan_summary 完备);

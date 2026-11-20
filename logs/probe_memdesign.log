@@ -1,0 +1,11 @@
+[sufficiency] 告警 12 条(只告警不裁决): [指标] wl_addressed=0: weakest_link 定位疑点未被任何假设关键词回应; 机械指标 wl_addressed=0 显示 weakest_link 定位疑点未被任何假设关键词回应；链路节选仅见四条; skill_f_reason 的 hypotheses 节选在 H1 的 contradicting 项处截断（'清单名...
+[1912.1s] finished ok=True exit=llm_terminate
+secs= 1912.1 ok= True exit= llm_terminate steps= 8
+trail= ['skill_anchor_target', 'skill_scope_scan', 'skill_f_reason', 'skill_dk_deduction', 'matrix_feed', 'skill_terminate']
+hyp数= 4
+ H: {'hypothesis': '显式清单差集假设：已分析专利以结构化载体（索引文件或frontmatter状态位）显式登记，未分析识别为确定性差集计算（全集40+减去登记清单），链路可信度取决于标记写入是否完整及时', 'supporting': ['结构化记忆系统通常存在索引/frontmatte
+ H: {'hypothesis': "语义检索重构假设：不存在显式清单，'已分析集合'靠语义检索memory条目临时重构，未分析=全集减去召回结果，链路存在系统性漏召风险——对'未做过的事'检索天然盲区", 'supporting': ["无结构化索引的记忆系统只能靠检索回忆'分析过哪些'，这是最常见的实
+ H: {'hypothesis': "判定定义漂移假设：识别机制本身无论哪种都可行，但'分析过'的操作定义停留在浅层（读过或提及过即置位），标记状态与真实分析深度脱节，导致识别出的'未分析'清单名义准确、实质低估——真正的缺口藏在判定层而非数据/检索层", 'supporting': ["任务将'读过/标
+ H: {'hypothesis': '输出转述失真假设：前三层计算均正确，失真发生在输出层——差集结果经LLM转述生成清单时，清单形态（纯编号/含元数据）由生成时上下文随机决定，且转述环节可能丢项或添项，清单与差集计算结果无一致性校验', 'supporting': ["输出层'清单形态与差集一致性'被单
+wl= None
+chains= 4 gaps= 0

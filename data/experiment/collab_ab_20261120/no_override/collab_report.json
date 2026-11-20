@@ -1,0 +1,318 @@
+{
+ "formula": "F50 v2.1: Y=Σ W_k·Y_k(仅抽象指标); S_T 禁平均→原生分支清单",
+ "tau": 0.5,
+ "n_live": 1,
+ "n_dead": 1,
+ "dead_errors": [
+  {
+   "branch": 0,
+   "error": null
+  }
+ ],
+ "y_hat": {
+  "converged": 1.0,
+  "has_deliverable": 0.0,
+  "confidence": 0.75,
+  "n_gaps": 20.0,
+  "n_contradictions": 0.0
+ },
+ "branches": [
+  {
+   "rank": 1,
+   "weight": 1.0,
+   "raw_score": 0.55,
+   "branch": 1,
+   "view": "【协同分支 S2·度量验证】三路子分析师共研同一目标，你主责度量与验证切面：优先识别现有结论缺哪些实证数据/指标才能成立，评估证据充分性与可测性。你认可的底层机制应与队友表述对齐而非另起炉灶，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 599.7,
+   "S_native": {
+    "summary": "四图投影完成, 缺口合并20条",
+    "hypotheses": [
+     {
+      "hypothesis": "上限主要由CPU物理核数约束，进程数超过核数后上下文切换与GIL外争用导致吞吐饱和",
+      "supporting": [
+       "任务级多进程天然映射到物理核，multiprocessing常见默认Pool(size=cpu_count)",
+       "若采用默认池配置，代码层上限即隐式等于核数，无需额外显式配置"
+      ],
+      "contradicting": [
+       "无任何吞吐/延迟实测数据证明饱和点出现在核数附近",
+       "若任务为IO密集型，核数并非瓶颈，该假设不成立"
+      ],
+      "test_next": "在2/4/8/16进程梯度下测吞吐与p99延迟曲线，观察拐点是否落在CPU核数附近"
+     },
+     {
+      "hypothesis": "真实瓶颈是序列化与IPC开销（pickle往返、队列通信），进程数增加反而降低有效吞吐",
+      "supporting": [
+       "parallel_pipeline传递任务对象需跨进程序列化，大对象时开销可主导",
+       "此机制下表现出的'上限'是软性的收益递减而非硬性资源墙，与当前仅有推断无数据的状态吻合"
+      ],
+      "contradicting": [
+       "若任务粒度大（单任务秒级），序列化开销占比可忽略",
+       "无内存/耗时profile数据支持序列化占比假设"
+      ],
+      "test_next": "对单任务测量pickle序列化耗时占比（cProfile/py-spy采样跨进程时间分布）"
+     },
+     {
+      "hypothesis": "瓶颈在OS层资源：文件描述符、进程数上限(ulimit)或内存峰值触发OOM killer，表现为硬故障而非性能退化",
+      "supporting": [
+       "每个子进程占用独立fd与内存副本（copy-on-write后仍可能膨胀），高并发下可能触及rlimit",
+       "超限故障模式（子进程被杀、池僵死）在缺乏失败率数据时最易被忽视"
+      ],
+      "contradicting": [
+       "若实测并发量级仅个位数到几十，远低于典型ulimit阈值，该瓶颈可能永不触发",
+       "无OOM日志或fd计数证据"
+      ],
+      "test_next": "压测至失败，记录失败瞬间进程数、fd使用量(/proc/self/limits)、dmesg中OOM记录与失败率"
+     },
+     {
+      "hypothesis": "瓶颈在进程池实现层：Pool的不当复用/未join导致的进程泄漏使有效并发随时间衰减，表观上限是泄漏累积结果",
+      "supporting": [
+       "multiprocessing.Pool若未正确terminate/join，僵尸进程会累积占用槽位，形成'越跑越慢'的伪上限",
+       "该假设与'上限约束因素'结论缺乏失败率与长期运行数据直接相关——短测无法暴露"
+      ],
+      "contradicting": [
+       "若pipeline生命周期短或每轮重建池，泄漏无累积窗口",
+       "无进程数随时间变化的监控数据"
+      ],
+      "test_next": "长时间运行下用psutil采样存活子进程数曲线，检测是否单调增长或泄漏"
+     }
+    ],
+    "weakest_link": {
+     "location": "parallel_pipeline 上限结论的实证支撑层（吞吐/延迟/内存峰值/失败率等度量数据）",
+     "dimension": "度量验证充分性",
+     "score": 0.25,
+     "evidence": "任务空间摘要明确以度量验证缺口为主责切面：关于上限由哪些因素约束、超限故障模式的所有结论目前均无实证数据支撑，属未经测量的推断链条，是整个论证体系中唯一无法自证的一环。"
+    },
+    "gaps": [
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "parallel_pipeline 中任务级多进程上限由哪些代码或配置显式定义？",
+       "why_missed": "假设谱与薄弱点均聚焦于对上限成因的推测（CPU核数、IPC开销、OS资源、进程池泄漏），没有任何一条直接回应上限在代码或配置中的显式定义位置与具体取值",
+       "suggest_next": "定位 parallel_pipeline 源码中创建进程池/设置并发的参数（如 max_workers、pool size、os.cpu_count 调用点），确认是否存在硬编码常量或可配置项"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "超出或接近上限时主要故障模式是什么（进程泄漏、序列化开销、子进程崩溃恢复、资源争用）？",
+       "why_missed": "假设谱分别涉及泄漏、序列化开销、资源争用，但对“子进程崩溃恢复”这一故障模式完全未提及，且各假设之间故障模式互相冲突（性能退化 vs 硬故障 vs 有效并发衰减），未形成对接近上限时行为的完整刻画",
+       "suggest_next": "设计崩溃注入实验（kill 子进程）观察 parallel_pipeline 的恢复行为，并对冲突假设做区分性测试以确定实际故障模式"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "下一步改进的候选方案有哪些及其权衡（动态并发、异步化、批处理）？",
+       "why_missed": "假设谱与薄弱点均止步于瓶颈成因分析，未涉及任何改进方案、候选技术路线及其权衡的讨论",
+       "suggest_next": "在确认瓶颈因素后，对比动态并发（按负载调整进程数）、异步化（asyncio替代多进程）、批处理（减少IPC往返）三类方案的实施成本与预期收益"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "parallel_pipeline 采用任务级多进程，进程调度由 OS 完成，CPU 物理核数是并行度的物理上界",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "进程数超过物理核数后，OS 需在核间做上下文切换，并行收益被切换开销抵消",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "各子进程独立持有解释器，GIL 限制不跨进程，但内存与缓存争用仍在核间发生",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "综上，吞吐在进程数达到核数附近后趋于饱和，构成可观测的上限",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "任务间需经 pickle 序列化与队列通信传递数据，单次往返开销与任务规模成正比",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "当单任务计算量较小时，IPC/序列化开销占比随进程数增加而上升",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "开销占比上升使有效吞吐不升反降，形成'更多进程更低吞吐'的反直觉上限",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "因此真实瓶颈是序列化与 IPC，而非 CPU 核数",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "每增加一个进程会消耗文件描述符、进程表项与独立内存空间",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "当进程数触及 ulimit（nofile/nproc）或内存峰值触发 OOM killer 时，任务将以硬故障形式失败",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "硬故障（fork 失败、子进程被杀）与 H1/H2 的性能退化形态不同，可作为区分实验的观测变量",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "故瓶颈可能表现为资源硬上限而非吞吐饱和",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "multiprocessing.Pool 若未正确 close/join 或被不当复用，会产生泄漏的僵尸/孤儿进程",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "泄漏进程持续占用进程表与内存，压缩后续任务可用的资源",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "有效并发随运行时间衰减，表观上限实为泄漏累积的伪上限而非真实资源上限",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "因此改进前提是排除泄漏：先监控进程生命周期，再谈上限归因",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "weakest_link: parallel_pipeline 上限结论的实证支撑层（度量验证充分性）",
+       "premise": "可测性已具备：进程数扫描实验、时间序列进程监控、失败率统计可直接区分四假设",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     }
+    ],
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  }
+ ],
+ "reference_baseline_branch": 1,
+ "divergence_notes": [
+  "各路收敛一致性: 全收敛",
+  "缺口数极差=0(大=视角正交性好, 小=同质冗余)",
+  "有终稿分支: 无"
+ ],
+ "f60": {
+  "dx_candidates": {
+   "consensus_hypotheses": [],
+   "shared_weak_points": [],
+   "candidate_actions_dedup": [
+    {
+     "weight": 1.0,
+     "branch": 1,
+     "action": "四图投影完成, 缺口合并20条"
+    }
+   ],
+   "divergent_hypotheses": [
+    "上限主要由CPU物理核数约束，进程数超过核数后上下文切换与GIL外争用导致吞吐饱和",
+    "真实瓶颈是序列化与IPC开销（pickle往返、队列通信），进程数增加反而降低有效吞吐",
+    "瓶颈在OS层资源：文件描述符、进程数上限(ulimit)或内存峰值触发OOM killer，表现为硬故障而非性能退化",
+    "瓶颈在进程池实现层：Pool的不当复用/未join导致的进程泄漏使有效并发随时间衰减，表观上限是泄漏累积结果"
+   ]
+  },
+  "vote_stats": {
+   "n_live": 1,
+   "hyp_clusters": 4,
+   "consensus_clusters": 0
+  },
+  "single_branch_mode": true,
+  "note": "ΔX 为候选(F40 粗解语义), 未经正演校验不得直接执行"
+ },
+ "forward_check_static": {
+  "goal_keyword_coverage": {
+   "parallel_pipeline": true,
+   "分析认知": false,
+   "析认知引": false,
+   "认知引擎": false,
+   "分析认": false,
+   "析认知": false
+  },
+  "covered": "1/6",
+  "verdict": "PASS_WITH_GAPS"
+ },
+ "meta": {
+  "wall_secs": 602.0,
+  "task_file": "data\\experiment\\collab_task_20261120.txt",
+  "results": [
+   {
+    "branch": 0,
+    "ok": true,
+    "secs": 2.3,
+    "error": null
+   },
+   {
+    "branch": 1,
+    "ok": true,
+    "secs": 599.7,
+    "error": null
+   }
+  ]
+ }
+}

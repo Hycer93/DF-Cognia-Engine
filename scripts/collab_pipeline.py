@@ -57,7 +57,8 @@ def load_cfg():
 # ---------------- Worker(子进程入口, 复用 parallel_pipeline._run_one 模式) ----------------
 
 def _run_branch(args):
-    idx, task_path, view_text, out_dir = args
+    idx, task_path, view_text, out_dir = args[:4]
+    synth_override = args[4] if len(args) > 4 else True   # A/B: 旧 4 元组调用默认开门
     from cgraph.executor import ChainExecutor
     from cgraph.llm import LLMClient
     snap_path = os.path.join(out_dir, "branches", f"branch_{idx}.json")
@@ -88,7 +89,11 @@ def _run_branch(args):
         ex.llm = cl
         _prog("start")
         t0 = time.time()
-        report, state, gate = ex.run_atomic(user_input)
+        # #9 collab synthesize 旁路(2026-11-20 用户裁决): 仅本脚本注入, 普通任务不开放。
+        # 让多路推演分支能穿过 goal_type 门产出 final_deliverable 供 F50 has_deliverable 打分;
+        # F60 聚类只取 hypotheses/evidence, 不读 final_deliverable, 共识判定不受干扰。
+        report, state, gate = ex.run_atomic(
+            user_input, collab_synthesize_override=synth_override)
         secs = round(time.time() - t0, 1)
         _prog("done", secs=secs, steps=state.steps)
         snap = {
@@ -436,12 +441,14 @@ def run_f60(out_dir: str, goal_keywords: list) -> dict:
 
 # ---------------- 编排入口 ----------------
 
-def run_collab(task_path, views, out_dir, mode="parallel", goal_keywords=None):
+def run_collab(task_path, views, out_dir, mode="parallel", goal_keywords=None,
+               synth_override=True):
     workers, tau = load_cfg()
     os.makedirs(os.path.join(out_dir, "branches"), exist_ok=True)
-    jobs = [(i, task_path, views[i] if i < len(views) else "", out_dir)
+    jobs = [(i, task_path, views[i] if i < len(views) else "", out_dir, synth_override)
             for i in range(len(views) or 1)]
-    print(f"[collab] branches={len(jobs)} mode={mode} tau={tau}", flush=True)
+    print(f"[collab] branches={len(jobs)} mode={mode} tau={tau} "
+          f"synth_override={synth_override}", flush=True)
     t0 = time.time()
     if mode == "parallel":
         from multiprocessing import get_context
@@ -487,8 +494,12 @@ if __name__ == "__main__":
     ap.add_argument("--out", required=True)
     ap.add_argument("--mode", choices=["single", "parallel"], default=None,
                     help="缺省跟随 config pipeline.mode 逻辑(collab 恒并行优先)")
+    ap.add_argument("--synth-override", dest="synth_override", action="store_true", default=True,
+                    help="collab synthesize 旁路(#9), 默认开; A/B 对照组用 --no-synth-override")
+    ap.add_argument("--no-synth-override", dest="synth_override", action="store_false",
+                    help="关闭 synthesize 旁路(对照组, 复现老行为)")
     a = ap.parse_args()
     views = ([io.open(v, encoding="utf-8").read() for v in a.views]
              if a.views else DEFAULT_VIEWS[:a.branches])
     mode = a.mode or "parallel"
-    run_collab(a.task, views, a.out, mode=mode)
+    run_collab(a.task, views, a.out, mode=mode, synth_override=a.synth_override)

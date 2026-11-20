@@ -1,0 +1,22 @@
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+
+===== 轮 1 | 图快照重置, Jw边权: Eo->Jw=0.85 Fq->Jw=0.90
+  [从多角度分析：领导说"你很有潜力] 图94459ms path14 | marks=['G18'] jw_path=True 劫持=True
+[llm] 第1次调用失败(IncompleteRead(0 bytes read))，2s 后重试
+  [分析这段产品需求："用户希望AP] 图165562ms path14 | marks=无 jw_path=True 劫持=False
+  [总结本轮学习的认知盲区：为什么我] 图81630ms path14 | marks=无 jw_path=True 劫持=False
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+
+===== 轮 2 | 图快照重置, Jw边权: Eo->Jw=0.85 Fq->Jw=0.90
+  [从多角度分析：领导说"你很有潜力] 图96058ms path14 | marks=['G18'] jw_path=True 劫持=True
+  [分析这段产品需求："用户希望AP] 图85467ms path14 | marks=无 jw_path=True 劫持=False
+  [总结本轮学习的认知盲区：为什么我] 图108370ms path14 | marks=无 jw_path=True 劫持=False
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+
+===== 轮 3 | 图快照重置, Jw边权: Eo->Jw=0.85 Fq->Jw=0.90
+  [从多角度分析：领导说"你很有潜力] 图91755ms path14 | marks=['G09'] jw_path=True 劫持=False
+  [分析这段产品需求："用户希望AP] 图83286ms path14 | marks=['G18'] jw_path=True 劫持=True
+  [总结本轮学习的认知盲区：为什么我] 图74684ms path14 | marks=['G18'] jw_path=True 劫持=False
+
+实验完成, 产物: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\ab_exp_rollback_20261113_124928.jsonl
+生产图已还原(pre_exp快照)

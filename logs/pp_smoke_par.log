@@ -1,0 +1,5 @@
+[parallel_pipeline] mode=parallel workers=4 tasks=3
+  t1: ok=True secs=515.6 steps=2 err=None
+  t2: ok=True secs=559.4 steps=2 err=None
+  t3: ok=True secs=723.7 steps=2 err=None
+[total] 724.5s mode=parallel

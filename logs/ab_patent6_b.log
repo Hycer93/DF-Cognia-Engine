@@ -1,0 +1,4 @@
+[sufficiency] 告警 3 条(只告警不裁决): [指标] hypotheses_n=0: 多步链路未产出竞争假设谱(纯执行类属正常, 请结合任务类型判断); [指标] empty_evidence_fields=1: 关键证据字段存在空值; [复核失败] 机械疑点仍待人工复核(LLM复核未产出)
+B侧管线完成: exit=collapse steps=4 1227.0s
+matrix_feed: ["matrix_injected: ['pa-005', 'pa-004'] (tokens=67)"]
+DONE

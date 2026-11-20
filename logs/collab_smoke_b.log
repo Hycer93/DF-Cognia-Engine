@@ -1,0 +1,5 @@
+[collab] branches=2 mode=parallel tau=0.5
+[collab] done wall=4498.1s report=data/experiment/collab_smoke_20261120b\collab_report.json
+[F50] Y_hat={'converged': 1.0, 'has_deliverable': 0.0, 'confidence': 0.835, 'n_gaps': 7.0, 'n_contradictions': 0.0} baseline=branch0
+  #1 branch0 W=0.5 exit=llm_terminate
+  #2 branch1 W=0.5 exit=llm_terminate

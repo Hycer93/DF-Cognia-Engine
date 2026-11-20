@@ -1,0 +1,2311 @@
+[NIGHT] 开始于 2026-11-18 16:12:33
+[NIGHT] 图快照失败(不阻断夜跑): No module named 'eval.e6_mind_graph_patrol'
+
+============================================================
+[NIGHT] >>> E0 topic锚开关守卫
+============================================================
+[E0] topic_layer 开关守卫探针
+  ✓ ① TOPIC_LAYER_ON=1(topic_enabled 为 True)
+  ✓ ② 守卫卡写入成功(全id=9bb11066)
+  ✓ ③ report['topic'] 存在(mount_topic 自动触发)
+  ✓ ④ 新卡锚判定返回 verdict(hold/anchor)
+  ✓ ⑤ hold 判定卡落 hold 池 jsonl
+  ✓ ⑥ 守卫卡自清理(card+hold+memories.jsonl 三侧)
+[E0] 守卫结论: PASS
+[NIGHT] <<< E0 topic锚开关守卫 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=290 negative=8
+[E2 pos 1/290] me=0.808 hit
+[E2 pos 2/290] me=0.794 hit
+[E2 pos 3/290] me=0.793 hit
+[E2 pos 4/290] me=0.805 hit
+[E2 pos 5/290] me=0.786 hit
+[E2 pos 6/290] me=0.796 hit
+[E2 pos 7/290] me=0.705 hit
+[E2 pos 8/290] me=0.702 hit
+[E2 pos 9/290] me=0.703 hit
+[E2 pos 10/290] me=0.693 hit
+[E2 pos 11/290] me=0.826 hit
+[E2 pos 12/290] me=0.798 hit
+[E2 pos 13/290] me=0.814 hit
+[E2 pos 14/290] me=0.803 hit
+[E2 pos 15/290] me=0.798 hit
+[E2 pos 16/290] me=0.810 hit
+[E2 pos 17/290] me=0.810 hit
+[E2 pos 18/290] me=0.796 hit
+[E2 pos 19/290] me=0.696 hit
+[E2 pos 20/290] me=0.806 hit
+[E2 pos 21/290] me=0.809 hit
+[E2 pos 22/290] me=0.803 hit
+[E2 pos 23/290] me=0.705 hit
+[E2 pos 24/290] me=0.819 hit
+[E2 pos 25/290] me=0.794 hit
+[E2 pos 26/290] me=0.703 hit
+[E2 pos 27/290] me=0.825 hit
+[E2 pos 28/290] me=0.759 hit
+[E2 pos 29/290] me=0.776 hit
+[E2 pos 30/290] me=0.823 hit
+[E2 pos 31/290] me=0.709 hit
+[E2 pos 32/290] me=0.809 hit
+[E2 pos 33/290] me=0.794 hit
+[E2 pos 34/290] me=0.693 hit
+[E2 pos 35/290] me=0.707 hit
+[E2 pos 36/290] me=0.695 hit
+[E2 pos 37/290] me=0.705 hit
+[E2 pos 38/290] me=0.711 hit
+[E2 pos 39/290] me=0.678 hit
+[E2 pos 40/290] me=0.699 hit
+[E2 pos 41/290] me=0.691 hit
+[E2 pos 42/290] me=0.673 hit
+[E2 pos 43/290] me=0.806 hit
+[E2 pos 44/290] me=0.685 hit
+[E2 pos 45/290] me=0.789 hit
+[E2 pos 46/290] me=0.700 hit
+[E2 pos 47/290] me=0.686 hit
+[E2 pos 48/290] me=0.805 hit
+[E2 pos 49/290] me=0.803 hit
+[E2 pos 50/290] me=0.672 hit
+[E2 pos 51/290] me=0.706 hit
+[E2 pos 52/290] me=0.698 hit
+[E2 pos 53/290] me=0.692 hit
+[E2 pos 54/290] me=0.687 hit
+[E2 pos 55/290] me=0.681 hit
+[E2 pos 56/290] me=0.816 hit
+[E2 pos 57/290] me=0.831 hit
+[E2 pos 58/290] me=0.690 hit
+[E2 pos 59/290] me=0.789 hit
+[E2 pos 60/290] me=0.785 hit
+[E2 pos 61/290] me=0.764 hit
+[E2 pos 62/290] me=0.711 hit
+[E2 pos 63/290] me=0.707 hit
+[E2 pos 64/290] me=0.698 hit
+[E2 pos 65/290] me=0.796 hit
+[E2 pos 66/290] me=0.803 hit
+[E2 pos 67/290] me=0.794 hit
+[E2 pos 68/290] me=0.788 hit
+[E2 pos 69/290] me=0.786 hit
+[E2 pos 70/290] me=0.713 hit
+[E2 pos 71/290] me=0.710 hit
+[E2 pos 72/290] me=0.685 hit
+[E2 pos 73/290] me=0.692 hit
+[E2 pos 74/290] me=0.720 hit
+[E2 pos 75/290] me=0.690 hit
+[E2 pos 76/290] me=0.665 hit
+[E2 pos 77/290] me=0.702 hit
+[E2 pos 78/290] me=0.796 hit
+[E2 pos 79/290] me=0.728 hit
+[E2 pos 80/290] me=0.643 hit
+[E2 pos 81/290] me=0.678 hit
+[E2 pos 82/290] me=0.705 hit
+[E2 pos 83/290] me=0.736 hit
+[E2 pos 84/290] me=0.657 hit
+[E2 pos 85/290] me=0.701 hit
+[E2 pos 86/290] me=0.704 hit
+[E2 pos 87/290] me=0.644 hit
+[E2 pos 88/290] me=0.619 hit
+[E2 pos 89/290] me=0.704 hit
+[E2 pos 90/290] me=0.635 hit
+[E2 pos 91/290] me=0.624 hit
+[E2 pos 92/290] me=0.642 hit
+[E2 pos 93/290] me=0.684 hit
+[E2 pos 94/290] me=0.705 hit
+[E2 pos 95/290] me=0.688 hit
+[E2 pos 96/290] me=0.779 hit
+[E2 pos 97/290] me=0.625 hit
+[E2 pos 98/290] me=0.729 hit
+[E2 pos 99/290] me=0.287 hit
+[E2 pos 100/290] me=0.580 hit
+[E2 pos 101/290] me=0.574 hit
+[E2 pos 102/290] me=0.593 hit
+[E2 pos 103/290] me=0.620 hit
+[E2 pos 104/290] me=0.613 hit
+[E2 pos 105/290] me=0.739 hit
+[E2 pos 106/290] me=0.627 hit
+[E2 pos 107/290] me=0.626 hit
+[E2 pos 108/290] me=0.728 hit
+[E2 pos 109/290] me=0.622 hit
+[E2 pos 110/290] me=0.679 hit
+[E2 pos 111/290] me=0.322 hit
+[E2 pos 112/290] me=0.673 hit
+[E2 pos 113/290] me=0.717 hit
+[E2 pos 114/290] me=0.719 hit
+[E2 pos 115/290] me=0.731 hit
+[E2 pos 116/290] me=0.717 hit
+[E2 pos 117/290] me=0.707 hit
+[E2 pos 118/290] me=0.712 hit
+[E2 pos 119/290] me=0.735 hit
+[E2 pos 120/290] me=0.678 hit
+[E2 pos 121/290] me=0.730 hit
+[E2 pos 122/290] me=0.692 hit
+[E2 pos 123/290] me=0.601 hit
+[E2 pos 124/290] me=0.719 hit
+[E2 pos 125/290] me=0.722 hit
+[E2 pos 126/290] me=0.724 hit
+[E2 pos 127/290] me=0.736 hit
+[E2 pos 128/290] me=0.693 hit
+[E2 pos 129/290] me=0.708 hit
+[E2 pos 130/290] me=0.700 hit
+[E2 pos 131/290] me=0.738 hit
+[E2 pos 132/290] me=0.733 hit
+[E2 pos 133/290] me=0.718 hit
+[E2 pos 134/290] me=0.644 hit
+[E2 pos 135/290] me=0.719 hit
+[E2 pos 136/290] me=0.713 hit
+[E2 pos 137/290] me=0.723 hit
+[E2 pos 138/290] me=0.730 hit
+[E2 pos 139/290] me=0.722 hit
+[E2 pos 140/290] me=0.802 hit
+[E2 pos 141/290] me=0.653 hit
+[E2 pos 142/290] me=0.711 hit
+[E2 pos 143/290] me=0.644 hit
+[E2 pos 144/290] me=0.685 hit
+[E2 pos 145/290] me=0.680 hit
+[E2 pos 146/290] me=0.723 hit
+[E2 pos 147/290] me=0.654 hit
+[E2 pos 148/290] me=0.692 hit
+[E2 pos 149/290] me=0.667 hit
+[E2 pos 150/290] me=0.694 hit
+[E2 pos 151/290] me=0.811 hit
+[E2 pos 152/290] me=0.799 hit
+[E2 pos 153/290] me=0.676 hit
+[E2 pos 154/290] me=0.678 hit
+[E2 pos 155/290] me=0.672 hit
+[E2 pos 156/290] me=0.674 hit
+[E2 pos 157/290] me=0.709 hit
+[E2 pos 158/290] me=0.691 hit
+[E2 pos 159/290] me=0.702 hit
+[E2 pos 160/290] me=0.674 hit
+[E2 pos 161/290] me=0.000 empty
+[E2 pos 162/290] me=0.000 empty
+[E2 pos 163/290] me=0.232 hit
+[E2 pos 164/290] me=0.000 empty
+[E2 pos 165/290] me=0.000 empty
+[E2 pos 166/290] me=0.228 hit
+[E2 pos 167/290] me=0.809 hit
+[E2 pos 168/290] me=0.809 hit
+[E2 pos 169/290] me=0.799 hit
+[E2 pos 170/290] me=0.780 hit
+[E2 pos 171/290] me=0.779 hit
+[E2 pos 172/290] me=0.777 hit
+[E2 pos 173/290] me=0.801 hit
+[E2 pos 174/290] me=0.797 hit
+[E2 pos 175/290] me=0.793 hit
+[E2 pos 176/290] me=0.802 hit
+[E2 pos 177/290] me=0.782 hit
+[E2 pos 178/290] me=0.810 hit
+[E2 pos 179/290] me=0.806 hit
+[E2 pos 180/290] me=0.788 hit
+[E2 pos 181/290] me=0.813 hit
+[E2 pos 182/290] me=0.795 hit
+[E2 pos 183/290] me=0.788 hit
+[E2 pos 184/290] me=0.795 hit
+[E2 pos 185/290] me=0.798 hit
+[E2 pos 186/290] me=0.811 hit
+[E2 pos 187/290] me=0.707 hit
+[E2 pos 188/290] me=0.704 hit
+[E2 pos 189/290] me=0.787 hit
+[E2 pos 190/290] me=0.795 hit
+[E2 pos 191/290] me=0.800 hit
+[E2 pos 192/290] me=0.792 hit
+[E2 pos 193/290] me=0.802 hit
+[E2 pos 194/290] me=0.823 hit
+[E2 pos 195/290] me=0.809 hit
+[E2 pos 196/290] me=0.792 hit
+[E2 pos 197/290] me=0.711 hit
+[E2 pos 198/290] me=0.706 hit
+[E2 pos 199/290] me=0.718 hit
+[E2 pos 200/290] me=0.798 hit
+[E2 pos 201/290] me=0.705 hit
+[E2 pos 202/290] me=0.789 hit
+[E2 pos 203/290] me=0.797 hit
+[E2 pos 204/290] me=0.701 hit
+[E2 pos 205/290] me=0.701 hit
+[E2 pos 206/290] me=0.697 hit
+[E2 pos 207/290] me=0.707 hit
+[E2 pos 208/290] me=0.706 hit
+[E2 pos 209/290] me=0.682 hit
+[E2 pos 210/290] me=0.680 hit
+[E2 pos 211/290] me=0.671 hit
+[E2 pos 212/290] me=0.701 hit
+[E2 pos 213/290] me=0.811 hit
+[E2 pos 214/290] me=0.810 hit
+[E2 pos 215/290] me=0.805 hit
+[E2 pos 216/290] me=0.805 hit
+[E2 pos 217/290] me=0.699 hit
+[E2 pos 218/290] me=0.675 hit
+[E2 pos 219/290] me=0.669 hit
+[E2 pos 220/290] me=0.710 hit
+[E2 pos 221/290] me=0.709 hit
+[E2 pos 222/290] me=0.690 hit
+[E2 pos 223/290] me=0.730 hit
+[E2 pos 224/290] me=0.337 hit
+[E2 pos 225/290] me=0.794 hit
+[E2 pos 226/290] me=0.692 hit
+[E2 pos 227/290] me=0.696 hit
+[E2 pos 228/290] me=0.804 hit
+[E2 pos 229/290] me=0.712 hit
+[E2 pos 230/290] me=0.685 hit
+[E2 pos 231/290] me=0.665 hit
+[E2 pos 232/290] me=0.711 hit
+[E2 pos 233/290] me=0.694 hit
+[E2 pos 234/290] me=0.698 hit
+[E2 pos 235/290] me=0.683 hit
+[E2 pos 236/290] me=0.665 hit
+[E2 pos 237/290] me=0.657 hit
+[E2 pos 238/290] me=0.690 hit
+[E2 pos 239/290] me=0.774 hit
+[E2 pos 240/290] me=0.696 hit
+[E2 pos 241/290] me=0.797 hit
+[E2 pos 242/290] me=0.802 hit
+[E2 pos 243/290] me=0.777 hit
+[E2 pos 244/290] me=0.784 hit
+[E2 pos 245/290] me=0.784 hit
+[E2 pos 246/290] me=0.779 hit
+[E2 pos 247/290] me=0.706 hit
+[E2 pos 248/290] me=0.790 hit
+[E2 pos 249/290] me=0.775 hit
+[E2 pos 250/290] me=0.810 hit
+[E2 pos 251/290] me=0.805 hit
+[E2 pos 252/290] me=0.805 hit
+[E2 pos 253/290] me=0.702 hit
+[E2 pos 254/290] me=0.665 hit
+[E2 pos 255/290] me=0.675 hit
+[E2 pos 256/290] me=0.670 hit
+[E2 pos 257/290] me=0.713 hit
+[E2 pos 258/290] me=0.722 hit
+[E2 pos 259/290] me=0.696 hit
+[E2 pos 260/290] me=0.804 hit
+[E2 pos 261/290] me=0.659 hit
+[E2 pos 262/290] me=0.698 hit
+[E2 pos 263/290] me=0.677 hit
+[E2 pos 264/290] me=0.697 hit
+[E2 pos 265/290] me=0.680 hit
+[E2 pos 266/290] me=0.671 hit
+[E2 pos 267/290] me=0.672 hit
+[E2 pos 268/290] me=0.683 hit
+[E2 pos 269/290] me=0.683 hit
+[E2 pos 270/290] me=0.668 hit
+[E2 pos 271/290] me=0.698 hit
+[E2 pos 272/290] me=0.696 hit
+[E2 pos 273/290] me=0.706 hit
+[E2 pos 274/290] me=0.706 hit
+[E2 pos 275/290] me=0.690 hit
+[E2 pos 276/290] me=0.692 hit
+[E2 pos 277/290] me=0.680 hit
+[E2 pos 278/290] me=0.718 hit
+[E2 pos 279/290] me=0.700 hit
+[E2 pos 280/290] me=0.699 hit
+[E2 pos 281/290] me=0.706 hit
+[E2 pos 282/290] me=0.691 hit
+[E2 pos 283/290] me=0.679 hit
+[E2 pos 284/290] me=0.685 hit
+[E2 pos 285/290] me=0.628 hit
+[E2 pos 286/290] me=0.679 hit
+[E2 pos 287/290] me=0.678 hit
+[E2 pos 288/290] me=0.520 hit
+[E2 pos 289/290] me=0.682 hit
+[E2 pos 290/290] me=0.701 hit
+[E2 neg 1/8] me=0.089 uncertain (无任何实义（地板分）)
+[E2 neg 2/8] me=0.134 marginal_ask (无主语泛指)
+[E2 neg 3/8] me=0.136 marginal_ask (无上下文新任务)
+[E2 neg 4/8] me=0.103 uncertain (完全无关域)
+[E2 neg 5/8] me=0.112 uncertain (无主题泛任务)
+[E2 neg 6/8] me=0.417 hit (泛指无实体)
+[E2 neg 7/8] me=0.106 uncertain (无指代反问)
+[E2 neg 8/8] me=0.121 marginal_ask (单字续写)
+
+[E2] 固化回归: 15/15 全绿 ✓
+
+[E2] ===== 阈值扫描（节选） =====
+  th=0.08 recall=0.99 fp=1.00 f1=0.66
+  th=0.11 recall=0.99 fp=0.62 f1=0.76
+  th=0.14 recall=0.99 fp=0.12 f1=0.93
+  th=0.17 recall=0.99 fp=0.12 f1=0.93
+  th=0.20 recall=0.99 fp=0.12 f1=0.93
+  th=0.23 recall=0.98 fp=0.12 f1=0.93
+  th=0.26 recall=0.98 fp=0.12 f1=0.93
+  th=0.29 recall=0.98 fp=0.12 f1=0.93
+当前 0.15: recall=98.60% 误报=12.50%
+双门分层: 正例放行 286/290 (98.6%) | 负例漏报 1/8
+  负例漏报明细: ['上次说的那个 bug 修了吗']
+F1 最优: th=0.22 f1=0.934
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e2_gate_calibration.json
+[NIGHT] <<< E2 反问门标定扫描 OK 用时 6.1min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+[E1] config 快照: logs/config_snapshot_20261118_161846.yaml | 判定后端: deepseek/deepseek-chat
+[E1] 结果文件陈旧(6.2天 > 3天), 归档 e1_probe_result.jsonl.stale-20261118_161850 并全量重跑
+[E1] probes total 123, done 0, todo 123
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 识别到阻断级风险须设硬闸门冻结设计，而非降格为待确认项
+[memory_gate][黄档建议立卡, 等确认] 指针卡: 节点间状态传递协议：证伪条件须回写为任务流前置依赖
+[memory_gate] 绿档落库 1 张: ['570a57f5c36742b2']
+[E1 1/123] ✓Aa-P01 trigger->Aa IN hint=0.333 elapsed=102s eta=207.4min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 迁移类需求须将诊断结论转译为排期前置准入清单
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 量化风险指标须附数据可得性校验与采集时点
+[memory_gate] 绿档落库 1 张: ['134622f8969d4f13']
+[E1 2/123] ✓Aa-P02 trigger->Aa IN hint=0.5 elapsed=196s eta=197.6min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 模糊战略词解码：竞争假设须转化为区分性探测动作
+[memory_gate][黄档建议立卡, 等确认] 指针卡: 模糊口号转译三步法：锚定变化-分层利益-源事实锚定
+[memory_gate] 绿档落库 1 张: ['928351ff9c8b4c92']
+[E1 3/123] ✓Aa-P03 trigger->Aa IN hint=0.2 elapsed=293s eta=195.3min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 需求范围表述须强制翻译为系统能力假设再评审
+[memory_gate][黄档建议立卡, 等确认] 指针卡: 状态维度引入型变更的受影响点清单模板
+[memory_gate] 绿档落库 1 张: ['28fa913717624bcd']
+[E1 4/123] ✓Aa-P04 trigger->Aa IN hint=0.4 elapsed=391s eta=193.9min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 大改动影响面扫描须含不可控外部依赖与时序副作用两维度
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 校验节点怀疑产出需回灌上游扫描框架触发重做
+[memory_gate] 绿档落库 1 张: ['dc06c45494004246']
+[E1 5/123] ✓Aa-P05 trigger->Aa IN hint=0.2 elapsed=483s eta=190.0min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 转行规划须前置低成本验证性动作，勿直接进学习主链
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 职业转行路径勿默认单一投递，须并列内部转岗/相邻岗/外包跳板
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 规划类方案须前置待确认关键变量清单，防方向错配
+[memory_gate] 绿档落库 1 张: ['66d6900ad2404eda']
+[E1 6/123] ✓Aa-P06 trigger->Aa IN hint=0.0 elapsed=593s eta=192.7min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 任务空间扫描须含「是否做/做到何种程度/何时不做」决策位
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 证伪须双向：既证伪「不做」也证伪「这么做」
+[memory_gate][黄档建议立卡, 等确认] 指针卡: 识别到偏差后须回补闭环，诊断到位不等于修复到位
+[E1 7/123] ✓Aa-P07 trigger->Aa IN hint=0.75 elapsed=692s eta=191.1min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 口径变更影响面盘点：源事实锚定+时序校验+概念等价性+风险量化四步法
+[memory_gate][黄档建议立卡, 等确认] 指针卡: 口径错误根因指向治理层：定义权与消费权分离、无契约化变更告知
+[memory_gate] 绿档落库 1 张: ['ea4cb0dda9bd4860']
+[E1 8/123] ✓Aa-P08 trigger->Aa IN hint=0.5 elapsed=782s eta=187.4min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 跨模块需求分析须先平铺并行因果链与全动作面再收敛
+[memory_gate][黄档建议立卡, 等确认] 指针卡: 证伪框架只验风险成立不扫遗漏维度，需回退重扫工作面
+[memory_gate] 绿档落库 1 张: ['f4eccbc1330a4579']
+[E1 9/123] ✓Aa-P09 trigger->Aa IN hint=0.5 elapsed=859s eta=181.3min
+[memory_gate][黄档建议立卡, 等确认] 能力卡: 识别-决策传导检查：风险识别须转化为下游决策约束
+[memory_gate][黄档建议立卡, 等确认] 指针卡: 出清淘汰标准应含'结论效度不可验证'维度
+[memory_gate] 绿档落库 1 张: ['7e831a2b279145c2']
+[E1 10/123] ✓Aa-P10 trigger->Aa IN hint=0.75 elapsed=951s eta=179.1min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[E1 11/123] ✓Aa-P11 trigger->Aa IN hint=0.25 elapsed=1057s eta=179.4min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 12/123] ✓Aa-P12 trigger->Aa IN hint=0.25 elapsed=1196s eta=184.4min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 13/123] ✓Aa-P13 no_trigger->Aa IN hint=0.0 elapsed=1253s eta=176.7min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 14/123] ✓Aa-P14 no_trigger->Aa IN hint=0.0 elapsed=1310s eta=170.0min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 15/123] ✓Aa-P15 no_trigger->Aa IN hint=0.0 elapsed=1369s eta=164.3min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 16/123] ✓Aa-P16 no_trigger->Aa IN hint=0.0 elapsed=1427s eta=159.1min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 17/123] ✓Aa-P17 no_trigger->Aa IN hint=0.0 elapsed=1582s eta=164.4min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 18/123] ✓Aa-P18 no_trigger->Aa IN hint=0.0 elapsed=1642s eta=159.6min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 19/123] ✓Aa-P19 no_trigger->Aa IN hint=0.0 elapsed=1699s eta=155.0min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 20/123] ✓Aa-P20 no_trigger->Aa IN hint=0.0 elapsed=1757s eta=150.8min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 21/123] ✓Aa-R01 trigger->Aa IN hint=0.0 elapsed=1903s eta=154.1min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 22/123] ✓Aa-R02 trigger->Aa IN hint=0.0 elapsed=2049s eta=156.8min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 23/123] ✓Aa-R03 trigger->Aa IN hint=0.0 elapsed=2194s eta=159.0min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 24/123] ✓Aa-R04 trigger->Aa IN hint=0.0 elapsed=2342s eta=161.0min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 25/123] ✓Aa-R05 trigger->Aa IN hint=0.0 elapsed=2491s eta=162.7min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 26/123] ✓Aa-R06 trigger->Aa IN hint=0.0 elapsed=2639s eta=164.1min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 27/123] ✓Aa-R07 trigger->Aa IN hint=0.0 elapsed=2785s eta=165.0min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 28/123] ✓Aa-R08 trigger->Aa IN hint=0.0 elapsed=2934s eta=165.9min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 29/123] ✓Aa-R09 trigger->Aa IN hint=0.0 elapsed=3118s eta=168.4min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 30/123] ✓Aa-R10 trigger->Aa IN hint=0.0 elapsed=3264s eta=168.6min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 31/123] ✓Aa-R11 no_trigger->Aa IN hint=0.0 elapsed=3321s eta=164.3min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 32/123] ✓Aa-R12 no_trigger->Aa IN hint=0.0 elapsed=3381s eta=160.2min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 33/123] ✓Aa-R13 no_trigger->Aa IN hint=0.0 elapsed=3438s eta=156.3min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 34/123] ✓Aa-R14 no_trigger->Aa IN hint=0.0 elapsed=3495s eta=152.5min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 35/123] ✓Aa-R15 no_trigger->Aa IN hint=0.0 elapsed=3550s eta=148.8min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 36/123] ✓Aa-R16 no_trigger->Aa IN hint=0.0 elapsed=3607s eta=145.3min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 37/123] ✓Aa-R17 no_trigger->Aa IN hint=0.0 elapsed=3664s eta=141.9min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 38/123] ✓Aa-R18 no_trigger->Aa IN hint=0.0 elapsed=3723s eta=138.8min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 39/123] ✓Aa-R19 no_trigger->Aa IN hint=0.0 elapsed=3779s eta=135.7min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 40/123] ✓Aa-R20 no_trigger->Aa IN hint=0.0 elapsed=3834s eta=132.6min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 41/123]  Bc-P01 trigger->Bc out hint=0.0 elapsed=3978s eta=132.6min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 42/123]  Bc-P02 trigger->Bc out hint=0.0 elapsed=4119s eta=132.4min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 43/123]  Bc-P03 trigger->Bc out hint=0.0 elapsed=4282s eta=132.8min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 44/123]  Bc-P04 trigger->Bc out hint=0.0 elapsed=4433s eta=132.7min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 45/123]  Bc-P05 trigger->Bc out hint=0.0 elapsed=4577s eta=132.2min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 46/123]  Bc-P06 trigger->Bc out hint=0.0 elapsed=4720s eta=131.7min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 47/123]  Bc-P07 trigger->Bc out hint=0.0 elapsed=4862s eta=131.0min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 48/123]  Bc-P08 trigger->Bc out hint=0.0 elapsed=5003s eta=130.3min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 49/123]  Bc-P09 trigger->Bc out hint=0.0 elapsed=5144s eta=129.5min
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E1 50/123]  Bc-P10 trigger->Bc out hint=0.0 elapsed=5286s eta=128.6min
+[NIGHT] E1 探针触发率全链回归 超时 90min(分级阈值)，跳到下一步
+[NIGHT] <<< E1 探针触发率全链回归 FAIL 用时 90.0min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+E4 维护巡逻: 5 项报警
+  [warn] DB↔jsonl 迁移漂移 +34 (db=301 vs jsonl=267)——差值非零须人工对账归零后才可切换读源
+  [warn] 隔离区近7天新增 10 条校验拦截(拦截正常, 非管道故障)——repro来源非法:6 | 枚举非法值:4 | 骨架编码错误:1
+  [warn] 冲突评审积压 3 条（同源分叉待元思域对撞）
+  [warn] event_ts 空值存量 48 条待回填（有线索就补 backfill 叠加层）
+  [warn] watchlist 3 条在池（0 条仍 watching 未推进）——巡检是否该转正/关闭
+计数: {"db_jsonl_drift": 34, "db_card_total": 301, "multi_topic_frozen": 0, "multi_topic_suspect_rough": 0, "unclassified_expired": 0, "unclassified_near_limit": 0, "quarantine_total": 31, "quarantine_last7d": 10, "quarantine_by_cat": {"枚举非法值": 4, "repro来源非法": 6, "骨架编码错误": 1}, "conflict_pending": 3, "experiences": 19, "experience_split_pending": 0, "entities": 6, "entity_dangling_members": 0, "runtime_unlinked": 0, "event_ts_null_remaining": 48, "watchlist": 3, "alias_entries": 6, "alias_pending": 149, "alias_expired_inactive": 0, "high_value_content_without_class": 0, "mc_in_dfcp_tag": 242, "mc_legacy_top_level": 117, "mc_dual_field_conflict": 0, "corpus_hash_drift": 0, "placeholder_cards": 0, "fragile_cards": 0}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e4_maintenance.json
+[NIGHT] <<< E4 记忆库维护巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E5 记忆自动整理
+============================================================
+E5 整理: 补挂 0/0（conflict 0 skipped 0） | 经验 created=0 updated=0
+库态: {'memories': 267, 'graph_edges': 209, 'experiences': 19}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e5_consolidation.json
+[NIGHT] <<< E5 记忆自动整理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E6 思维图巡逻
+============================================================
+E6 思维图巡逻: 1 项报警
+  [warn] [warning] 10 条边逼近ε软上限（≥1.85，示例 Aa->Bb=1.865）——观察衰减是否失效
+计数: {"edges_over_hard_cap": 0, "edges_near_soft_cap": 10, "first_hop_concentration_top3": 0.281, "dead_edges": 24, "backup_snapshots": 5, "latest_backup": "mind_graph_backup_20261113.json", "drift_vs_backup": {"edges": -21, "nodes": 0, "max_weight": 0.065}}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e6_mind_graph_patrol.json
+[NIGHT] <<< E6 思维图巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E7 夜间治理
+============================================================
+[E7] hold分流: 自动放行 0 | 自动留置 0 | 人工队列 0 | 高频簇可疑 6 | 证据回写 0 条 | cue复检 50项/告警0条/观察12条
+
+— P2b cue样本不足观察名单 (12条, disc暂不判, 跟踪争议量) —
+  [topic_brain_region] cue: 前额叶 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_brain_region] cue: 杏仁核 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_g22_decision] cue: 方案矩阵 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_feinong_review] cue: 金价 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_memory_ops] cue: 入库断档 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_memory_ops] cue: judge管道 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_patent_matrix] cue: P33 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_patent_matrix] cue: P41 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_stock_decision] cue: 股价 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_vehicle_8397] cue: 右舵 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_atomic_metacore] cue: ThinkState (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_atomic_metacore] cue: BaseAtomicSkill (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+
+— P2 高频簇可疑混入明细 (6张) —
+  [7a499925] 簇: topic_memory_ops
+    卡: 新机制上线前伪演示基线法: 只读模拟跑一次做对比样本, 验证保守路线+存量收益判断+留验收底片
+    summary无锚词命中, 疑似混入
+  [76f6b86b] 簇: topic_memory_ops
+    卡: 未来推演公式体系v2.1折中软约束裁决: p_trait只出β推荐基准不锁死(主体特质是推演风格暗示非强制)+∏σ合规因子改衰减罚分不归零(违规分支降权留档可复…
+    summary无锚词命中, 疑似混入
+  [12a06982] 簇: topic_memory_ops
+    卡: 平行论→P7→公式体系诞生过程考古定案(跨corpus1 r959-963/corpus2 r105,108逐轮核对): 平行论双向推演=用户原创四轮传递(r9…
+    summary无锚词命中, 疑似混入
+  [7747ed4d] 簇: topic_memory_ops
+    卡: 消费侧教训: 用户问'逆向推演四权重公式是否已形成'时检索命中了正确卡(9219377d, 0.985分)但只扫summary未读detail——完整四维权重定…
+    summary无锚词命中, 疑似混入
+  [a65a500c] 簇: topic_memory_ops
+    卡: [待办] 平行论双向推演公式体系(F00-F60, v2.1)工程实现: 最小验证=F00(DFCP检索组装S_0快照+p_trait输入)→F10(固定K=3…
+    summary无锚词命中, 疑似混入
+  [f1577a38] 簇: topic_memory_ops
+    卡: 图谱还债专项定案: 全库191失挂卡盘点→冲突预检29歧义四类处置→6 manual_seed簇+152 backfill补挂+9双挂, 挂载51→182/24…
+    summary无锚词命中, 疑似混入
+[NIGHT] <<< E7 夜间治理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E10 语义离群巡检
+============================================================
+[E10] 语义离群巡检(incremental): 检查0卡 | 告警0条 | 小簇跳过3 | 未变跳过9
+[NIGHT] <<< E10 语义离群巡检 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E9 对话治理
+============================================================
+[E9] 扫描0段 | 高价值0 | 提案0(送pending) | 重复跳过0 | miss_case0 | 假阴性疑点0 | transcript兜底: 提取69/入库66/去重3
+— transcript 兜底入库 66 段, 样例: —
+  [t10287] 嗯嗯加入待办吧（planned）,现在输出晨报我们一起看下
+  [t10288] 分析："D:\uidq0280\Downloads\system_app_anr@1794963025996.txt"
+  [t10289] 那你汇报结果把
+[NIGHT] <<< E9 对话治理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E11 原子技能冒烟
+============================================================
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[E11] FAIL skill_f_reason (7.5s) 失败项: non_degraded,applicable,hypotheses_nonempty
+[E11] FAIL skill_memory_gate (7.6s) 失败项: non_degraded
+[E11] 总判定: FAIL | 明细 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e11_atomic_smoke.json
+[NIGHT] <<< E11 原子技能冒烟 FAIL 用时 0.3min
+
+============================================================
+[NIGHT] >>> E12 路由器冒烟
+============================================================
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[E12] G1-根因 FAIL (30.9s) exit=collapse type=other/other steps=2 fb=2 preempt=0 失败项: ok_true,steps_ge3,fallback_le1,c3_effective
+[E12] G1-根因 trail: skill_anchor_target→skill_scope_scan
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[E12] G2-评估 FAIL (31.8s) exit=collapse type=other/other steps=2 fb=2 preempt=0 失败项: ok_true,steps_ge3,fallback_le1,c3_effective
+[E12] G2-评估 trail: skill_anchor_target→skill_scope_scan
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[E12] G3-决策 FAIL (30.6s) exit=collapse type=other/other steps=2 fb=2 preempt=0 失败项: ok_true,steps_ge3,fallback_le1
+[E12] G3-决策 trail: skill_anchor_target→skill_scope_scan
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[E12] S1-短材料直塞 FAIL (30.9s) mode=inline mat=1500chars exit=collapse 词表命中=0/5 []
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[E12] S2-长材料检索 FAIL (30.9s) mode=retrieve mat=8545chars exit=collapse 词表命中=0/5 []
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[E12] S3-超大截断 FAIL (31.0s) mode=oversize mat=181000chars exit=collapse 词表命中=0/5 []
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[E12] S4-CIPP直塞6401 FAIL (31.4s) mode=cipp_inline mat=6401chars exit=collapse CIPP词表命中=0/5 []
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E12] N1-带材料后置(检索) PASS (46.8s) trail=skill_anchor_target→skill_scope_scan→matrix_feed→skill_terminate 汇编=True final_output=581字 ref=10545
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E12] N2-直收口不适用 PASS (46.2s) trail=skill_anchor_target→skill_scope_scan→matrix_feed→skill_terminate 汇编=True final_output=508字 ref=0
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[llm] 第1次调用失败(HTTP Error 402: Payment Required)，2s 后重试
+[llm] 第2次调用失败(HTTP Error 402: Payment Required)，4s 后重试
+[llm] 3 次调用全部失败: HTTP Error 402: Payment Required
+[memory_gate] 降级(不炸主链路, 可单独重跑): llm空返回
+[E12] N3-直塞无告警 PASS (46.5s) trail=skill_anchor_target→skill_scope_scan→matrix_feed→skill_terminate 汇编=True final_output=3155字 ref=2537
+[E12] N1 审计断言异常(不阻断): 'str' object has no attribute 'get'
+[E12][P0-1观测] gate摘要Jaccard分布: n=171 p50=0.20 max=0.77 >0.6占比=2.9% (R14-a: 阈值决策待此分布积累)
+[E12] 总判定: FAIL (warn 0条不阻断) | 明细 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e12_router_smoke.json
+[NIGHT] <<< E12 路由器冒烟 FAIL 用时 6.0min
+
+============================================================
+[NIGHT] >>> T1 trace月度归档
+============================================================
+归档完成: {'trace_cited': 0, 'trace_call': 0, 'trace_embedding': 0}
+  trace_archive_2026_08.db trace_cited: meta申报 300 vs 本库实际 300 PASS
+  trace_archive_2026_09.db trace_cited: meta申报 200 vs 本库实际 200 PASS
+trace_cited: 总 31389 行 = 主库:30889 + trace_archive_2026_08.db:300 + trace_archive_2026_09.db:200
+trace_call: 总 0 行 = 主库:0
+trace_embedding: 总 0 行 = 主库:0
+[NIGHT] <<< T1 trace月度归档 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> F20 基线守卫(experiment)
+============================================================
+[F20守卫] smoke PASS(基线PASS ⚠️位次移动) top=87f66cc1,f1577a38,58707552
+[F20守卫] explore1 PASS(基线PASS) top=04353a35
+[F20守卫] explore2 PASS(基线PASS ⚠️位次移动) top=87f66cc1,f1577a38,58707552
+[F20守卫] explore3 PASS(基线PASS) top=287e892d,b178d1f9,296e4981
+[F20守卫] explore4 FAIL(基线FAIL) top=4304794d,6ed8586c,fb674356
+⚠️ F20基线异常: 翻转=False 位次移动=True — 见 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\f20\guard_latest.json
+[NIGHT] <<< F20 基线守卫(experiment) OK 用时 0.2min
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261118_1755.md
+[NIGHT] 全部结束于 2026-11-18 17:55:15

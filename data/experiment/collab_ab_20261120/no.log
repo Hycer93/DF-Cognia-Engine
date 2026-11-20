@@ -1,0 +1,6 @@
+[collab] branches=2 mode=parallel tau=0.5 synth_override=False
+[sufficiency] 告警 3 条(只告警不裁决): [指标] hypotheses_n=0: 多步链路未产出竞争假设谱(纯执行类属正常, 请结合任务类型判断); [指标] empty_evidence_fields=1: 关键证据字段存在空值; [复核失败] 机械疑点仍待人工复核(LLM复核未产出)
+[memory_gate] 降级(不炸主链路, 可单独重跑): JSON解析失败(两级容错均失败): 并行任务数已满（最多同时 3 个），请等其他任务结束后再提交任务。
+[collab] done wall=602.0s report=data\experiment\collab_ab_20261120\no_override\collab_report.json
+[F50] Y_hat={'converged': 1.0, 'has_deliverable': 0.0, 'confidence': 0.75, 'n_gaps': 20.0, 'n_contradictions': 0.0} baseline=branch1
+  #1 branch1 W=1.0 exit=llm_terminate

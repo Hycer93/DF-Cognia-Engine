@@ -1,0 +1,284 @@
+{
+ "formula": "F50 v2.1: Y=Σ W_k·Y_k(仅抽象指标); S_T 禁平均→原生分支清单",
+ "tau": 0.5,
+ "n_live": 2,
+ "n_dead": 0,
+ "dead_errors": [],
+ "y_hat": {
+  "converged": 1.0,
+  "has_deliverable": 0.0,
+  "confidence": 0.7552,
+  "n_gaps": 7.6863,
+  "n_contradictions": 0.0
+ },
+ "branches": [
+  {
+   "rank": 1,
+   "weight": 0.6318,
+   "raw_score": 0.7,
+   "branch": 0,
+   "view": "【协同分支 S1·机制边界】三路子分析师共研同一目标，你主责机制与边界切面：优先厘清该事物的内在机制、成立条件与作用边界（什么情况下成立/失效）。其他切面有队友负责，但你认可的机制结论要写明依据，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 673.9,
+   "S_native": {
+    "summary": "四图投影完成, 缺口合并11条",
+    "hypotheses": [
+     {
+      "hypothesis": "并发上限的主导约束是CPU核数与Python多进程调度开销，而非内存或下游配额",
+      "supporting": [
+       "任务级多进程通常为CPU密集型分发模型，进程数超过核数后上下文切换开销非线性增长",
+       "parallel_pipeline若为进程池+任务粒度分发，IPC序列化开销随进程数增加而放大，可能先于内存成为瓶颈"
+      ],
+      "contradicting": [
+       "若单任务加载大模型/大数据，内存可能先耗尽（每个进程独立内存空间，无写时复制收益时内存按进程数线性放大）",
+       "若下游依赖模型服务有并发配额，多进程数超过配额只会导致排队而非崩溃，上限实际由下游决定"
+      ],
+      "test_next": "在固定任务负载下阶梯递增进程数（1/2/4/8/16），同时记录吞吐、CPU利用率、RSS内存、IPC耗时占比，找出第一个进入非线性区间的资源维度"
+     },
+     {
+      "hypothesis": "真正的失效边界不在进程数本身，而在结果聚合与任务分发的串行段（聚合瓶颈/队头阻塞）",
+      "supporting": [
+       "多进程方案常见失效模式：各worker并行完成但主进程单点聚合，吞吐被聚合段封顶",
+       "子问题清单已列出'结果聚合瓶颈'，说明方案架构中存在集中式回收点"
+      ],
+      "contradicting": [
+       "若聚合为流式回调而非批量回收，聚合段可能不构成瓶颈",
+       "当前无任何profile数据，无法确认聚合开销占比"
+      ],
+      "test_next": "对主进程分发-回收路径做埋点计时（分发等待、任务执行、结果回收三段），验证并行段执行时间是否被串行段吞噬"
+     },
+     {
+      "hypothesis": "系统在超限时的失效形态是渐进退化（排队雪崩/延迟放大），而非硬崩溃（内存耗尽/进程泄漏）",
+      "supporting": [
+       "无背压机制时任务队列无界堆积，外在表现是延迟持续增长而非立刻失败，更隐蔽也更难察觉",
+       "若进程池为固定大小，超投递任务自然排队，进程数本身不会无限增长"
+      ],
+      "contradicting": [
+       "若每次任务动态spawn进程且无回收保障，僵尸进程泄漏可能导致文件描述符/进程表耗尽的硬故障",
+       "队列堆积同时驻留任务数据时，内存仍可能被间接耗尽（队列本身吃内存）"
+      ],
+      "test_next": "构造持续超量投递场景运行30分钟以上，观察是延迟曲线持续恶化（渐进）还是出现OOM/fd耗尽/进程数增长（硬失效），并检查子进程回收路径"
+     },
+     {
+      "hypothesis": "现有配置中已存在隐式并发约束（如进程池默认max_workers、下游连接池上限），其有效性边界未被文档化",
+      "supporting": [
+       "若parallel_pipeline基于标准库multiprocessing/ProcessPoolExecutor实现，默认max_workers=核数，天然存在隐式上限",
+       "方案逻辑自洽暗示有基础实现，基础实现通常自带默认限流"
+      ],
+      "contradicting": [
+       "上游最弱环节定位明确指出无背压/限流机制的有效性验证记录，可能默认参数被显式覆盖或绕过",
+       "若为自研分发器，可能完全无上限控制"
+      ],
+      "test_next": "审查parallel_pipeline的进程池构造代码，列出所有与并发度相关的参数及其默认值与实际传入值，确认隐式上限是否存在及其被触发时的行为"
+     }
+    ],
+    "weakest_link": {
+     "location": "并发上限约束的量化论证——'约束因素'目前仅为推测清单（CPU/内存/IPC/下游配额），全链条缺少实测数据支撑",
+     "dimension": "论证链条实证性",
+     "score": 0.35,
+     "evidence": "整个方案建立在'多进程上限受若干因素约束'的假设上，但子问题清单显示当前无压测数据、无失效边界实验、无现有背压/限流机制的有效性验证记录；上限取值与失效模式（内存耗尽、任务排队雪崩、结果聚合瓶颈、僵尸进程）均未经系统验证，属于纸面推演"
+    },
+    "gaps": [
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "parallel_pipeline当前任务级多进程的具体实现方式是什么(进程池模型、任务分发粒度)?",
+       "why_missed": "假设谱与薄弱点均聚焦约束因素与失效形态推测，未涉及实现方式本身（进程池模型、分发粒度）的事实性核查",
+       "suggest_next": "直接阅读parallel_pipeline源码，确认进程池类型(ProcessPoolExecutor/multiprocessing.Pool/自研)、任务分发粒度与结果聚合路径"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "当前是否已有并发度配置、背压或限流机制，其有效性边界在哪里?",
+       "why_missed": "仅假设'隐式并发约束存在且边界未文档化'属推测，未实际核查配置项、背压或限流机制的存在性与边界",
+       "suggest_next": "审查配置文件与pipeline代码，定位max_workers、队列长度、信号量等并发控制点，并验证其实际生效边界"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "uncovered_subquestion",
+      "payload": {
+       "q": "针对主要风险应采取哪些下一步行动(压测、动态并发调节、降级策略、监控埋点)?",
+       "why_missed": "薄弱点仅指出缺实测数据，未形成具体行动方案（压测设计、动态并发调节、降级策略、监控埋点均未落地为建议）",
+       "suggest_next": "基于实现核查结果制定行动清单：设计阶梯加压压测、评估动态并发调节可行性、定义降级策略与监控埋点"
+      },
+      "reflow_allowed": true
+     },
+     {
+      "gap_type": "unaddressed_weakpoint",
+      "payload": {
+       "location": "并发上限约束的量化论证——'约束因素'目前仅为推测清单（CPU/内存/IPC/下游配额），全链条缺少实测数据支撑",
+       "why_missed": "无任何假设回应该薄弱点"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "Python多进程存在进程创建、IPC序列化与调度开销，随进程数增长呈超线性放大",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H1",
+       "premise": "内存与下游配额在现有信息中未见显式占用特征或配额证据",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H2",
+       "premise": "串行段吞吐不随进程数扩展，构成Amdahl定律意义上的并行加速上限",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H3",
+       "premise": "渐进退化优于硬崩溃的排序判断缺乏任一形态的触发阈值证据",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "H4",
+       "premise": "隐式约束未被文档化意味着显式配置的并发上限可能与隐式上限冲突或被截断",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "weakest_link·并发上限约束的量化论证(论证链条实证性, 0.35)",
+       "premise": "补链路径：需一组阶梯式压测（递增进程数观测吞吐/延迟/内存/聚合耗时）以同时验证H1-H4四个假设",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "weakest_link·并发上限约束的量化论证(论证链条实证性, 0.35)",
+       "premise": "在实测前，下游建议只能是'先小上限+监控验证'而非直接给出上限值",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     }
+    ],
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  },
+  {
+   "rank": 2,
+   "weight": 0.3682,
+   "raw_score": 0.43,
+   "branch": 1,
+   "view": "【协同分支 S2·度量验证】三路子分析师共研同一目标，你主责度量与验证切面：优先识别现有结论缺哪些实证数据/指标才能成立，评估证据充分性与可测性。你认可的底层机制应与队友表述对齐而非另起炉灶，便于跨路互证。",
+   "exit_channel": "llm_terminate",
+   "secs": 559.5,
+   "S_native": {
+    "summary": "四图投影完成, 缺口合并2条",
+    "hypotheses": "",
+    "weakest_link": {
+     "location": "现有结论的实证度量基础(吞吐曲线/延迟分布/资源峰值数据缺失)",
+     "dimension": "证据充分性/可测性",
+     "score": 0.25,
+     "evidence": "整个论证链条中，多进程上限约束与风险的判断目前缺乏任何实测数据支撑：既无不同并发度下的吞吐曲线，也无内存/延迟峰值观测，结论建立在机制推理而非实证之上，属全体系最先失效的一环"
+    },
+    "gaps": [
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "薄弱点: 现有结论的实证度量基础(吞吐曲线/延迟分布/资源峰值数据缺失)",
+       "premise": "成立该结论至少需要三类度量：不同并发度下的吞吐曲线、任务级延迟分布、内存/CPU 资源峰值观测，目前三者均缺失",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     },
+     {
+      "gap_type": "unsupported_premise",
+      "payload": {
+       "target_ref": "薄弱点: 现有结论的实证度量基础(吞吐曲线/延迟分布/资源峰值数据缺失)",
+       "premise": "下一步应设计并发度梯度实验（固定任务集，逐步提升多进程数），采集吞吐、延迟分位数与资源峰值，以实证数据替换机制推理",
+       "note": "该前提无有效evidence_ref证据支撑"
+      }
+     }
+    ],
+    "final_deliverable": null,
+    "alternatives_appendix": null
+   }
+  }
+ ],
+ "reference_baseline_branch": 0,
+ "divergence_notes": [
+  "各路收敛一致性: 全收敛",
+  "缺口数极差=9(大=视角正交性好, 小=同质冗余)",
+  "有终稿分支: 无"
+ ],
+ "f60": {
+  "dx_candidates": {
+   "consensus_hypotheses": [],
+   "shared_weak_points": [],
+   "candidate_actions_dedup": [
+    {
+     "weight": 0.6318,
+     "branch": 0,
+     "action": "四图投影完成, 缺口合并11条"
+    },
+    {
+     "weight": 0.3682,
+     "branch": 1,
+     "action": "四图投影完成, 缺口合并2条"
+    }
+   ],
+   "divergent_hypotheses": [
+    "并发上限的主导约束是CPU核数与Python多进程调度开销，而非内存或下游配额",
+    "真正的失效边界不在进程数本身，而在结果聚合与任务分发的串行段（聚合瓶颈/队头阻塞）",
+    "系统在超限时的失效形态是渐进退化（排队雪崩/延迟放大），而非硬崩溃（内存耗尽/进程泄漏）",
+    "现有配置中已存在隐式并发约束（如进程池默认max_workers、下游连接池上限），其有效性边界未被文档化"
+   ]
+  },
+  "vote_stats": {
+   "n_live": 2,
+   "hyp_clusters": 4,
+   "consensus_clusters": 0
+  },
+  "single_branch_mode": false,
+  "note": "ΔX 为候选(F40 粗解语义), 未经正演校验不得直接执行"
+ },
+ "forward_check_static": {
+  "goal_keyword_coverage": {
+   "parallel_pipeline": false,
+   "分析认知": false,
+   "析认知引": false,
+   "认知引擎": false,
+   "分析认": false,
+   "析认知": false
+  },
+  "covered": "0/6",
+  "verdict": "NO_CONSENSUS"
+ },
+ "meta": {
+  "wall_secs": 674.9,
+  "task_file": "data\\experiment\\collab_task_20261120.txt",
+  "results": [
+   {
+    "branch": 0,
+    "ok": true,
+    "secs": 673.9,
+    "error": null
+   },
+   {
+    "branch": 1,
+    "ok": true,
+    "secs": 559.5,
+    "error": null
+   }
+  ]
+ }
+}

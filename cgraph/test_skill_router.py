@@ -265,6 +265,36 @@ class T11_RunAtomicE2E(RouterTestBase):
             EX.commit_green_cards = saved_commit
 
 
+class T13_CollabOverrideE2E(RouterTestBase):
+    """⑬(#9 2026-11-20): run_atomic 的 collab_synthesize_override 入参贯通到 ThinkState;
+    默认 False(普通任务零变更), True 时透传。"""
+    def test(self):
+        import cgraph.executor as EX
+        saved_gate = EX.ChainExecutor._run_memory_gate
+        saved_commit = EX.commit_green_cards
+        seen = []
+        EX.ChainExecutor._run_memory_gate = lambda self, ui, no, walked: (
+            seen.append(dict(no)) or (None, None))
+        EX.commit_green_cards = lambda result, gate, ui: None
+        captured = []
+        orig_run = R.RouterAtomic.run
+        def _spy(self, state):
+            captured.append(getattr(state, "collab_synthesize_override", None))
+            return RouteReport(ok=True, exit_channel="llm_terminate", final_state=state,
+                               steps_log=[], fallback_count=0)
+        R.RouterAtomic.run = _spy
+        try:
+            ex = EX.ChainExecutor.__new__(EX.ChainExecutor)
+            ex.llm = MockLLM('{"chosen": "skill_terminate", "reason": "r"}')
+            ex.run_atomic("目标A")                                    # 默认 False
+            ex.run_atomic("目标B", collab_synthesize_override=True)    # 显式 True
+        finally:
+            R.RouterAtomic.run = orig_run
+            EX.ChainExecutor._run_memory_gate = saved_gate
+            EX.commit_green_cards = saved_commit
+        self.assertEqual(captured, [False, True])
+
+
 class T12_RouteReportSchema(RouterTestBase):
     """⑫ RouteReport 全部字段、类型校验"""
     def test(self):
@@ -1071,6 +1101,38 @@ class R16b_RouteGateRegression(RouterTestBase):
         # state=None 兼容旧调用签名(纯占位清洗不受影响)
         m5 = RouterAtomic._clean_menu(rt, [{"skill": "skill_terminate"}, {"skill": "__planned__"}])
         self.assertEqual([o["skill"] for o in m5], ["skill_terminate"])
+
+
+class R16e_CollabSynthesizeOverride(RouterTestBase):
+    """R16e(#9 2026-11-20): collab 旁路——override=True 时绕 goal_type 门放行 synthesize;
+    override=False/未设时老逻辑字节级不变(含 fail-safe 剔除)。"""
+    def test(self):
+        menu = [{"skill": "skill_synthesize"}, {"skill": "skill_terminate"}]
+        import types as _tp
+        from cgraph.router_atomic import RouterAtomic
+        rt = RouterAtomic.__new__(RouterAtomic)
+        rt.steps_log = []; rt.adjacency = {"entries": {"skill_terminate": {}, "skill_synthesize": {}}}
+        audits = []
+        rt._audit = _tp.MethodType(lambda self, *a: audits.append(a), rt)
+        rt._ids = _tp.MethodType(lambda self, x: [o.get("skill") for o in (x or [])], rt)
+
+        # ① override=True + 非 scheme_design(analysis) → 放行, 留 collab_override_pass 审计
+        st = ThinkState(goal="g", collab_synthesize_override=True)
+        st.trail = [{"skill_id": "skill_anchor_target", "result_fields": {"goal_type": "analysis"}}]
+        m = RouterAtomic._clean_menu(rt, [dict(o) for o in menu], st)
+        self.assertIn("skill_synthesize", [o["skill"] for o in m])
+        self.assertTrue(any(a[1] == "collab_override_pass" for a in audits))
+
+        # ② override=True + 无 anchor 记录 → 同样放行(旁路不看 goal_type)
+        st2 = ThinkState(goal="g", collab_synthesize_override=True); st2.trail = []
+        self.assertIn("skill_synthesize",
+                      [o["skill"] for o in RouterAtomic._clean_menu(rt, [dict(o) for o in menu], st2)])
+
+        # ③ override=False(默认) + analysis → 老逻辑剔除, 字节级回归
+        st3 = ThinkState(goal="g")
+        st3.trail = [{"skill_id": "skill_anchor_target", "result_fields": {"goal_type": "analysis"}}]
+        self.assertNotIn("skill_synthesize",
+                         [o["skill"] for o in RouterAtomic._clean_menu(rt, [dict(o) for o in menu], st3)])
 
 
 class R16c_HypothesesReadOnly(RouterTestBase):

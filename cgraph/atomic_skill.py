@@ -56,6 +56,11 @@ class ThinkState:
     # 仅 f_reason/weakest_link 只读消费; sufficiency 判据零读取(R15a)。
     # 任何降级(文件缺失/零命中/超限)恒 [], 链路行为与改造前一致。
     matrix_knowledge: list = field(default_factory=list)
+    # collab synthesize 旁路(2026-11-20 #9 用户裁决): 仅 scripts/collab_pipeline
+    # 的多路协同场景可置 True(经 run_atomic 入参注入), 普通任务恒 False。
+    # True 时 router._clean_menu 绕过 goal_type==scheme_design 的 synthesize 门控,
+    # 其余路由规则不变; 邻接表不变(f_reason→synthesize→terminate 支线)。
+    collab_synthesize_override: bool = False
     sub_questions: list = field(default_factory=list)
     summary: str = ""
     trail: list = field(default_factory=list)       # [(skill_id, chosen, candidates, reason, ts)]

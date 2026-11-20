@@ -1,0 +1,3 @@
+B侧管线完成: exit=llm_terminate steps=8 479.9s
+matrix_feed: ["matrix_injected: ['pa-005', 'pa-004'] (tokens=67)"]
+DONE

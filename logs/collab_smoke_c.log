@@ -1,0 +1,8 @@
+[collab] branches=3 mode=parallel tau=0.5
+[sufficiency] 告警 9 条(只告警不裁决): [指标] wl_addressed=0: weakest_link 定位疑点未被任何假设关键词回应; 疑点『wl_addressed=0: weakest_link 定位疑点未被任何假设关键词回应』与链路产出的一致性得到部; 『最薄弱环节』的具体所指在节选产出中未显式锚定：机械告警引用了 weakest_link 定位疑点，但链路各步骤（sco...
+[memory_gate] 绿档落库 1 张: ['cc26c396ad9e451e']
+[collab] done wall=1929.3s report=data/experiment/collab_smoke_20261120c\collab_report.json
+[F50] Y_hat={'converged': 1.0, 'has_deliverable': 0.0, 'confidence': 0.8234, 'n_gaps': 7.4785, 'n_contradictions': 0.0} baseline=branch1
+  #1 branch1 W=0.3399 exit=llm_terminate
+  #2 branch2 W=0.3399 exit=llm_terminate
+  #3 branch0 W=0.3201 exit=llm_terminate

@@ -1,0 +1,2343 @@
+[NIGHT] 开始于 2026-11-13 00:13:20
+[NIGHT] 图快照: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\data\mind_graph_backup_20261113.json
+
+============================================================
+[NIGHT] >>> E3 SFT七池静态体检
+============================================================
+[E3] sft_groupB_performative.jsonl: 8条 clean=8 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_groupC_explicit.jsonl: 35条 clean=35 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_pool_bc_aa.jsonl: 148条 clean=122 空=0 占位=0 src=0 码=0 重复=26 坏JSON=0
+[E3] sft_s1_doubter.jsonl: 35条 clean=35 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s1_pairs.jsonl: 35条 clean=35 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s2_doubter.jsonl: 10条 clean=10 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s5_deepreflect.jsonl: 25条 clean=25 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s6_thinking_assets.jsonl: 48条 clean=48 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s7_corpus3_assets.jsonl: 12条 clean=12 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+
+[E3] 总计 356 条, dirty 26 (7.3%)
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e3_sft_audit.json
+[NIGHT] <<< E3 SFT七池静态体检 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=215 negative=8
+[E2 pos 1/215] me=0.708 hit
+[E2 pos 2/215] me=0.701 hit
+[E2 pos 3/215] me=0.698 hit
+[E2 pos 4/215] me=0.704 hit
+[E2 pos 5/215] me=0.686 hit
+[E2 pos 6/215] me=0.696 hit
+[E2 pos 7/215] me=0.704 hit
+[E2 pos 8/215] me=0.684 hit
+[E2 pos 9/215] me=0.704 hit
+[E2 pos 10/215] me=0.704 hit
+[E2 pos 11/215] me=0.692 hit
+[E2 pos 12/215] me=0.709 hit
+[E2 pos 13/215] me=0.731 hit
+[E2 pos 14/215] me=0.695 hit
+[E2 pos 15/215] me=0.713 hit
+[E2 pos 16/215] me=0.703 hit
+[E2 pos 17/215] me=0.698 hit
+[E2 pos 18/215] me=0.710 hit
+[E2 pos 19/215] me=0.710 hit
+[E2 pos 20/215] me=0.696 hit
+[E2 pos 21/215] me=0.697 hit
+[E2 pos 22/215] me=0.718 hit
+[E2 pos 23/215] me=0.708 hit
+[E2 pos 24/215] me=0.703 hit
+[E2 pos 25/215] me=0.711 hit
+[E2 pos 26/215] me=0.720 hit
+[E2 pos 27/215] me=0.700 hit
+[E2 pos 28/215] me=0.702 hit
+[E2 pos 29/215] me=0.725 hit
+[E2 pos 30/215] me=0.659 hit
+[E2 pos 31/215] me=0.676 hit
+[E2 pos 32/215] me=0.708 hit
+[E2 pos 33/215] me=0.723 hit
+[E2 pos 34/215] me=0.709 hit
+[E2 pos 35/215] me=0.709 hit
+[E2 pos 36/215] me=0.696 hit
+[E2 pos 37/215] me=0.694 hit
+[E2 pos 38/215] me=0.706 hit
+[E2 pos 39/215] me=0.702 hit
+[E2 pos 40/215] me=0.704 hit
+[E2 pos 41/215] me=0.711 hit
+[E2 pos 42/215] me=0.680 hit
+[E2 pos 43/215] me=0.696 hit
+[E2 pos 44/215] me=0.690 hit
+[E2 pos 45/215] me=0.674 hit
+[E2 pos 46/215] me=0.705 hit
+[E2 pos 47/215] me=0.682 hit
+[E2 pos 48/215] me=0.683 hit
+[E2 pos 49/215] me=0.702 hit
+[E2 pos 50/215] me=0.687 hit
+[E2 pos 51/215] me=0.701 hit
+[E2 pos 52/215] me=0.701 hit
+[E2 pos 53/215] me=0.672 hit
+[E2 pos 54/215] me=0.709 hit
+[E2 pos 55/215] me=0.703 hit
+[E2 pos 56/215] me=0.691 hit
+[E2 pos 57/215] me=0.687 hit
+[E2 pos 58/215] me=0.681 hit
+[E2 pos 59/215] me=0.716 hit
+[E2 pos 60/215] me=0.730 hit
+[E2 pos 61/215] me=0.698 hit
+[E2 pos 62/215] me=0.688 hit
+[E2 pos 63/215] me=0.685 hit
+[E2 pos 64/215] me=0.663 hit
+[E2 pos 65/215] me=0.712 hit
+[E2 pos 66/215] me=0.714 hit
+[E2 pos 67/215] me=0.698 hit
+[E2 pos 68/215] me=0.703 hit
+[E2 pos 69/215] me=0.702 hit
+[E2 pos 70/215] me=0.694 hit
+[E2 pos 71/215] me=0.686 hit
+[E2 pos 72/215] me=0.692 hit
+[E2 pos 73/215] me=0.711 hit
+[E2 pos 74/215] me=0.716 hit
+[E2 pos 75/215] me=0.687 hit
+[E2 pos 76/215] me=0.691 hit
+[E2 pos 77/215] me=0.721 hit
+[E2 pos 78/215] me=0.692 hit
+[E2 pos 79/215] me=0.664 hit
+[E2 pos 80/215] me=0.704 hit
+[E2 pos 81/215] me=0.695 hit
+[E2 pos 82/215] me=0.728 hit
+[E2 pos 83/215] me=0.643 hit
+[E2 pos 84/215] me=0.681 hit
+[E2 pos 85/215] me=0.704 hit
+[E2 pos 86/215] me=0.736 hit
+[E2 pos 87/215] me=0.659 hit
+[E2 pos 88/215] me=0.702 hit
+[E2 pos 89/215] me=0.704 hit
+[E2 pos 90/215] me=0.674 hit
+[E2 pos 91/215] me=0.644 hit
+[E2 pos 92/215] me=0.703 hit
+[E2 pos 93/215] me=0.640 hit
+[E2 pos 94/215] me=0.632 hit
+[E2 pos 95/215] me=0.642 hit
+[E2 pos 96/215] me=0.682 hit
+[E2 pos 97/215] me=0.703 hit
+[E2 pos 98/215] me=0.703 hit
+[E2 pos 99/215] me=0.688 hit
+[E2 pos 100/215] me=0.679 hit
+[E2 pos 101/215] me=0.626 hit
+[E2 pos 102/215] me=0.634 hit
+[E2 pos 103/215] me=0.689 hit
+[E2 pos 104/215] me=0.588 hit
+[E2 pos 105/215] me=0.574 hit
+[E2 pos 106/215] me=0.592 hit
+[E2 pos 107/215] me=0.619 hit
+[E2 pos 108/215] me=0.621 hit
+[E2 pos 109/215] me=0.648 hit
+[E2 pos 110/215] me=0.628 hit
+[E2 pos 111/215] me=0.635 hit
+[E2 pos 112/215] me=0.634 hit
+[E2 pos 113/215] me=0.622 hit
+[E2 pos 114/215] me=0.678 hit
+[E2 pos 115/215] me=0.223 hit
+[E2 pos 116/215] me=0.673 hit
+[E2 pos 117/215] me=0.618 hit
+[E2 pos 118/215] me=0.619 hit
+[E2 pos 119/215] me=0.631 hit
+[E2 pos 120/215] me=0.616 hit
+[E2 pos 121/215] me=0.610 hit
+[E2 pos 122/215] me=0.612 hit
+[E2 pos 123/215] me=0.634 hit
+[E2 pos 124/215] me=0.580 hit
+[E2 pos 125/215] me=0.629 hit
+[E2 pos 126/215] me=0.593 hit
+[E2 pos 127/215] me=0.598 hit
+[E2 pos 128/215] me=0.618 hit
+[E2 pos 129/215] me=0.622 hit
+[E2 pos 130/215] me=0.622 hit
+[E2 pos 131/215] me=0.635 hit
+[E2 pos 132/215] me=0.592 hit
+[E2 pos 133/215] me=0.609 hit
+[E2 pos 134/215] me=0.601 hit
+[E2 pos 135/215] me=0.638 hit
+[E2 pos 136/215] me=0.636 hit
+[E2 pos 137/215] me=0.619 hit
+[E2 pos 138/215] me=0.545 hit
+[E2 pos 139/215] me=0.619 hit
+[E2 pos 140/215] me=0.614 hit
+[E2 pos 141/215] me=0.623 hit
+[E2 pos 142/215] me=0.629 hit
+[E2 pos 143/215] me=0.623 hit
+[E2 pos 144/215] me=0.710 hit
+[E2 pos 145/215] me=0.550 hit
+[E2 pos 146/215] me=0.610 hit
+[E2 pos 147/215] me=0.544 hit
+[E2 pos 148/215] me=0.587 hit
+[E2 pos 149/215] me=0.578 hit
+[E2 pos 150/215] me=0.623 hit
+[E2 pos 151/215] me=0.557 hit
+[E2 pos 152/215] me=0.600 hit
+[E2 pos 153/215] me=0.566 hit
+[E2 pos 154/215] me=0.594 hit
+[E2 pos 155/215] me=0.716 hit
+[E2 pos 156/215] me=0.701 hit
+[E2 pos 157/215] me=0.574 hit
+[E2 pos 158/215] me=0.580 hit
+[E2 pos 159/215] me=0.571 hit
+[E2 pos 160/215] me=0.675 hit
+[E2 pos 161/215] me=0.710 hit
+[E2 pos 162/215] me=0.689 hit
+[E2 pos 163/215] me=0.702 hit
+[E2 pos 164/215] me=0.674 hit
+[E2 pos 165/215] me=0.000 empty
+[E2 pos 166/215] me=0.000 empty
+[E2 pos 167/215] me=0.000 empty
+[E2 pos 168/215] me=0.000 empty
+[E2 pos 169/215] me=0.000 empty
+[E2 pos 170/215] me=0.000 empty
+[E2 pos 171/215] me=0.716 hit
+[E2 pos 172/215] me=0.726 hit
+[E2 pos 173/215] me=0.715 hit
+[E2 pos 174/215] me=0.709 hit
+[E2 pos 175/215] me=0.703 hit
+[E2 pos 176/215] me=0.706 hit
+[E2 pos 177/215] me=0.717 hit
+[E2 pos 178/215] me=0.720 hit
+[E2 pos 179/215] me=0.698 hit
+[E2 pos 180/215] me=0.712 hit
+[E2 pos 181/215] me=0.706 hit
+[E2 pos 182/215] me=0.720 hit
+[E2 pos 183/215] me=0.728 hit
+[E2 pos 184/215] me=0.718 hit
+[E2 pos 185/215] me=0.725 hit
+[E2 pos 186/215] me=0.708 hit
+[E2 pos 187/215] me=0.708 hit
+[E2 pos 188/215] me=0.717 hit
+[E2 pos 189/215] me=0.717 hit
+[E2 pos 190/215] me=0.725 hit
+[E2 pos 191/215] me=0.721 hit
+[E2 pos 192/215] me=0.713 hit
+[E2 pos 193/215] me=0.709 hit
+[E2 pos 194/215] me=0.711 hit
+[E2 pos 195/215] me=0.707 hit
+[E2 pos 196/215] me=0.723 hit
+[E2 pos 197/215] me=0.715 hit
+[E2 pos 198/215] me=0.711 hit
+[E2 pos 199/215] me=0.739 hit
+[E2 pos 200/215] me=0.715 hit
+[E2 pos 201/215] me=0.714 hit
+[E2 pos 202/215] me=0.638 hit
+[E2 pos 203/215] me=0.637 hit
+[E2 pos 204/215] me=0.651 hit
+[E2 pos 205/215] me=0.715 hit
+[E2 pos 206/215] me=0.638 hit
+[E2 pos 207/215] me=0.586 hit
+[E2 pos 208/215] me=0.605 hit
+[E2 pos 209/215] me=0.706 hit
+[E2 pos 210/215] me=0.712 hit
+[E2 pos 211/215] me=0.701 hit
+[E2 pos 212/215] me=0.702 hit
+[E2 pos 213/215] me=0.696 hit
+[E2 pos 214/215] me=0.707 hit
+[E2 pos 215/215] me=0.706 hit
+[E2 neg 1/8] me=0.131 marginal_ask (无任何实义（地板分）)
+[E2 neg 2/8] me=0.161 marginal_ask (无主语泛指)
+[E2 neg 3/8] me=0.150 marginal_ask (无上下文新任务)
+[E2 neg 4/8] me=0.096 uncertain (完全无关域)
+[E2 neg 5/8] me=0.135 marginal_ask (无主题泛任务)
+[E2 neg 6/8] me=0.419 hit (泛指无实体)
+[E2 neg 7/8] me=0.133 marginal_ask (无指代反问)
+[E2 neg 8/8] me=0.157 marginal_ask (单字续写)
+
+[E2] 固化回归: 14/15 有红 ✗ — 见 gate_regression.cases
+  ✗ GATE-TIME-01 expect=time_window_hit verdict=top1 event 2026-05-21 窗 2026-11-02~2026-11-08 me=None
+
+[E2] ===== 阈值扫描（节选） =====
+  th=0.08 recall=0.97 fp=1.00 f1=0.65
+  th=0.11 recall=0.97 fp=0.88 f1=0.68
+  th=0.14 recall=0.97 fp=0.50 f1=0.79
+  th=0.17 recall=0.97 fp=0.12 f1=0.93
+  th=0.20 recall=0.97 fp=0.12 f1=0.93
+  th=0.23 recall=0.97 fp=0.12 f1=0.93
+  th=0.26 recall=0.97 fp=0.12 f1=0.93
+  th=0.29 recall=0.97 fp=0.12 f1=0.93
+当前 0.15: recall=97.20% 误报=37.50%
+双门分层: 正例放行 209/215 (97.2%) | 负例漏报 1/8
+  负例漏报明细: ['上次说的那个 bug 修了吗']
+F1 最优: th=0.22 f1=0.927
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e2_gate_calibration.json
+[NIGHT] <<< E2 反问门标定扫描 OK 用时 0.5min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+[E1] config 快照: logs/config_snapshot_20261113_001355.yaml | 判定后端: deepseek/deepseek-chat
+[E1] probes total 123, done 123, todo 0
+
+[E1] ===== 触发率汇总 =====
+errors: 0
+[NIGHT] <<< E1 探针触发率全链回归 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+E4 维护巡逻: 5 项报警
+  [warn] 隔离区近7天新增 28 条非法编码拒收——检查入库管道是否标签错乱
+  [warn] event_ts 空值存量 29 条待回填（有线索就补 backfill 叠加层）
+  [warn] watchlist 3 条在池（0 条仍 watching 未推进）——巡检是否该转正/关闭
+  [warn] [quality] 语料版本漂移 novel_szt_chapters(hash_changed)——指向此语料的卡片判定需复检, 合法更新应 refresh_hash
+  [warn] [quality] 语料版本漂移 patent_disclosures(hash_changed)——指向此语料的卡片判定需复检, 合法更新应 refresh_hash
+计数: {"multi_topic_frozen": 0, "multi_topic_suspect_rough": 0, "unclassified_expired": 0, "unclassified_near_limit": 0, "quarantine_total": 28, "quarantine_last7d": 28, "conflict_pending": 0, "experiences": 11, "experience_split_pending": 0, "entities": 6, "entity_dangling_members": 0, "runtime_unlinked": 0, "event_ts_null_remaining": 29, "watchlist": 3, "alias_entries": 6, "alias_pending": 85, "alias_expired_inactive": 0, "high_value_content_without_class": 0, "mc_in_dfcp_tag": 192, "mc_legacy_top_level": 66, "mc_dual_field_conflict": 0, "corpus_hash_drift": 2, "placeholder_cards": 0, "fragile_cards": 0}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e4_maintenance.json
+[NIGHT] <<< E4 记忆库维护巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E5 记忆自动整理
+============================================================
+E5 整理: 补挂 0/0（conflict 0 skipped 0） | 经验 created=2 updated=1
+库态: {'memories': 215, 'graph_edges': 164, 'experiences': 13}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e5_consolidation.json
+[NIGHT] <<< E5 记忆自动整理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E6 思维图巡逻
+============================================================
+E6 思维图巡逻: 全绿
+计数: {"edges_over_hard_cap": 0, "edges_near_soft_cap": 0, "first_hop_concentration_top3": 0.296, "dead_edges": 26, "backup_snapshots": 5, "latest_backup": "mind_graph_backup_20261113.json", "drift_vs_backup": {"edges": 0, "nodes": 0, "max_weight": 0.0}}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e6_mind_graph_patrol.json
+[NIGHT] <<< E6 思维图巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E8 影子对话实测
+============================================================
+[E8] Q1/8 correct      v=hit           上次咱们聊非农数据超预期金价反而跌了那事儿，你说是什么央行买金对冲了流动性冲击，
+[E8] Q2/8 correct      v=hit           上次你说黄金ETF对冲要分批建仓，我第一笔已经买了，第二批挂单等回调——现在这行
+[E8] Q3/8 correct      v=hit           上次你说右舵车空调那个主驾风量信号从TMS到app层会左右反过来，那个链路具体是
+[E8] Q4/8 correct      v=hit           上次你提的那个多维偏离度张量注意力，具体是怎么个思路来着？
+[E8] Q5/8 correct      v=hit           上次你说那个双侧巡逻的事，说AI那边其实全靠人肉盯着，CodeChat侧压根没有
+[E8] Q6/8 correct      v=hit           上次咱们聊的那个动态拓维神经元方案，说要把多级正态扩域和异常驱动维度衍生揉在一起
+[E8] Q7/8 correct      v=hit           上次你说那套判断老知识还适不适用的标准，什么去个体化、可证伪那些，是不是不能直接
+[E8] Q8/8 wrong_entry  v=hit           上次你提的那个专利检索方法，好像分了好几层锚点来着，那个具体是怎么弄的？
+E8 影子对话: 7/8 正确命中 | 张冠李戴 1 | missA召回 0 / missB排序 0 | 合格池命中率 1.0 | 反问 0 | 均分 0.969
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e8_shadow_dialog.jsonl
+[NIGHT] <<< E8 影子对话实测 OK 用时 0.5min
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261113_0014.md
+[NIGHT] 全部结束于 2026-11-13 00:14:29
+[NIGHT] 开始于 2026-11-16 18:05:02
+[NIGHT] 图快照失败(不阻断夜跑): No module named 'eval.e6_mind_graph_patrol'
+
+============================================================
+[NIGHT] >>> E0 topic锚开关守卫
+============================================================
+[E0] topic_layer 开关守卫探针
+  ✓ ① TOPIC_LAYER_ON=1(topic_enabled 为 True)
+  ✓ ② 守卫卡写入成功(全id=b644caaa)
+  ✓ ③ report['topic'] 存在(mount_topic 自动触发)
+  ✓ ④ 新卡锚判定返回 verdict(hold/anchor)
+  ✓ ⑤ hold 判定卡落 hold 池 jsonl
+  ✓ ⑥ 守卫卡自清理(card+hold+memories.jsonl 三侧)
+[E0] 守卫结论: PASS
+[NIGHT] <<< E0 topic锚开关守卫 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=253 negative=8
+[E2 pos 1/253] me=0.809 hit
+[E2 pos 2/253] me=0.795 hit
+[E2 pos 3/253] me=0.793 hit
+[E2 pos 4/253] me=0.805 hit
+[E2 pos 5/253] me=0.786 hit
+[E2 pos 6/253] me=0.797 hit
+[E2 pos 7/253] me=0.706 hit
+[E2 pos 8/253] me=0.684 hit
+[E2 pos 9/253] me=0.703 hit
+[E2 pos 10/253] me=0.703 hit
+[E2 pos 11/253] me=0.691 hit
+[E2 pos 12/253] me=0.809 hit
+[E2 pos 13/253] me=0.825 hit
+[E2 pos 14/253] me=0.795 hit
+[E2 pos 15/253] me=0.813 hit
+[E2 pos 16/253] me=0.803 hit
+[E2 pos 17/253] me=0.798 hit
+[E2 pos 18/253] me=0.810 hit
+[E2 pos 19/253] me=0.810 hit
+[E2 pos 20/253] me=0.797 hit
+[E2 pos 21/253] me=0.697 hit
+[E2 pos 22/253] me=0.806 hit
+[E2 pos 23/253] me=0.809 hit
+[E2 pos 24/253] me=0.803 hit
+[E2 pos 25/253] me=0.706 hit
+[E2 pos 26/253] me=0.820 hit
+[E2 pos 27/253] me=0.794 hit
+[E2 pos 28/253] me=0.703 hit
+[E2 pos 29/253] me=0.825 hit
+[E2 pos 30/253] me=0.761 hit
+[E2 pos 31/253] me=0.776 hit
+[E2 pos 32/253] me=0.802 hit
+[E2 pos 33/253] me=0.824 hit
+[E2 pos 34/253] me=0.709 hit
+[E2 pos 35/253] me=0.809 hit
+[E2 pos 36/253] me=0.797 hit
+[E2 pos 37/253] me=0.693 hit
+[E2 pos 38/253] me=0.808 hit
+[E2 pos 39/253] me=0.696 hit
+[E2 pos 40/253] me=0.704 hit
+[E2 pos 41/253] me=0.711 hit
+[E2 pos 42/253] me=0.678 hit
+[E2 pos 43/253] me=0.698 hit
+[E2 pos 44/253] me=0.691 hit
+[E2 pos 45/253] me=0.676 hit
+[E2 pos 46/253] me=0.806 hit
+[E2 pos 47/253] me=0.683 hit
+[E2 pos 48/253] me=0.788 hit
+[E2 pos 49/253] me=0.699 hit
+[E2 pos 50/253] me=0.685 hit
+[E2 pos 51/253] me=0.804 hit
+[E2 pos 52/253] me=0.804 hit
+[E2 pos 53/253] me=0.671 hit
+[E2 pos 54/253] me=0.707 hit
+[E2 pos 55/253] me=0.698 hit
+[E2 pos 56/253] me=0.695 hit
+[E2 pos 57/253] me=0.689 hit
+[E2 pos 58/253] me=0.683 hit
+[E2 pos 59/253] me=0.816 hit
+[E2 pos 60/253] me=0.831 hit
+[E2 pos 61/253] me=0.693 hit
+[E2 pos 62/253] me=0.789 hit
+[E2 pos 63/253] me=0.786 hit
+[E2 pos 64/253] me=0.765 hit
+[E2 pos 65/253] me=0.713 hit
+[E2 pos 66/253] me=0.707 hit
+[E2 pos 67/253] me=0.699 hit
+[E2 pos 68/253] me=0.797 hit
+[E2 pos 69/253] me=0.803 hit
+[E2 pos 70/253] me=0.796 hit
+[E2 pos 71/253] me=0.788 hit
+[E2 pos 72/253] me=0.786 hit
+[E2 pos 73/253] me=0.711 hit
+[E2 pos 74/253] me=0.710 hit
+[E2 pos 75/253] me=0.687 hit
+[E2 pos 76/253] me=0.792 hit
+[E2 pos 77/253] me=0.720 hit
+[E2 pos 78/253] me=0.692 hit
+[E2 pos 79/253] me=0.668 hit
+[E2 pos 80/253] me=0.704 hit
+[E2 pos 81/253] me=0.797 hit
+[E2 pos 82/253] me=0.728 hit
+[E2 pos 83/253] me=0.641 hit
+[E2 pos 84/253] me=0.678 hit
+[E2 pos 85/253] me=0.705 hit
+[E2 pos 86/253] me=0.737 hit
+[E2 pos 87/253] me=0.660 hit
+[E2 pos 88/253] me=0.704 hit
+[E2 pos 89/253] me=0.703 hit
+[E2 pos 90/253] me=0.644 hit
+[E2 pos 91/253] me=0.619 hit
+[E2 pos 92/253] me=0.702 hit
+[E2 pos 93/253] me=0.636 hit
+[E2 pos 94/253] me=0.624 hit
+[E2 pos 95/253] me=0.643 hit
+[E2 pos 96/253] me=0.684 hit
+[E2 pos 97/253] me=0.704 hit
+[E2 pos 98/253] me=0.689 hit
+[E2 pos 99/253] me=0.778 hit
+[E2 pos 100/253] me=0.625 hit
+[E2 pos 101/253] me=0.726 hit
+[E2 pos 102/253] me=0.783 hit
+[E2 pos 103/253] me=0.582 hit
+[E2 pos 104/253] me=0.574 hit
+[E2 pos 105/253] me=0.593 hit
+[E2 pos 106/253] me=0.619 hit
+[E2 pos 107/253] me=0.613 hit
+[E2 pos 108/253] me=0.740 hit
+[E2 pos 109/253] me=0.628 hit
+[E2 pos 110/253] me=0.626 hit
+[E2 pos 111/253] me=0.727 hit
+[E2 pos 112/253] me=0.621 hit
+[E2 pos 113/253] me=0.680 hit
+[E2 pos 114/253] me=0.324 hit
+[E2 pos 115/253] me=0.673 hit
+[E2 pos 116/253] me=0.718 hit
+[E2 pos 117/253] me=0.721 hit
+[E2 pos 118/253] me=0.730 hit
+[E2 pos 119/253] me=0.717 hit
+[E2 pos 120/253] me=0.710 hit
+[E2 pos 121/253] me=0.714 hit
+[E2 pos 122/253] me=0.737 hit
+[E2 pos 123/253] me=0.678 hit
+[E2 pos 124/253] me=0.729 hit
+[E2 pos 125/253] me=0.693 hit
+[E2 pos 126/253] me=0.601 hit
+[E2 pos 127/253] me=0.720 hit
+[E2 pos 128/253] me=0.724 hit
+[E2 pos 129/253] me=0.724 hit
+[E2 pos 130/253] me=0.737 hit
+[E2 pos 131/253] me=0.693 hit
+[E2 pos 132/253] me=0.708 hit
+[E2 pos 133/253] me=0.701 hit
+[E2 pos 134/253] me=0.739 hit
+[E2 pos 135/253] me=0.735 hit
+[E2 pos 136/253] me=0.722 hit
+[E2 pos 137/253] me=0.647 hit
+[E2 pos 138/253] me=0.719 hit
+[E2 pos 139/253] me=0.714 hit
+[E2 pos 140/253] me=0.724 hit
+[E2 pos 141/253] me=0.729 hit
+[E2 pos 142/253] me=0.723 hit
+[E2 pos 143/253] me=0.805 hit
+[E2 pos 144/253] me=0.652 hit
+[E2 pos 145/253] me=0.708 hit
+[E2 pos 146/253] me=0.645 hit
+[E2 pos 147/253] me=0.687 hit
+[E2 pos 148/253] me=0.680 hit
+[E2 pos 149/253] me=0.723 hit
+[E2 pos 150/253] me=0.654 hit
+[E2 pos 151/253] me=0.693 hit
+[E2 pos 152/253] me=0.667 hit
+[E2 pos 153/253] me=0.694 hit
+[E2 pos 154/253] me=0.812 hit
+[E2 pos 155/253] me=0.799 hit
+[E2 pos 156/253] me=0.677 hit
+[E2 pos 157/253] me=0.680 hit
+[E2 pos 158/253] me=0.672 hit
+[E2 pos 159/253] me=0.674 hit
+[E2 pos 160/253] me=0.709 hit
+[E2 pos 161/253] me=0.693 hit
+[E2 pos 162/253] me=0.702 hit
+[E2 pos 163/253] me=0.675 hit
+[E2 pos 164/253] me=0.000 empty
+[E2 pos 165/253] me=0.000 empty
+[E2 pos 166/253] me=0.000 empty
+[E2 pos 167/253] me=0.000 empty
+[E2 pos 168/253] me=0.000 empty
+[E2 pos 169/253] me=0.000 empty
+[E2 pos 170/253] me=0.810 hit
+[E2 pos 171/253] me=0.810 hit
+[E2 pos 172/253] me=0.799 hit
+[E2 pos 173/253] me=0.779 hit
+[E2 pos 174/253] me=0.779 hit
+[E2 pos 175/253] me=0.778 hit
+[E2 pos 176/253] me=0.801 hit
+[E2 pos 177/253] me=0.798 hit
+[E2 pos 178/253] me=0.795 hit
+[E2 pos 179/253] me=0.801 hit
+[E2 pos 180/253] me=0.783 hit
+[E2 pos 181/253] me=0.809 hit
+[E2 pos 182/253] me=0.807 hit
+[E2 pos 183/253] me=0.789 hit
+[E2 pos 184/253] me=0.813 hit
+[E2 pos 185/253] me=0.796 hit
+[E2 pos 186/253] me=0.789 hit
+[E2 pos 187/253] me=0.796 hit
+[E2 pos 188/253] me=0.797 hit
+[E2 pos 189/253] me=0.812 hit
+[E2 pos 190/253] me=0.708 hit
+[E2 pos 191/253] me=0.705 hit
+[E2 pos 192/253] me=0.788 hit
+[E2 pos 193/253] me=0.796 hit
+[E2 pos 194/253] me=0.799 hit
+[E2 pos 195/253] me=0.793 hit
+[E2 pos 196/253] me=0.802 hit
+[E2 pos 197/253] me=0.823 hit
+[E2 pos 198/253] me=0.808 hit
+[E2 pos 199/253] me=0.791 hit
+[E2 pos 200/253] me=0.713 hit
+[E2 pos 201/253] me=0.707 hit
+[E2 pos 202/253] me=0.718 hit
+[E2 pos 203/253] me=0.797 hit
+[E2 pos 204/253] me=0.739 hit
+[E2 pos 205/253] me=0.686 hit
+[E2 pos 206/253] me=0.704 hit
+[E2 pos 207/253] me=0.788 hit
+[E2 pos 208/253] me=0.796 hit
+[E2 pos 209/253] me=0.700 hit
+[E2 pos 210/253] me=0.702 hit
+[E2 pos 211/253] me=0.697 hit
+[E2 pos 212/253] me=0.707 hit
+[E2 pos 213/253] me=0.707 hit
+[E2 pos 214/253] me=0.681 hit
+[E2 pos 215/253] me=0.679 hit
+[E2 pos 216/253] me=0.672 hit
+[E2 pos 217/253] me=0.801 hit
+[E2 pos 218/253] me=0.811 hit
+[E2 pos 219/253] me=0.811 hit
+[E2 pos 220/253] me=0.805 hit
+[E2 pos 221/253] me=0.805 hit
+[E2 pos 222/253] me=0.701 hit
+[E2 pos 223/253] me=0.668 hit
+[E2 pos 224/253] me=0.675 hit
+[E2 pos 225/253] me=0.770 hit
+[E2 pos 226/253] me=0.710 hit
+[E2 pos 227/253] me=0.701 hit
+[E2 pos 228/253] me=0.691 hit
+[E2 pos 229/253] me=0.831 hit
+[E2 pos 230/253] me=0.337 hit
+[E2 pos 231/253] me=0.795 hit
+[E2 pos 232/253] me=0.690 hit
+[E2 pos 233/253] me=0.796 hit
+[E2 pos 234/253] me=0.806 hit
+[E2 pos 235/253] me=0.812 hit
+[E2 pos 236/253] me=0.687 hit
+[E2 pos 237/253] me=0.668 hit
+[E2 pos 238/253] me=0.810 hit
+[E2 pos 239/253] me=0.794 hit
+[E2 pos 240/253] me=0.699 hit
+[E2 pos 241/253] me=0.681 hit
+[E2 pos 242/253] me=0.664 hit
+[E2 pos 243/253] me=0.660 hit
+[E2 pos 244/253] me=0.788 hit
+[E2 pos 245/253] me=0.774 hit
+[E2 pos 246/253] me=0.698 hit
+[E2 pos 247/253] me=0.797 hit
+[E2 pos 248/253] me=0.803 hit
+[E2 pos 249/253] me=0.777 hit
+[E2 pos 250/253] me=0.781 hit
+[E2 pos 251/253] me=0.782 hit
+[E2 pos 252/253] me=0.781 hit
+[E2 pos 253/253] me=0.706 hit
+[E2 neg 1/8] me=0.091 uncertain (无任何实义（地板分）)
+[E2 neg 2/8] me=0.137 marginal_ask (无主语泛指)
+[E2 neg 3/8] me=0.138 marginal_ask (无上下文新任务)
+[E2 neg 4/8] me=0.074 uncertain (完全无关域)
+[E2 neg 5/8] me=0.115 uncertain (无主题泛任务)
+[E2 neg 6/8] me=0.419 hit (泛指无实体)
+[E2 neg 7/8] me=0.106 uncertain (无指代反问)
+[E2 neg 8/8] me=0.121 marginal_ask (单字续写)
+
+[E2] 固化回归: 15/15 全绿 ✓
+
+[E2] ===== 阈值扫描（节选） =====
+  th=0.08 recall=0.98 fp=0.88 f1=0.69
+  th=0.11 recall=0.98 fp=0.62 f1=0.75
+  th=0.14 recall=0.98 fp=0.12 f1=0.93
+  th=0.17 recall=0.98 fp=0.12 f1=0.93
+  th=0.20 recall=0.98 fp=0.12 f1=0.93
+  th=0.23 recall=0.98 fp=0.12 f1=0.93
+  th=0.26 recall=0.98 fp=0.12 f1=0.93
+  th=0.29 recall=0.98 fp=0.12 f1=0.93
+当前 0.15: recall=97.60% 误报=12.50%
+双门分层: 正例放行 247/253 (97.6%) | 负例漏报 1/8
+  负例漏报明细: ['上次说的那个 bug 修了吗']
+F1 最优: th=0.3 f1=0.929
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e2_gate_calibration.json
+[NIGHT] <<< E2 反问门标定扫描 OK 用时 3.9min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+[E1] config 快照: logs/config_snapshot_20261116_180859.yaml | 判定后端: deepseek/deepseek-chat
+[E1] probes total 123, done 123, todo 0
+
+[E1] ===== 触发率汇总 =====
+errors: 0
+[NIGHT] <<< E1 探针触发率全链回归 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+E4 维护巡逻: 4 项报警
+  [warn] 隔离区近7天新增 22 条非法编码拒收——检查入库管道是否标签错乱
+  [warn] 冲突评审积压 3 条（同源分叉待元思域对撞）
+  [warn] event_ts 空值存量 34 条待回填（有线索就补 backfill 叠加层）
+  [warn] watchlist 3 条在池（0 条仍 watching 未推进）——巡检是否该转正/关闭
+计数: {"multi_topic_frozen": 0, "multi_topic_suspect_rough": 0, "unclassified_expired": 0, "unclassified_near_limit": 0, "quarantine_total": 43, "quarantine_last7d": 22, "conflict_pending": 3, "experiences": 19, "experience_split_pending": 0, "entities": 6, "entity_dangling_members": 0, "runtime_unlinked": 0, "event_ts_null_remaining": 34, "watchlist": 3, "alias_entries": 6, "alias_pending": 103, "alias_expired_inactive": 0, "high_value_content_without_class": 0, "mc_in_dfcp_tag": 228, "mc_legacy_top_level": 103, "mc_dual_field_conflict": 0, "corpus_hash_drift": 0, "placeholder_cards": 0, "fragile_cards": 0}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e4_maintenance.json
+[NIGHT] <<< E4 记忆库维护巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E5 记忆自动整理
+============================================================
+E5 整理: 补挂 0/0（conflict 0 skipped 0） | 经验 created=0 updated=0
+库态: {'memories': 253, 'graph_edges': 200, 'experiences': 19}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e5_consolidation.json
+[NIGHT] <<< E5 记忆自动整理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E6 思维图巡逻
+============================================================
+E6 思维图巡逻: 全绿
+计数: {"edges_over_hard_cap": 0, "edges_near_soft_cap": 0, "first_hop_concentration_top3": 0.289, "dead_edges": 26, "backup_snapshots": 5, "latest_backup": "mind_graph_backup_20261113.json", "drift_vs_backup": {"edges": -6, "nodes": 0, "max_weight": -0.055}}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e6_mind_graph_patrol.json
+[NIGHT] <<< E6 思维图巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E7 夜间治理
+============================================================
+[E7] hold分流: 自动放行 0 | 自动留置 0 | 人工队列 0 | 高频簇可疑 0 | 证据回写 0 条
+[NIGHT] <<< E7 夜间治理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E9 对话治理
+============================================================
+[E9] 扫描69段 | 高价值1 | 提案1(送pending) | 重复跳过1 | miss_case0 | 假阴性疑点0 | transcript兜底: 提取88/入库19/去重69
+
+— E9 提案明细 (1条, 终审=人闸) —
+  拟卡: 会话裁决提炼(夜间E9): 内生驱动系统v4构思(用户提交全文)
+    E9夜间扫描主通道自动提案(来源=dialog.2026-11-16.v4design, simhash见gate_log)。原文: 用户显式入库指令 2026-11-16; 原文=applog首行标题, 全文经会话AI整理为 design_v4_endogenous.md。终审人闸——此卡仅为提案
+  拟卡: 会话裁决提炼(夜间E9): codechat-transcript[用户提交]
+    E9夜间扫描主通道自动提案(来源=dialog.2026-11-16.t10040, simhash见gate_log)。原文: C:/Users/uidq0280/AppData/Roaming/DSV CodeChat Desktop/logs/applog.log; window=2026-1
+— 旁路重复跳过 1 条(优先级规约①: 旁路已提, 夜间不重复) —
+— transcript 兜底入库 19 段, 样例: —
+  [t10003] 找找提交记录，是不是AllApps长按图标编辑，对应的图标默认需要触发可拖拽状态是bug要求改的
+  [t10004] 优先敲定：选用方案 B。
+  [t10005] 不是这笔，是非编辑模式下长按图标，进入编辑态后，还得再长按图标触发图标拖拽
+[NIGHT] <<< E9 对话治理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> T1 trace月度归档
+============================================================
+归档完成: {'trace_cited': 0, 'trace_call': 0, 'trace_embedding': 0}
+  trace_archive_2026_08.db trace_cited: meta申报 300 vs 本库实际 300 PASS
+  trace_archive_2026_09.db trace_cited: meta申报 200 vs 本库实际 200 PASS
+trace_cited: 总 23851 行 = 主库:23351 + trace_archive_2026_08.db:300 + trace_archive_2026_09.db:200
+trace_call: 总 0 行 = 主库:0
+trace_embedding: 总 0 行 = 主库:0
+[NIGHT] <<< T1 trace月度归档 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> F20 基线守卫(experiment)
+============================================================
+[F20守卫] smoke PASS(基线PASS) top=87f66cc1,f1577a38,f4198bf7
+[F20守卫] explore1 PASS(基线PASS) top=04353a35
+[F20守卫] explore2 PASS(基线PASS) top=87f66cc1,f1577a38,f4198bf7
+[F20守卫] explore3 PASS(基线PASS) top=287e892d,b178d1f9,296e4981
+[F20守卫] explore4 FAIL(基线FAIL) top=4304794d,6ed8586c,fb674356
+[F20守卫] 基线稳定: 五场景判定与位次全部一致
+[NIGHT] <<< F20 基线守卫(experiment) OK 用时 0.2min
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261116_1809.md
+[NIGHT] 全部结束于 2026-11-16 18:09:21
+[NIGHT] 开始于 2026-11-17 18:05:02
+[NIGHT] 图快照失败(不阻断夜跑): No module named 'eval.e6_mind_graph_patrol'
+
+============================================================
+[NIGHT] >>> E0 topic锚开关守卫
+============================================================
+[E0] topic_layer 开关守卫探针
+  ✓ ① TOPIC_LAYER_ON=1(topic_enabled 为 True)
+  ✓ ② 守卫卡写入成功(全id=d1d90885)
+  ✓ ③ report['topic'] 存在(mount_topic 自动触发)
+  ✓ ④ 新卡锚判定返回 verdict(hold/anchor)
+  ✓ ⑤ hold 判定卡落 hold 池 jsonl
+  ✓ ⑥ 守卫卡自清理(card+hold+memories.jsonl 三侧)
+[E0] 守卫结论: PASS
+[NIGHT] <<< E0 topic锚开关守卫 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=270 negative=8
+[E2 pos 1/270] me=0.808 hit
+[E2 pos 2/270] me=0.794 hit
+[E2 pos 3/270] me=0.792 hit
+[E2 pos 4/270] me=0.806 hit
+[E2 pos 5/270] me=0.785 hit
+[E2 pos 6/270] me=0.796 hit
+[E2 pos 7/270] me=0.704 hit
+[E2 pos 8/270] me=0.704 hit
+[E2 pos 9/270] me=0.702 hit
+[E2 pos 10/270] me=0.692 hit
+[E2 pos 11/270] me=0.825 hit
+[E2 pos 12/270] me=0.795 hit
+[E2 pos 13/270] me=0.813 hit
+[E2 pos 14/270] me=0.803 hit
+[E2 pos 15/270] me=0.798 hit
+[E2 pos 16/270] me=0.810 hit
+[E2 pos 17/270] me=0.809 hit
+[E2 pos 18/270] me=0.798 hit
+[E2 pos 19/270] me=0.696 hit
+[E2 pos 20/270] me=0.806 hit
+[E2 pos 21/270] me=0.807 hit
+[E2 pos 22/270] me=0.804 hit
+[E2 pos 23/270] me=0.706 hit
+[E2 pos 24/270] me=0.819 hit
+[E2 pos 25/270] me=0.794 hit
+[E2 pos 26/270] me=0.702 hit
+[E2 pos 27/270] me=0.824 hit
+[E2 pos 28/270] me=0.761 hit
+[E2 pos 29/270] me=0.777 hit
+[E2 pos 30/270] me=0.824 hit
+[E2 pos 31/270] me=0.710 hit
+[E2 pos 32/270] me=0.809 hit
+[E2 pos 33/270] me=0.796 hit
+[E2 pos 34/270] me=0.692 hit
+[E2 pos 35/270] me=0.706 hit
+[E2 pos 36/270] me=0.694 hit
+[E2 pos 37/270] me=0.704 hit
+[E2 pos 38/270] me=0.710 hit
+[E2 pos 39/270] me=0.676 hit
+[E2 pos 40/270] me=0.698 hit
+[E2 pos 41/270] me=0.691 hit
+[E2 pos 42/270] me=0.676 hit
+[E2 pos 43/270] me=0.805 hit
+[E2 pos 44/270] me=0.683 hit
+[E2 pos 45/270] me=0.786 hit
+[E2 pos 46/270] me=0.699 hit
+[E2 pos 47/270] me=0.689 hit
+[E2 pos 48/270] me=0.801 hit
+[E2 pos 49/270] me=0.805 hit
+[E2 pos 50/270] me=0.673 hit
+[E2 pos 51/270] me=0.706 hit
+[E2 pos 52/270] me=0.698 hit
+[E2 pos 53/270] me=0.694 hit
+[E2 pos 54/270] me=0.688 hit
+[E2 pos 55/270] me=0.681 hit
+[E2 pos 56/270] me=0.815 hit
+[E2 pos 57/270] me=0.831 hit
+[E2 pos 58/270] me=0.689 hit
+[E2 pos 59/270] me=0.789 hit
+[E2 pos 60/270] me=0.785 hit
+[E2 pos 61/270] me=0.763 hit
+[E2 pos 62/270] me=0.711 hit
+[E2 pos 63/270] me=0.708 hit
+[E2 pos 64/270] me=0.698 hit
+[E2 pos 65/270] me=0.795 hit
+[E2 pos 66/270] me=0.803 hit
+[E2 pos 67/270] me=0.794 hit
+[E2 pos 68/270] me=0.787 hit
+[E2 pos 69/270] me=0.787 hit
+[E2 pos 70/270] me=0.711 hit
+[E2 pos 71/270] me=0.710 hit
+[E2 pos 72/270] me=0.689 hit
+[E2 pos 73/270] me=0.691 hit
+[E2 pos 74/270] me=0.720 hit
+[E2 pos 75/270] me=0.693 hit
+[E2 pos 76/270] me=0.666 hit
+[E2 pos 77/270] me=0.705 hit
+[E2 pos 78/270] me=0.797 hit
+[E2 pos 79/270] me=0.729 hit
+[E2 pos 80/270] me=0.641 hit
+[E2 pos 81/270] me=0.677 hit
+[E2 pos 82/270] me=0.704 hit
+[E2 pos 83/270] me=0.736 hit
+[E2 pos 84/270] me=0.658 hit
+[E2 pos 85/270] me=0.703 hit
+[E2 pos 86/270] me=0.704 hit
+[E2 pos 87/270] me=0.645 hit
+[E2 pos 88/270] me=0.620 hit
+[E2 pos 89/270] me=0.701 hit
+[E2 pos 90/270] me=0.634 hit
+[E2 pos 91/270] me=0.625 hit
+[E2 pos 92/270] me=0.641 hit
+[E2 pos 93/270] me=0.683 hit
+[E2 pos 94/270] me=0.703 hit
+[E2 pos 95/270] me=0.687 hit
+[E2 pos 96/270] me=0.779 hit
+[E2 pos 97/270] me=0.626 hit
+[E2 pos 98/270] me=0.729 hit
+[E2 pos 99/270] me=0.286 hit
+[E2 pos 100/270] me=0.582 hit
+[E2 pos 101/270] me=0.575 hit
+[E2 pos 102/270] me=0.593 hit
+[E2 pos 103/270] me=0.619 hit
+[E2 pos 104/270] me=0.613 hit
+[E2 pos 105/270] me=0.739 hit
+[E2 pos 106/270] me=0.628 hit
+[E2 pos 107/270] me=0.626 hit
+[E2 pos 108/270] me=0.727 hit
+[E2 pos 109/270] me=0.624 hit
+[E2 pos 110/270] me=0.679 hit
+[E2 pos 111/270] me=0.323 hit
+[E2 pos 112/270] me=0.676 hit
+[E2 pos 113/270] me=0.717 hit
+[E2 pos 114/270] me=0.719 hit
+[E2 pos 115/270] me=0.729 hit
+[E2 pos 116/270] me=0.717 hit
+[E2 pos 117/270] me=0.709 hit
+[E2 pos 118/270] me=0.714 hit
+[E2 pos 119/270] me=0.734 hit
+[E2 pos 120/270] me=0.679 hit
+[E2 pos 121/270] me=0.729 hit
+[E2 pos 122/270] me=0.693 hit
+[E2 pos 123/270] me=0.603 hit
+[E2 pos 124/270] me=0.719 hit
+[E2 pos 125/270] me=0.722 hit
+[E2 pos 126/270] me=0.724 hit
+[E2 pos 127/270] me=0.736 hit
+[E2 pos 128/270] me=0.693 hit
+[E2 pos 129/270] me=0.708 hit
+[E2 pos 130/270] me=0.702 hit
+[E2 pos 131/270] me=0.737 hit
+[E2 pos 132/270] me=0.735 hit
+[E2 pos 133/270] me=0.722 hit
+[E2 pos 134/270] me=0.647 hit
+[E2 pos 135/270] me=0.720 hit
+[E2 pos 136/270] me=0.712 hit
+[E2 pos 137/270] me=0.721 hit
+[E2 pos 138/270] me=0.730 hit
+[E2 pos 139/270] me=0.722 hit
+[E2 pos 140/270] me=0.803 hit
+[E2 pos 141/270] me=0.653 hit
+[E2 pos 142/270] me=0.710 hit
+[E2 pos 143/270] me=0.644 hit
+[E2 pos 144/270] me=0.685 hit
+[E2 pos 145/270] me=0.680 hit
+[E2 pos 146/270] me=0.724 hit
+[E2 pos 147/270] me=0.655 hit
+[E2 pos 148/270] me=0.693 hit
+[E2 pos 149/270] me=0.665 hit
+[E2 pos 150/270] me=0.695 hit
+[E2 pos 151/270] me=0.810 hit
+[E2 pos 152/270] me=0.800 hit
+[E2 pos 153/270] me=0.675 hit
+[E2 pos 154/270] me=0.678 hit
+[E2 pos 155/270] me=0.671 hit
+[E2 pos 156/270] me=0.675 hit
+[E2 pos 157/270] me=0.709 hit
+[E2 pos 158/270] me=0.691 hit
+[E2 pos 159/270] me=0.702 hit
+[E2 pos 160/270] me=0.672 hit
+[E2 pos 161/270] me=0.000 empty
+[E2 pos 162/270] me=0.000 empty
+[E2 pos 163/270] me=0.000 empty
+[E2 pos 164/270] me=0.000 empty
+[E2 pos 165/270] me=0.000 empty
+[E2 pos 166/270] me=0.000 empty
+[E2 pos 167/270] me=0.810 hit
+[E2 pos 168/270] me=0.809 hit
+[E2 pos 169/270] me=0.798 hit
+[E2 pos 170/270] me=0.781 hit
+[E2 pos 171/270] me=0.779 hit
+[E2 pos 172/270] me=0.776 hit
+[E2 pos 173/270] me=0.801 hit
+[E2 pos 174/270] me=0.797 hit
+[E2 pos 175/270] me=0.794 hit
+[E2 pos 176/270] me=0.801 hit
+[E2 pos 177/270] me=0.782 hit
+[E2 pos 178/270] me=0.809 hit
+[E2 pos 179/270] me=0.807 hit
+[E2 pos 180/270] me=0.788 hit
+[E2 pos 181/270] me=0.814 hit
+[E2 pos 182/270] me=0.795 hit
+[E2 pos 183/270] me=0.788 hit
+[E2 pos 184/270] me=0.795 hit
+[E2 pos 185/270] me=0.797 hit
+[E2 pos 186/270] me=0.811 hit
+[E2 pos 187/270] me=0.706 hit
+[E2 pos 188/270] me=0.705 hit
+[E2 pos 189/270] me=0.786 hit
+[E2 pos 190/270] me=0.795 hit
+[E2 pos 191/270] me=0.799 hit
+[E2 pos 192/270] me=0.792 hit
+[E2 pos 193/270] me=0.802 hit
+[E2 pos 194/270] me=0.822 hit
+[E2 pos 195/270] me=0.809 hit
+[E2 pos 196/270] me=0.791 hit
+[E2 pos 197/270] me=0.711 hit
+[E2 pos 198/270] me=0.706 hit
+[E2 pos 199/270] me=0.718 hit
+[E2 pos 200/270] me=0.799 hit
+[E2 pos 201/270] me=0.704 hit
+[E2 pos 202/270] me=0.788 hit
+[E2 pos 203/270] me=0.795 hit
+[E2 pos 204/270] me=0.700 hit
+[E2 pos 205/270] me=0.701 hit
+[E2 pos 206/270] me=0.697 hit
+[E2 pos 207/270] me=0.706 hit
+[E2 pos 208/270] me=0.706 hit
+[E2 pos 209/270] me=0.681 hit
+[E2 pos 210/270] me=0.680 hit
+[E2 pos 211/270] me=0.672 hit
+[E2 pos 212/270] me=0.701 hit
+[E2 pos 213/270] me=0.810 hit
+[E2 pos 214/270] me=0.810 hit
+[E2 pos 215/270] me=0.805 hit
+[E2 pos 216/270] me=0.805 hit
+[E2 pos 217/270] me=0.699 hit
+[E2 pos 218/270] me=0.675 hit
+[E2 pos 219/270] me=0.670 hit
+[E2 pos 220/270] me=0.710 hit
+[E2 pos 221/270] me=0.710 hit
+[E2 pos 222/270] me=0.692 hit
+[E2 pos 223/270] me=0.731 hit
+[E2 pos 224/270] me=0.338 hit
+[E2 pos 225/270] me=0.795 hit
+[E2 pos 226/270] me=0.689 hit
+[E2 pos 227/270] me=0.696 hit
+[E2 pos 228/270] me=0.807 hit
+[E2 pos 229/270] me=0.712 hit
+[E2 pos 230/270] me=0.688 hit
+[E2 pos 231/270] me=0.666 hit
+[E2 pos 232/270] me=0.711 hit
+[E2 pos 233/270] me=0.692 hit
+[E2 pos 234/270] me=0.699 hit
+[E2 pos 235/270] me=0.681 hit
+[E2 pos 236/270] me=0.665 hit
+[E2 pos 237/270] me=0.656 hit
+[E2 pos 238/270] me=0.688 hit
+[E2 pos 239/270] me=0.774 hit
+[E2 pos 240/270] me=0.697 hit
+[E2 pos 241/270] me=0.796 hit
+[E2 pos 242/270] me=0.802 hit
+[E2 pos 243/270] me=0.777 hit
+[E2 pos 244/270] me=0.783 hit
+[E2 pos 245/270] me=0.781 hit
+[E2 pos 246/270] me=0.779 hit
+[E2 pos 247/270] me=0.706 hit
+[E2 pos 248/270] me=0.791 hit
+[E2 pos 249/270] me=0.775 hit
+[E2 pos 250/270] me=0.810 hit
+[E2 pos 251/270] me=0.805 hit
+[E2 pos 252/270] me=0.805 hit
+[E2 pos 253/270] me=0.700 hit
+[E2 pos 254/270] me=0.668 hit
+[E2 pos 255/270] me=0.675 hit
+[E2 pos 256/270] me=0.669 hit
+[E2 pos 257/270] me=0.712 hit
+[E2 pos 258/270] me=0.722 hit
+[E2 pos 259/270] me=0.696 hit
+[E2 pos 260/270] me=0.807 hit
+[E2 pos 261/270] me=0.658 hit
+[E2 pos 262/270] me=0.695 hit
+[E2 pos 263/270] me=0.677 hit
+[E2 pos 264/270] me=0.699 hit
+[E2 pos 265/270] me=0.681 hit
+[E2 pos 266/270] me=0.672 hit
+[E2 pos 267/270] me=0.672 hit
+[E2 pos 268/270] me=0.684 hit
+[E2 pos 269/270] me=0.684 hit
+[E2 pos 270/270] me=0.668 hit
+[E2 neg 1/8] me=0.086 uncertain (无任何实义（地板分）)
+[E2 neg 2/8] me=0.132 marginal_ask (无主语泛指)
+[E2 neg 3/8] me=0.134 marginal_ask (无上下文新任务)
+[E2 neg 4/8] me=0.101 uncertain (完全无关域)
+[E2 neg 5/8] me=0.111 uncertain (无主题泛任务)
+[E2 neg 6/8] me=0.421 hit (泛指无实体)
+[E2 neg 7/8] me=0.104 uncertain (无指代反问)
+[E2 neg 8/8] me=0.117 uncertain (单字续写)
+
+[E2] 固化回归: 15/15 全绿 ✓
+
+[E2] ===== 阈值扫描（节选） =====
+  th=0.08 recall=0.98 fp=1.00 f1=0.66
+  th=0.11 recall=0.98 fp=0.62 f1=0.75
+  th=0.14 recall=0.98 fp=0.12 f1=0.93
+  th=0.17 recall=0.98 fp=0.12 f1=0.93
+  th=0.20 recall=0.98 fp=0.12 f1=0.93
+  th=0.23 recall=0.98 fp=0.12 f1=0.93
+  th=0.26 recall=0.98 fp=0.12 f1=0.93
+  th=0.29 recall=0.97 fp=0.12 f1=0.93
+当前 0.15: recall=97.80% 误报=12.50%
+双门分层: 正例放行 264/270 (97.8%) | 负例漏报 1/8
+  负例漏报明细: ['上次说的那个 bug 修了吗']
+F1 最优: th=0.14 f1=0.93
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e2_gate_calibration.json
+[NIGHT] <<< E2 反问门标定扫描 OK 用时 5.1min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+[E1] config 快照: logs/config_snapshot_20261117_181016.yaml | 判定后端: deepseek/deepseek-chat
+[E1] probes total 123, done 123, todo 0
+
+[E1] ===== 触发率汇总 =====
+errors: 0
+[NIGHT] <<< E1 探针触发率全链回归 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+E4 维护巡逻: 5 项报警
+  [warn] 隔离区近7天新增 10 条校验拦截(拦截正常, 非管道故障)——repro来源非法:6 | 枚举非法值:4 | 骨架编码错误:1
+  [warn] 冲突评审积压 3 条（同源分叉待元思域对撞）
+  [warn] runtime 未跑四档判定 2 条——entity_timeline 挂靠需先补 classify_and_link
+  [warn] event_ts 空值存量 48 条待回填（有线索就补 backfill 叠加层）
+  [warn] watchlist 3 条在池（0 条仍 watching 未推进）——巡检是否该转正/关闭
+计数: {"multi_topic_frozen": 0, "multi_topic_suspect_rough": 0, "unclassified_expired": 0, "unclassified_near_limit": 0, "quarantine_total": 31, "quarantine_last7d": 10, "quarantine_by_cat": {"枚举非法值": 4, "repro来源非法": 6, "骨架编码错误": 1}, "conflict_pending": 3, "experiences": 19, "experience_split_pending": 0, "entities": 6, "entity_dangling_members": 0, "runtime_unlinked": 2, "event_ts_null_remaining": 48, "watchlist": 3, "alias_entries": 6, "alias_pending": 133, "alias_expired_inactive": 0, "high_value_content_without_class": 0, "mc_in_dfcp_tag": 242, "mc_legacy_top_level": 117, "mc_dual_field_conflict": 0, "corpus_hash_drift": 0, "placeholder_cards": 0, "fragile_cards": 0}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e4_maintenance.json
+[NIGHT] <<< E4 记忆库维护巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E5 记忆自动整理
+============================================================
+E5 整理: 补挂 2/2（conflict 0 skipped 0） | 经验 created=0 updated=0
+库态: {'memories': 267, 'graph_edges': 207, 'experiences': 19}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e5_consolidation.json
+[NIGHT] <<< E5 记忆自动整理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E6 思维图巡逻
+============================================================
+E6 思维图巡逻: 全绿
+计数: {"edges_over_hard_cap": 0, "edges_near_soft_cap": 0, "first_hop_concentration_top3": 0.286, "dead_edges": 24, "backup_snapshots": 5, "latest_backup": "mind_graph_backup_20261113.json", "drift_vs_backup": {"edges": -13, "nodes": 0, "max_weight": -0.0}}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e6_mind_graph_patrol.json
+[NIGHT] <<< E6 思维图巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E7 夜间治理
+============================================================
+[E7] hold分流: 自动放行 0 | 自动留置 0 | 人工队列 0 | 高频簇可疑 6 | 证据回写 0 条 | cue复检 50项/告警0条/观察12条
+
+— P2b cue样本不足观察名单 (12条, disc暂不判, 跟踪争议量) —
+  [topic_brain_region] cue: 前额叶 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_brain_region] cue: 杏仁核 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_g22_decision] cue: 方案矩阵 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_feinong_review] cue: 金价 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_memory_ops] cue: 入库断档 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_memory_ops] cue: judge管道 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_patent_matrix] cue: P33 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_patent_matrix] cue: P41 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_stock_decision] cue: 股价 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_vehicle_8397] cue: 右舵 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_atomic_metacore] cue: ThinkState (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_atomic_metacore] cue: BaseAtomicSkill (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+
+— P2 高频簇可疑混入明细 (6张) —
+  [7a499925] 簇: topic_memory_ops
+    卡: 新机制上线前伪演示基线法: 只读模拟跑一次做对比样本, 验证保守路线+存量收益判断+留验收底片
+    summary无锚词命中, 疑似混入
+  [76f6b86b] 簇: topic_memory_ops
+    卡: 未来推演公式体系v2.1折中软约束裁决: p_trait只出β推荐基准不锁死(主体特质是推演风格暗示非强制)+∏σ合规因子改衰减罚分不归零(违规分支降权留档可复…
+    summary无锚词命中, 疑似混入
+  [12a06982] 簇: topic_memory_ops
+    卡: 平行论→P7→公式体系诞生过程考古定案(跨corpus1 r959-963/corpus2 r105,108逐轮核对): 平行论双向推演=用户原创四轮传递(r9…
+    summary无锚词命中, 疑似混入
+  [7747ed4d] 簇: topic_memory_ops
+    卡: 消费侧教训: 用户问'逆向推演四权重公式是否已形成'时检索命中了正确卡(9219377d, 0.985分)但只扫summary未读detail——完整四维权重定…
+    summary无锚词命中, 疑似混入
+  [a65a500c] 簇: topic_memory_ops
+    卡: [待办] 平行论双向推演公式体系(F00-F60, v2.1)工程实现: 最小验证=F00(DFCP检索组装S_0快照+p_trait输入)→F10(固定K=3…
+    summary无锚词命中, 疑似混入
+  [f1577a38] 簇: topic_memory_ops
+    卡: 图谱还债专项定案: 全库191失挂卡盘点→冲突预检29歧义四类处置→6 manual_seed簇+152 backfill补挂+9双挂, 挂载51→182/24…
+    summary无锚词命中, 疑似混入
+[NIGHT] <<< E7 夜间治理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E10 语义离群巡检
+============================================================
+[E10] 语义离群巡检(incremental): 检查0卡 | 告警0条 | 小簇跳过3 | 未变跳过9
+[NIGHT] <<< E10 语义离群巡检 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E9 对话治理
+============================================================
+[E9] 扫描0段 | 高价值0 | 提案0(送pending) | 重复跳过0 | miss_case0 | 假阴性疑点0 | transcript兜底: 提取87/入库85/去重2
+— transcript 兜底入库 85 段, 样例: —
+  [t10130] 走记忆系统，查一下我记忆相关的专利有哪些
+  [t10131] 先处理conflict_suspect 的仲裁吧
+  [t10132] 我需要具体的信息，他们现状是谁和谁冲突，每个卡片的内容大体是啥样的
+[NIGHT] <<< E9 对话治理 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E11 原子技能冒烟
+============================================================
+[E11] PASS skill_f_reason (6.7s) 
+[E11] PASS skill_memory_gate (2.3s) 
+[E11] 总判定: PASS | 明细 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e11_atomic_smoke.json
+[NIGHT] <<< E11 原子技能冒烟 OK 用时 0.2min
+
+============================================================
+[NIGHT] >>> E12 路由器冒烟
+============================================================
+[E12] PASS skill_router (9.8s) exit=llm_terminate steps=3 fallback=0 
+[E12] trail: skill_anchor_target→skill_scope_scan→skill_weakest_link
+[E12] 总判定: PASS | 明细 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e12_router_smoke.json
+[NIGHT] <<< E12 路由器冒烟 OK 用时 0.2min
+
+============================================================
+[NIGHT] >>> T1 trace月度归档
+============================================================
+归档完成: {'trace_cited': 0, 'trace_call': 0, 'trace_embedding': 0}
+  trace_archive_2026_08.db trace_cited: meta申报 300 vs 本库实际 300 PASS
+  trace_archive_2026_09.db trace_cited: meta申报 200 vs 本库实际 200 PASS
+trace_cited: 总 28327 行 = 主库:27827 + trace_archive_2026_08.db:300 + trace_archive_2026_09.db:200
+trace_call: 总 0 行 = 主库:0
+trace_embedding: 总 0 行 = 主库:0
+[NIGHT] <<< T1 trace月度归档 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> F20 基线守卫(experiment)
+============================================================
+[F20守卫] smoke PASS(基线PASS ⚠️位次移动) top=87f66cc1,f1577a38,58707552
+[F20守卫] explore1 PASS(基线PASS) top=04353a35
+[F20守卫] explore2 PASS(基线PASS ⚠️位次移动) top=87f66cc1,f1577a38,58707552
+[F20守卫] explore3 PASS(基线PASS) top=287e892d,b178d1f9,296e4981
+[F20守卫] explore4 FAIL(基线FAIL) top=4304794d,6ed8586c,fb674356
+⚠️ F20基线异常: 翻转=False 位次移动=True — 见 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\f20\guard_latest.json
+[NIGHT] <<< F20 基线守卫(experiment) OK 用时 0.2min
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261117_1811.md
+[NIGHT] 全部结束于 2026-11-17 18:11:02
+[NIGHT] 开始于 2026-11-18 23:16:37
+[NIGHT] 图快照失败(不阻断夜跑): No module named 'eval.e6_mind_graph_patrol'
+
+============================================================
+[NIGHT] >>> E0 topic锚开关守卫
+============================================================
+[E0] topic_layer 开关守卫探针
+  ✓ ① TOPIC_LAYER_ON=1(topic_enabled 为 True)
+  ✓ ② 守卫卡写入成功(全id=68c55bcc)
+  ✓ ③ report['topic'] 存在(mount_topic 自动触发)
+  ✓ ④ 新卡锚判定返回 verdict(hold/anchor)
+  ✓ ⑤ hold 判定卡落 hold 池 jsonl
+  ✓ ⑥ 守卫卡自清理(card+hold+memories.jsonl 三侧)
+[E0] 守卫结论: PASS
+[NIGHT] <<< E0 topic锚开关守卫 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=299 negative=8
+[E2 pos 1/299] me=0.808 hit
+[E2 pos 2/299] me=0.794 hit
+[E2 pos 3/299] me=0.792 hit
+[E2 pos 4/299] me=0.806 hit
+[E2 pos 5/299] me=0.785 hit
+[E2 pos 6/299] me=0.795 hit
+[E2 pos 7/299] me=0.704 hit
+[E2 pos 8/299] me=0.702 hit
+[E2 pos 9/299] me=0.702 hit
+[E2 pos 10/299] me=0.690 hit
+[E2 pos 11/299] me=0.826 hit
+[E2 pos 12/299] me=0.795 hit
+[E2 pos 13/299] me=0.812 hit
+[E2 pos 14/299] me=0.803 hit
+[E2 pos 15/299] me=0.800 hit
+[E2 pos 16/299] me=0.810 hit
+[E2 pos 17/299] me=0.808 hit
+[E2 pos 18/299] me=0.797 hit
+[E2 pos 19/299] me=0.695 hit
+[E2 pos 20/299] me=0.805 hit
+[E2 pos 21/299] me=0.808 hit
+[E2 pos 22/299] me=0.803 hit
+[E2 pos 23/299] me=0.706 hit
+[E2 pos 24/299] me=0.818 hit
+[E2 pos 25/299] me=0.794 hit
+[E2 pos 26/299] me=0.702 hit
+[E2 pos 27/299] me=0.825 hit
+[E2 pos 28/299] me=0.761 hit
+[E2 pos 29/299] me=0.776 hit
+[E2 pos 30/299] me=0.823 hit
+[E2 pos 31/299] me=0.708 hit
+[E2 pos 32/299] me=0.810 hit
+[E2 pos 33/299] me=0.796 hit
+[E2 pos 34/299] me=0.693 hit
+[E2 pos 35/299] me=0.707 hit
+[E2 pos 36/299] me=0.695 hit
+[E2 pos 37/299] me=0.703 hit
+[E2 pos 38/299] me=0.710 hit
+[E2 pos 39/299] me=0.680 hit
+[E2 pos 40/299] me=0.696 hit
+[E2 pos 41/299] me=0.692 hit
+[E2 pos 42/299] me=0.673 hit
+[E2 pos 43/299] me=0.805 hit
+[E2 pos 44/299] me=0.685 hit
+[E2 pos 45/299] me=0.784 hit
+[E2 pos 46/299] me=0.701 hit
+[E2 pos 47/299] me=0.687 hit
+[E2 pos 48/299] me=0.802 hit
+[E2 pos 49/299] me=0.803 hit
+[E2 pos 50/299] me=0.670 hit
+[E2 pos 51/299] me=0.706 hit
+[E2 pos 52/299] me=0.698 hit
+[E2 pos 53/299] me=0.693 hit
+[E2 pos 54/299] me=0.687 hit
+[E2 pos 55/299] me=0.682 hit
+[E2 pos 56/299] me=0.816 hit
+[E2 pos 57/299] me=0.829 hit
+[E2 pos 58/299] me=0.688 hit
+[E2 pos 59/299] me=0.787 hit
+[E2 pos 60/299] me=0.785 hit
+[E2 pos 61/299] me=0.764 hit
+[E2 pos 62/299] me=0.710 hit
+[E2 pos 63/299] me=0.707 hit
+[E2 pos 64/299] me=0.697 hit
+[E2 pos 65/299] me=0.797 hit
+[E2 pos 66/299] me=0.803 hit
+[E2 pos 67/299] me=0.793 hit
+[E2 pos 68/299] me=0.787 hit
+[E2 pos 69/299] me=0.785 hit
+[E2 pos 70/299] me=0.711 hit
+[E2 pos 71/299] me=0.710 hit
+[E2 pos 72/299] me=0.686 hit
+[E2 pos 73/299] me=0.692 hit
+[E2 pos 74/299] me=0.721 hit
+[E2 pos 75/299] me=0.691 hit
+[E2 pos 76/299] me=0.666 hit
+[E2 pos 77/299] me=0.702 hit
+[E2 pos 78/299] me=0.797 hit
+[E2 pos 79/299] me=0.727 hit
+[E2 pos 80/299] me=0.642 hit
+[E2 pos 81/299] me=0.678 hit
+[E2 pos 82/299] me=0.704 hit
+[E2 pos 83/299] me=0.737 hit
+[E2 pos 84/299] me=0.656 hit
+[E2 pos 85/299] me=0.703 hit
+[E2 pos 86/299] me=0.703 hit
+[E2 pos 87/299] me=0.644 hit
+[E2 pos 88/299] me=0.620 hit
+[E2 pos 89/299] me=0.704 hit
+[E2 pos 90/299] me=0.635 hit
+[E2 pos 91/299] me=0.625 hit
+[E2 pos 92/299] me=0.642 hit
+[E2 pos 93/299] me=0.683 hit
+[E2 pos 94/299] me=0.703 hit
+[E2 pos 95/299] me=0.686 hit
+[E2 pos 96/299] me=0.779 hit
+[E2 pos 97/299] me=0.624 hit
+[E2 pos 98/299] me=0.728 hit
+[E2 pos 99/299] me=0.292 hit
+[E2 pos 100/299] me=0.579 hit
+[E2 pos 101/299] me=0.573 hit
+[E2 pos 102/299] me=0.593 hit
+[E2 pos 103/299] me=0.620 hit
+[E2 pos 104/299] me=0.612 hit
+[E2 pos 105/299] me=0.740 hit
+[E2 pos 106/299] me=0.628 hit
+[E2 pos 107/299] me=0.624 hit
+[E2 pos 108/299] me=0.727 hit
+[E2 pos 109/299] me=0.622 hit
+[E2 pos 110/299] me=0.680 hit
+[E2 pos 111/299] me=0.323 hit
+[E2 pos 112/299] me=0.672 hit
+[E2 pos 113/299] me=0.718 hit
+[E2 pos 114/299] me=0.719 hit
+[E2 pos 115/299] me=0.730 hit
+[E2 pos 116/299] me=0.716 hit
+[E2 pos 117/299] me=0.708 hit
+[E2 pos 118/299] me=0.711 hit
+[E2 pos 119/299] me=0.735 hit
+[E2 pos 120/299] me=0.679 hit
+[E2 pos 121/299] me=0.727 hit
+[E2 pos 122/299] me=0.692 hit
+[E2 pos 123/299] me=0.600 hit
+[E2 pos 124/299] me=0.721 hit
+[E2 pos 125/299] me=0.722 hit
+[E2 pos 126/299] me=0.723 hit
+[E2 pos 127/299] me=0.736 hit
+[E2 pos 128/299] me=0.693 hit
+[E2 pos 129/299] me=0.707 hit
+[E2 pos 130/299] me=0.700 hit
+[E2 pos 131/299] me=0.739 hit
+[E2 pos 132/299] me=0.734 hit
+[E2 pos 133/299] me=0.719 hit
+[E2 pos 134/299] me=0.647 hit
+[E2 pos 135/299] me=0.719 hit
+[E2 pos 136/299] me=0.714 hit
+[E2 pos 137/299] me=0.722 hit
+[E2 pos 138/299] me=0.728 hit
+[E2 pos 139/299] me=0.722 hit
+[E2 pos 140/299] me=0.802 hit
+[E2 pos 141/299] me=0.652 hit
+[E2 pos 142/299] me=0.710 hit
+[E2 pos 143/299] me=0.645 hit
+[E2 pos 144/299] me=0.686 hit
+[E2 pos 145/299] me=0.679 hit
+[E2 pos 146/299] me=0.723 hit
+[E2 pos 147/299] me=0.654 hit
+[E2 pos 148/299] me=0.690 hit
+[E2 pos 149/299] me=0.668 hit
+[E2 pos 150/299] me=0.694 hit
+[E2 pos 151/299] me=0.809 hit
+[E2 pos 152/299] me=0.799 hit
+[E2 pos 153/299] me=0.677 hit
+[E2 pos 154/299] me=0.678 hit
+[E2 pos 155/299] me=0.669 hit
+[E2 pos 156/299] me=0.675 hit
+[E2 pos 157/299] me=0.708 hit
+[E2 pos 158/299] me=0.691 hit
+[E2 pos 159/299] me=0.702 hit
+[E2 pos 160/299] me=0.674 hit
+[E2 pos 161/299] me=0.000 empty
+[E2 pos 162/299] me=0.000 empty
+[E2 pos 163/299] me=0.229 hit
+[E2 pos 164/299] me=0.000 empty
+[E2 pos 165/299] me=0.000 empty
+[E2 pos 166/299] me=0.225 hit
+[E2 pos 167/299] me=0.810 hit
+[E2 pos 168/299] me=0.809 hit
+[E2 pos 169/299] me=0.798 hit
+[E2 pos 170/299] me=0.778 hit
+[E2 pos 171/299] me=0.780 hit
+[E2 pos 172/299] me=0.777 hit
+[E2 pos 173/299] me=0.802 hit
+[E2 pos 174/299] me=0.798 hit
+[E2 pos 175/299] me=0.792 hit
+[E2 pos 176/299] me=0.802 hit
+[E2 pos 177/299] me=0.782 hit
+[E2 pos 178/299] me=0.808 hit
+[E2 pos 179/299] me=0.806 hit
+[E2 pos 180/299] me=0.790 hit
+[E2 pos 181/299] me=0.814 hit
+[E2 pos 182/299] me=0.797 hit
+[E2 pos 183/299] me=0.788 hit
+[E2 pos 184/299] me=0.795 hit
+[E2 pos 185/299] me=0.798 hit
+[E2 pos 186/299] me=0.810 hit
+[E2 pos 187/299] me=0.706 hit
+[E2 pos 188/299] me=0.703 hit
+[E2 pos 189/299] me=0.786 hit
+[E2 pos 190/299] me=0.796 hit
+[E2 pos 191/299] me=0.801 hit
+[E2 pos 192/299] me=0.794 hit
+[E2 pos 193/299] me=0.801 hit
+[E2 pos 194/299] me=0.823 hit
+[E2 pos 195/299] me=0.809 hit
+[E2 pos 196/299] me=0.793 hit
+[E2 pos 197/299] me=0.713 hit
+[E2 pos 198/299] me=0.706 hit
+[E2 pos 199/299] me=0.718 hit
+[E2 pos 200/299] me=0.798 hit
+[E2 pos 201/299] me=0.703 hit
+[E2 pos 202/299] me=0.788 hit
+[E2 pos 203/299] me=0.795 hit
+[E2 pos 204/299] me=0.700 hit
+[E2 pos 205/299] me=0.702 hit
+[E2 pos 206/299] me=0.695 hit
+[E2 pos 207/299] me=0.707 hit
+[E2 pos 208/299] me=0.707 hit
+[E2 pos 209/299] me=0.681 hit
+[E2 pos 210/299] me=0.678 hit
+[E2 pos 211/299] me=0.673 hit
+[E2 pos 212/299] me=0.701 hit
+[E2 pos 213/299] me=0.809 hit
+[E2 pos 214/299] me=0.810 hit
+[E2 pos 215/299] me=0.803 hit
+[E2 pos 216/299] me=0.804 hit
+[E2 pos 217/299] me=0.700 hit
+[E2 pos 218/299] me=0.674 hit
+[E2 pos 219/299] me=0.666 hit
+[E2 pos 220/299] me=0.711 hit
+[E2 pos 221/299] me=0.710 hit
+[E2 pos 222/299] me=0.691 hit
+[E2 pos 223/299] me=0.731 hit
+[E2 pos 224/299] me=0.337 hit
+[E2 pos 225/299] me=0.794 hit
+[E2 pos 226/299] me=0.691 hit
+[E2 pos 227/299] me=0.696 hit
+[E2 pos 228/299] me=0.806 hit
+[E2 pos 229/299] me=0.714 hit
+[E2 pos 230/299] me=0.686 hit
+[E2 pos 231/299] me=0.665 hit
+[E2 pos 232/299] me=0.710 hit
+[E2 pos 233/299] me=0.694 hit
+[E2 pos 234/299] me=0.699 hit
+[E2 pos 235/299] me=0.682 hit
+[E2 pos 236/299] me=0.665 hit
+[E2 pos 237/299] me=0.662 hit
+[E2 pos 238/299] me=0.688 hit
+[E2 pos 239/299] me=0.773 hit
+[E2 pos 240/299] me=0.698 hit
+[E2 pos 241/299] me=0.797 hit
+[E2 pos 242/299] me=0.801 hit
+[E2 pos 243/299] me=0.776 hit
+[E2 pos 244/299] me=0.781 hit
+[E2 pos 245/299] me=0.783 hit
+[E2 pos 246/299] me=0.780 hit
+[E2 pos 247/299] me=0.706 hit
+[E2 pos 248/299] me=0.791 hit
+[E2 pos 249/299] me=0.775 hit
+[E2 pos 250/299] me=0.810 hit
+[E2 pos 251/299] me=0.803 hit
+[E2 pos 252/299] me=0.804 hit
+[E2 pos 253/299] me=0.702 hit
+[E2 pos 254/299] me=0.667 hit
+[E2 pos 255/299] me=0.674 hit
+[E2 pos 256/299] me=0.669 hit
+[E2 pos 257/299] me=0.712 hit
+[E2 pos 258/299] me=0.722 hit
+[E2 pos 259/299] me=0.696 hit
+[E2 pos 260/299] me=0.806 hit
+[E2 pos 261/299] me=0.657 hit
+[E2 pos 262/299] me=0.699 hit
+[NIGHT] <<< E2 反问门标定扫描 FAIL 用时 22.0min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+[NIGHT] <<< E1 探针触发率全链回归 FAIL 用时 0.0min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+[NIGHT] <<< E4 记忆库维护巡逻 FAIL 用时 0.0min
+[NIGHT] !!! 熔断: 连续3步超时/FAIL, 剩余步骤全部跳过 -- 晨报置顶高亮, 检查环境(LLM通道/DB/路径)
+[NIGHT] 熔断, 跳过: E5 记忆自动整理
+[NIGHT] 熔断, 跳过: E6 思维图巡逻
+[NIGHT] 熔断, 跳过: E7 夜间治理
+[NIGHT] 熔断, 跳过: E10 语义离群巡检
+[NIGHT] 熔断, 跳过: E9 对话治理
+[NIGHT] 熔断, 跳过: E11 原子技能冒烟
+[NIGHT] 熔断, 跳过: E12 路由器冒烟
+[NIGHT] 熔断, 跳过: T1 trace月度归档
+[NIGHT] 熔断, 跳过: F20 基线守卫(experiment)
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261118_2338.md
+[NIGHT] 全部结束于 2026-11-18 23:38:47
+[NIGHT] 开始于 2026-11-19 18:05:02
+[NIGHT] 图快照: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\data\mind_graph_backup_20261119.json
+
+============================================================
+[NIGHT] >>> E0 topic锚开关守卫
+============================================================
+[E0] topic_layer 开关守卫探针
+  ✓ ① TOPIC_LAYER_ON=1(topic_enabled 为 True)
+  ✓ ② 守卫卡写入成功(全id=83ec18b4)
+  ✓ ③ report['topic'] 存在(mount_topic 自动触发)
+  ✓ ④ 新卡锚判定返回 verdict(hold/anchor)
+  ✓ ⑤ hold 判定卡落 hold 池 jsonl
+  ✓ ⑥ 守卫卡自清理(card+hold+memories.jsonl 三侧)
+[E0] 守卫结论: PASS
+[NIGHT] <<< E0 topic锚开关守卫 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=301 negative=8
+[E2 pos 1/301] me=0.808 hit
+[E2 pos 2/301] me=0.796 hit
+[E2 pos 3/301] me=0.791 hit
+[E2 pos 4/301] me=0.804 hit
+[E2 pos 5/301] me=0.785 hit
+[E2 pos 6/301] me=0.795 hit
+[E2 pos 7/301] me=0.705 hit
+[E2 pos 8/301] me=0.703 hit
+[E2 pos 9/301] me=0.703 hit
+[E2 pos 10/301] me=0.692 hit
+[E2 pos 11/301] me=0.825 hit
+[E2 pos 12/301] me=0.796 hit
+[E2 pos 13/301] me=0.813 hit
+[E2 pos 14/301] me=0.802 hit
+[E2 pos 15/301] me=0.798 hit
+[E2 pos 16/301] me=0.810 hit
+[E2 pos 17/301] me=0.809 hit
+[E2 pos 18/301] me=0.797 hit
+[E2 pos 19/301] me=0.697 hit
+[E2 pos 20/301] me=0.805 hit
+[E2 pos 21/301] me=0.807 hit
+[E2 pos 22/301] me=0.803 hit
+[E2 pos 23/301] me=0.707 hit
+[E2 pos 24/301] me=0.819 hit
+[E2 pos 25/301] me=0.794 hit
+[E2 pos 26/301] me=0.702 hit
+[E2 pos 27/301] me=0.824 hit
+[E2 pos 28/301] me=0.760 hit
+[E2 pos 29/301] me=0.776 hit
+[E2 pos 30/301] me=0.824 hit
+[E2 pos 31/301] me=0.710 hit
+[E2 pos 32/301] me=0.809 hit
+[E2 pos 33/301] me=0.796 hit
+[E2 pos 34/301] me=0.693 hit
+[E2 pos 35/301] me=0.707 hit
+[E2 pos 36/301] me=0.695 hit
+[E2 pos 37/301] me=0.704 hit
+[E2 pos 38/301] me=0.712 hit
+[E2 pos 39/301] me=0.677 hit
+[E2 pos 40/301] me=0.699 hit
+[E2 pos 41/301] me=0.691 hit
+[E2 pos 42/301] me=0.675 hit
+[E2 pos 43/301] me=0.805 hit
+[E2 pos 44/301] me=0.684 hit
+[E2 pos 45/301] me=0.785 hit
+[E2 pos 46/301] me=0.700 hit
+[E2 pos 47/301] me=0.687 hit
+[E2 pos 48/301] me=0.804 hit
+[E2 pos 49/301] me=0.801 hit
+[E2 pos 50/301] me=0.669 hit
+[E2 pos 51/301] me=0.708 hit
+[E2 pos 52/301] me=0.696 hit
+[E2 pos 53/301] me=0.693 hit
+[E2 pos 54/301] me=0.687 hit
+[E2 pos 55/301] me=0.681 hit
+[E2 pos 56/301] me=0.815 hit
+[E2 pos 57/301] me=0.829 hit
+[E2 pos 58/301] me=0.692 hit
+[E2 pos 59/301] me=0.788 hit
+[E2 pos 60/301] me=0.784 hit
+[E2 pos 61/301] me=0.763 hit
+[E2 pos 62/301] me=0.712 hit
+[E2 pos 63/301] me=0.707 hit
+[E2 pos 64/301] me=0.699 hit
+[E2 pos 65/301] me=0.797 hit
+[E2 pos 66/301] me=0.803 hit
+[E2 pos 67/301] me=0.794 hit
+[E2 pos 68/301] me=0.789 hit
+[E2 pos 69/301] me=0.787 hit
+[E2 pos 70/301] me=0.712 hit
+[E2 pos 71/301] me=0.710 hit
+[E2 pos 72/301] me=0.686 hit
+[E2 pos 73/301] me=0.693 hit
+[E2 pos 74/301] me=0.720 hit
+[E2 pos 75/301] me=0.690 hit
+[E2 pos 76/301] me=0.664 hit
+[E2 pos 77/301] me=0.703 hit
+[E2 pos 78/301] me=0.795 hit
+[E2 pos 79/301] me=0.728 hit
+[E2 pos 80/301] me=0.642 hit
+[E2 pos 81/301] me=0.678 hit
+[E2 pos 82/301] me=0.706 hit
+[E2 pos 83/301] me=0.735 hit
+[E2 pos 84/301] me=0.660 hit
+[E2 pos 85/301] me=0.701 hit
+[E2 pos 86/301] me=0.703 hit
+[E2 pos 87/301] me=0.643 hit
+[E2 pos 88/301] me=0.619 hit
+[E2 pos 89/301] me=0.703 hit
+[E2 pos 90/301] me=0.636 hit
+[E2 pos 91/301] me=0.623 hit
+[E2 pos 92/301] me=0.642 hit
+[E2 pos 93/301] me=0.683 hit
+[E2 pos 94/301] me=0.704 hit
+[E2 pos 95/301] me=0.688 hit
+[E2 pos 96/301] me=0.778 hit
+[E2 pos 97/301] me=0.626 hit
+[E2 pos 98/301] me=0.729 hit
+[E2 pos 99/301] me=0.292 hit
+[E2 pos 100/301] me=0.583 hit
+[E2 pos 101/301] me=0.573 hit
+[E2 pos 102/301] me=0.592 hit
+[E2 pos 103/301] me=0.621 hit
+[E2 pos 104/301] me=0.613 hit
+[E2 pos 105/301] me=0.740 hit
+[E2 pos 106/301] me=0.625 hit
+[E2 pos 107/301] me=0.626 hit
+[E2 pos 108/301] me=0.727 hit
+[E2 pos 109/301] me=0.623 hit
+[E2 pos 110/301] me=0.679 hit
+[E2 pos 111/301] me=0.325 hit
+[E2 pos 112/301] me=0.676 hit
+[E2 pos 113/301] me=0.717 hit
+[E2 pos 114/301] me=0.719 hit
+[E2 pos 115/301] me=0.729 hit
+[E2 pos 116/301] me=0.717 hit
+[E2 pos 117/301] me=0.708 hit
+[E2 pos 118/301] me=0.711 hit
+[E2 pos 119/301] me=0.736 hit
+[E2 pos 120/301] me=0.680 hit
+[E2 pos 121/301] me=0.728 hit
+[E2 pos 122/301] me=0.693 hit
+[E2 pos 123/301] me=0.601 hit
+[E2 pos 124/301] me=0.720 hit
+[E2 pos 125/301] me=0.722 hit
+[E2 pos 126/301] me=0.726 hit
+[E2 pos 127/301] me=0.736 hit
+[E2 pos 128/301] me=0.692 hit
+[E2 pos 129/301] me=0.707 hit
+[E2 pos 130/301] me=0.699 hit
+[E2 pos 131/301] me=0.740 hit
+[E2 pos 132/301] me=0.734 hit
+[E2 pos 133/301] me=0.719 hit
+[E2 pos 134/301] me=0.645 hit
+[E2 pos 135/301] me=0.718 hit
+[E2 pos 136/301] me=0.714 hit
+[E2 pos 137/301] me=0.722 hit
+[E2 pos 138/301] me=0.730 hit
+[E2 pos 139/301] me=0.722 hit
+[E2 pos 140/301] me=0.804 hit
+[E2 pos 141/301] me=0.653 hit
+[E2 pos 142/301] me=0.713 hit
+[E2 pos 143/301] me=0.647 hit
+[E2 pos 144/301] me=0.687 hit
+[E2 pos 145/301] me=0.680 hit
+[E2 pos 146/301] me=0.723 hit
+[E2 pos 147/301] me=0.655 hit
+[E2 pos 148/301] me=0.692 hit
+[E2 pos 149/301] me=0.666 hit
+[E2 pos 150/301] me=0.693 hit
+[E2 pos 151/301] me=0.811 hit
+[E2 pos 152/301] me=0.800 hit
+[E2 pos 153/301] me=0.677 hit
+[E2 pos 154/301] me=0.678 hit
+[E2 pos 155/301] me=0.671 hit
+[E2 pos 156/301] me=0.675 hit
+[E2 pos 157/301] me=0.709 hit
+[E2 pos 158/301] me=0.688 hit
+[E2 pos 159/301] me=0.700 hit
+[E2 pos 160/301] me=0.675 hit
+[E2 pos 161/301] me=0.000 empty
+[E2 pos 162/301] me=0.000 empty
+[E2 pos 163/301] me=0.233 hit
+[E2 pos 164/301] me=0.000 empty
+[E2 pos 165/301] me=0.000 empty
+[E2 pos 166/301] me=0.228 hit
+[E2 pos 167/301] me=0.811 hit
+[E2 pos 168/301] me=0.807 hit
+[E2 pos 169/301] me=0.799 hit
+[E2 pos 170/301] me=0.780 hit
+[E2 pos 171/301] me=0.779 hit
+[E2 pos 172/301] me=0.776 hit
+[E2 pos 173/301] me=0.800 hit
+[E2 pos 174/301] me=0.795 hit
+[E2 pos 175/301] me=0.794 hit
+[E2 pos 176/301] me=0.801 hit
+[E2 pos 177/301] me=0.783 hit
+[E2 pos 178/301] me=0.809 hit
+[E2 pos 179/301] me=0.807 hit
+[E2 pos 180/301] me=0.790 hit
+[E2 pos 181/301] me=0.811 hit
+[E2 pos 182/301] me=0.796 hit
+[E2 pos 183/301] me=0.788 hit
+[E2 pos 184/301] me=0.794 hit
+[E2 pos 185/301] me=0.797 hit
+[E2 pos 186/301] me=0.812 hit
+[E2 pos 187/301] me=0.707 hit
+[E2 pos 188/301] me=0.705 hit
+[E2 pos 189/301] me=0.788 hit
+[E2 pos 190/301] me=0.794 hit
+[E2 pos 191/301] me=0.800 hit
+[E2 pos 192/301] me=0.792 hit
+[E2 pos 193/301] me=0.801 hit
+[E2 pos 194/301] me=0.822 hit
+[E2 pos 195/301] me=0.810 hit
+[E2 pos 196/301] me=0.791 hit
+[E2 pos 197/301] me=0.714 hit
+[E2 pos 198/301] me=0.706 hit
+[E2 pos 199/301] me=0.719 hit
+[E2 pos 200/301] me=0.798 hit
+[E2 pos 201/301] me=0.704 hit
+[E2 pos 202/301] me=0.787 hit
+[E2 pos 203/301] me=0.797 hit
+[E2 pos 204/301] me=0.701 hit
+[E2 pos 205/301] me=0.702 hit
+[E2 pos 206/301] me=0.696 hit
+[E2 pos 207/301] me=0.706 hit
+[E2 pos 208/301] me=0.706 hit
+[E2 pos 209/301] me=0.679 hit
+[E2 pos 210/301] me=0.679 hit
+[E2 pos 211/301] me=0.672 hit
+[E2 pos 212/301] me=0.701 hit
+[E2 pos 213/301] me=0.811 hit
+[E2 pos 214/301] me=0.810 hit
+[E2 pos 215/301] me=0.805 hit
+[E2 pos 216/301] me=0.804 hit
+[E2 pos 217/301] me=0.701 hit
+[E2 pos 218/301] me=0.674 hit
+[E2 pos 219/301] me=0.669 hit
+[E2 pos 220/301] me=0.711 hit
+[E2 pos 221/301] me=0.710 hit
+[E2 pos 222/301] me=0.690 hit
+[E2 pos 223/301] me=0.731 hit
+[E2 pos 224/301] me=0.337 hit
+[E2 pos 225/301] me=0.796 hit
+[E2 pos 226/301] me=0.692 hit
+[E2 pos 227/301] me=0.696 hit
+[E2 pos 228/301] me=0.805 hit
+[E2 pos 229/301] me=0.712 hit
+[E2 pos 230/301] me=0.686 hit
+[E2 pos 231/301] me=0.665 hit
+[E2 pos 232/301] me=0.710 hit
+[E2 pos 233/301] me=0.695 hit
+[E2 pos 234/301] me=0.698 hit
+[E2 pos 235/301] me=0.682 hit
+[E2 pos 236/301] me=0.667 hit
+[E2 pos 237/301] me=0.659 hit
+[E2 pos 238/301] me=0.689 hit
+[E2 pos 239/301] me=0.774 hit
+[E2 pos 240/301] me=0.697 hit
+[E2 pos 241/301] me=0.799 hit
+[E2 pos 242/301] me=0.802 hit
+[E2 pos 243/301] me=0.777 hit
+[E2 pos 244/301] me=0.782 hit
+[E2 pos 245/301] me=0.784 hit
+[E2 pos 246/301] me=0.779 hit
+[E2 pos 247/301] me=0.707 hit
+[E2 pos 248/301] me=0.792 hit
+[E2 pos 249/301] me=0.777 hit
+[E2 pos 250/301] me=0.810 hit
+[E2 pos 251/301] me=0.805 hit
+[E2 pos 252/301] me=0.804 hit
+[E2 pos 253/301] me=0.700 hit
+[E2 pos 254/301] me=0.667 hit
+[E2 pos 255/301] me=0.674 hit
+[E2 pos 256/301] me=0.672 hit
+[E2 pos 257/301] me=0.712 hit
+[E2 pos 258/301] me=0.723 hit
+[E2 pos 259/301] me=0.696 hit
+[E2 pos 260/301] me=0.805 hit
+[E2 pos 261/301] me=0.661 hit
+[E2 pos 262/301] me=0.697 hit
+[E2 pos 263/301] me=0.677 hit
+[E2 pos 264/301] me=0.699 hit
+[E2 pos 265/301] me=0.681 hit
+[E2 pos 266/301] me=0.672 hit
+[E2 pos 267/301] me=0.671 hit
+[E2 pos 268/301] me=0.682 hit
+[E2 pos 269/301] me=0.682 hit
+[E2 pos 270/301] me=0.668 hit
+[E2 pos 271/301] me=0.697 hit
+[E2 pos 272/301] me=0.696 hit
+[E2 pos 273/301] me=0.706 hit
+[E2 pos 274/301] me=0.707 hit
+[E2 pos 275/301] me=0.689 hit
+[E2 pos 276/301] me=0.691 hit
+[E2 pos 277/301] me=0.680 hit
+[E2 pos 278/301] me=0.719 hit
+[E2 pos 279/301] me=0.701 hit
+[E2 pos 280/301] me=0.701 hit
+[E2 pos 281/301] me=0.707 hit
+[E2 pos 282/301] me=0.692 hit
+[E2 pos 283/301] me=0.678 hit
+[E2 pos 284/301] me=0.685 hit
+[E2 pos 285/301] me=0.625 hit
+[E2 pos 286/301] me=0.676 hit
+[E2 pos 287/301] me=0.679 hit
+[E2 pos 288/301] me=0.687 hit
+[E2 pos 289/301] me=0.682 hit
+[E2 pos 290/301] me=0.699 hit
+[E2 pos 291/301] me=0.703 hit
+[E2 pos 292/301] me=0.699 hit
+[E2 pos 293/301] me=0.696 hit
+[E2 pos 294/301] me=0.699 hit
+[E2 pos 295/301] me=0.688 hit
+[E2 pos 296/301] me=0.697 hit
+[E2 pos 297/301] me=0.692 hit
+[E2 pos 298/301] me=0.706 hit
+[E2 pos 299/301] me=0.696 hit
+[E2 pos 300/301] me=0.693 hit
+[E2 pos 301/301] me=0.704 hit
+[E2 neg 1/8] me=0.092 uncertain (无任何实义（地板分）)
+[E2 neg 2/8] me=0.137 marginal_ask (无主语泛指)
+[E2 neg 3/8] me=0.136 marginal_ask (无上下文新任务)
+[E2 neg 4/8] me=0.090 uncertain (完全无关域)
+[E2 neg 5/8] me=0.113 uncertain (无主题泛任务)
+[E2 neg 6/8] me=0.419 hit (泛指无实体)
+[E2 neg 7/8] me=0.109 uncertain (无指代反问)
+[E2 neg 8/8] me=0.125 marginal_ask (单字续写)
+
+[E2] 固化回归: 15/15 全绿 ✓
+
+[E2] ===== 阈值扫描（节选） =====
+  th=0.08 recall=0.99 fp=1.00 f1=0.66
+  th=0.11 recall=0.99 fp=0.62 f1=0.76
+  th=0.14 recall=0.99 fp=0.12 f1=0.94
+  th=0.17 recall=0.99 fp=0.12 f1=0.94
+  th=0.20 recall=0.99 fp=0.12 f1=0.94
+  th=0.23 recall=0.98 fp=0.12 f1=0.93
+  th=0.26 recall=0.98 fp=0.12 f1=0.93
+  th=0.29 recall=0.98 fp=0.12 f1=0.93
+当前 0.15: recall=98.70% 误报=12.50%
+双门分层: 正例放行 297/301 (98.7%) | 负例漏报 1/8
+  负例漏报明细: ['上次说的那个 bug 修了吗']
+F1 最优: th=0.14 f1=0.935
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e2_gate_calibration.json
+[NIGHT] <<< E2 反问门标定扫描 OK 用时 7.0min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+[E1] config 快照: logs/config_snapshot_20261119_181205.yaml | 判定后端: codechat/glm-5.3-flash
+[E1] probes total 123, done 61, todo 62
+[E1 1/62]  Bc-R02 trigger->Bc out hint=0.833 elapsed=1170s eta=1189.5min
+[E1 2/62]  Bc-R03 trigger->Bc out hint=0.5 elapsed=1959s eta=979.5min
+[memory_gate] 降级(不炸主链路, 可单独重跑): JSON解析失败(两级容错均失败): 直接回答链路携带的真实任务——蒸馏管线上游四阶段质量风险评估：
+
+## 风险评分（5分制：代价×隐蔽性）
+
+| 阶段 | 出错代价 | 发现难度 | 综合风险 
+[E1 3/62]  Bc-R04 trigger->Bc out hint=0.833 elapsed=2689s eta=881.4min
+[E1 4/62]  Bc-R05 trigger->Bc out hint=0.833 elapsed=3608s eta=871.9min
+[E1 5/62]  Bc-R06 trigger->Bc out hint=0.667 elapsed=4414s eta=838.7min
+[E1 6/62]  Bc-R07 trigger->Bc out hint=0.4 elapsed=5334s eta=829.7min
+[NIGHT] E1 探针触发率全链回归 超时 90min(分级阈值)，跳到下一步
+[NIGHT] <<< E1 探针触发率全链回归 FAIL 用时 90.0min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+E4 维护巡逻: 4 项报警
+  [warn] DB↔jsonl 迁移漂移 +71 (db=303 vs jsonl=232)——差值非零须人工对账归零后才可切换读源
+  [warn] 隔离区近7天新增 3 条校验拦截(拦截正常, 非管道故障)——枚举非法值:3 | 骨架编码错误:1
+  [warn] event_ts 空值存量 32 条待回填（有线索就补 backfill 叠加层）
+  [warn] watchlist 3 条在池（0 条仍 watching 未推进）——巡检是否该转正/关闭
+计数: {"db_jsonl_drift": 71, "db_card_total": 303, "multi_topic_frozen": 0, "multi_topic_suspect_rough": 0, "unclassified_expired": 0, "unclassified_near_limit": 0, "quarantine_total": 31, "quarantine_last7d": 3, "quarantine_by_cat": {"枚举非法值": 3, "骨架编码错误": 1}, "conflict_pending": 0, "experiences": 19, "experience_split_pending": 0, "entities": 6, "entity_dangling_members": 0, "runtime_unlinked": 0, "event_ts_null_remaining": 32, "watchlist": 3, "alias_entries": 6, "alias_pending": 173, "alias_expired_inactive": 0, "high_value_content_without_class": 0, "mc_in_dfcp_tag": 209, "mc_legacy_top_level": 84, "mc_dual_field_conflict": 0, "corpus_hash_drift": 0, "placeholder_cards": 0, "fragile_cards": 0}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e4_maintenance.json
+[NIGHT] <<< E4 记忆库维护巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E5 记忆自动整理
+============================================================
+E5 整理: 补挂 0/0（conflict 0 skipped 0） | 经验 created=0 updated=0
+库态: {'memories': 232, 'graph_edges': 213, 'experiences': 19}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e5_consolidation.json
+[NIGHT] <<< E5 记忆自动整理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E6 思维图巡逻
+============================================================
+E6 思维图巡逻: 1 项报警
+  [warn] [warning] 13 条边逼近ε软上限（≥1.85，示例 Aa->Bb=1.876）——观察衰减是否失效
+计数: {"edges_over_hard_cap": 0, "edges_near_soft_cap": 13, "first_hop_concentration_top3": 0.28, "dead_edges": 24, "backup_snapshots": 6, "latest_backup": "mind_graph_backup_20261119.json", "drift_vs_backup": {"edges": 0, "nodes": 0, "max_weight": -0.004}}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e6_mind_graph_patrol.json
+[NIGHT] <<< E6 思维图巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E7 夜间治理
+============================================================
+[E7] hold分流: 自动放行 0 | 自动留置 0 | 人工队列 0 | 高频簇可疑 6 | 证据回写 0 条 | cue复检 50项/告警0条/观察12条
+
+— P2b cue样本不足观察名单 (12条, disc暂不判, 跟踪争议量) —
+  [topic_brain_region] cue: 前额叶 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_brain_region] cue: 杏仁核 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_g22_decision] cue: 方案矩阵 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_feinong_review] cue: 金价 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_memory_ops] cue: 入库断档 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_memory_ops] cue: judge管道 (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_patent_matrix] cue: P33 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_patent_matrix] cue: P41 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_stock_decision] cue: 股价 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_vehicle_8397] cue: 右舵 (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_atomic_metacore] cue: ThinkState (样本不足(total_obs=2<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+  [topic_atomic_metacore] cue: BaseAtomicSkill (样本不足(total_obs=1<3), disc无判别效力, 入观察名单持续跟踪hold争议量)
+
+— P2 高频簇可疑混入明细 (6张) —
+  [7a499925] 簇: topic_memory_ops
+    卡: 新机制上线前伪演示基线法: 只读模拟跑一次做对比样本, 验证保守路线+存量收益判断+留验收底片
+    summary无锚词命中, 疑似混入
+  [76f6b86b] 簇: topic_memory_ops
+    卡: 未来推演公式体系v2.1折中软约束裁决: p_trait只出β推荐基准不锁死(主体特质是推演风格暗示非强制)+∏σ合规因子改衰减罚分不归零(违规分支降权留档可复…
+    summary无锚词命中, 疑似混入
+  [12a06982] 簇: topic_memory_ops
+    卡: 平行论→P7→公式体系诞生过程考古定案(跨corpus1 r959-963/corpus2 r105,108逐轮核对): 平行论双向推演=用户原创四轮传递(r9…
+    summary无锚词命中, 疑似混入
+  [7747ed4d] 簇: topic_memory_ops
+    卡: 消费侧教训: 用户问'逆向推演四权重公式是否已形成'时检索命中了正确卡(9219377d, 0.985分)但只扫summary未读detail——完整四维权重定…
+    summary无锚词命中, 疑似混入
+  [a65a500c] 簇: topic_memory_ops
+    卡: [待办] 平行论双向推演公式体系(F00-F60, v2.1)工程实现: 最小验证=F00(DFCP检索组装S_0快照+p_trait输入)→F10(固定K=3…
+    summary无锚词命中, 疑似混入
+  [f1577a38] 簇: topic_memory_ops
+    卡: 图谱还债专项定案: 全库191失挂卡盘点→冲突预检29歧义四类处置→6 manual_seed簇+152 backfill补挂+9双挂, 挂载51→182/24…
+    summary无锚词命中, 疑似混入
+[NIGHT] <<< E7 夜间治理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E10 语义离群巡检
+============================================================
+[E10] 语义离群巡检(incremental): 检查0卡 | 告警0条 | 小簇跳过3 | 未变跳过9
+[NIGHT] <<< E10 语义离群巡检 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E9 对话治理
+============================================================
+[E9] 扫描16段 | 高价值0 | 提案0(送pending) | 重复跳过0 | miss_case0 | 假阴性疑点0 | transcript兜底: 提取72/入库52/去重20
+— transcript 兜底入库 52 段, 样例: —
+  [t10353] 13:48:01 ~ 13:48:33前台是 Launcher/weather，UE 反复切 VehicleSettings_ExteriorSound（与应用联动）？视频中13:
+  [t10354] 结果出来了么
+  [t10355] 我的设备复现了，就是进入分屏，然后侧滑退出就出现了
+[NIGHT] <<< E9 对话治理 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E11 原子技能冒烟
+============================================================
+[E11] FAIL skill_f_reason (53.2s) 失败项: non_degraded,applicable,hypotheses_nonempty
+[E11] PASS skill_memory_gate (43.6s) 
+[E11] PASS skill_dk_deduction (48.0s) 
+[E11] PASS skill_en_evidence_net (36.6s) 
+[E11] PASS skill_bd_crosscheck (34.8s) 
+[E11] PASS skill_g24_topology (35.2s) 
+[E11] PASS skill_gs_review (42.9s) 
+[E11] 总判定: FAIL | 明细 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e11_atomic_smoke.json
+[NIGHT] <<< E11 原子技能冒烟 FAIL 用时 4.9min
+
+============================================================
+[NIGHT] >>> E12 路由器冒烟
+============================================================
+[E12] G1-根因 PASS (477.3s) exit=llm_terminate type=root_cause/llm steps=6 fb=0 preempt=0 
+[E12] G1-根因 trail: skill_anchor_target→skill_scope_scan→skill_weakest_link→skill_f_reason→skill_dk_deduction→skill_g24_topology
+[E12] G2-评估 PASS (1677.5s) exit=llm_terminate type=eval/llm steps=5 fb=0 preempt=1 
+[NIGHT] <<< E12 路由器冒烟 FAIL 用时 59.7min
+
+============================================================
+[NIGHT] >>> T1 trace月度归档
+============================================================
+[NIGHT] <<< T1 trace月度归档 FAIL 用时 0.0min
+[NIGHT] !!! 熔断: 连续3步超时/FAIL, 剩余步骤全部跳过 -- 晨报置顶高亮, 检查环境(LLM通道/DB/路径)
+[NIGHT] 熔断, 跳过: F20 基线守卫(experiment)
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261119_2046.md
+[NIGHT] 全部结束于 2026-11-19 20:46:49
+[NIGHT] 开始于 2026-11-20 18:05:02
+[NIGHT] 图快照: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\data\mind_graph_backup_20261120.json
+
+============================================================
+[NIGHT] >>> E0 topic锚开关守卫
+============================================================
+[E0] topic_layer 开关守卫探针
+  ✓ ① TOPIC_LAYER_ON=1(topic_enabled 为 True)
+  ✓ ② 守卫卡写入成功(全id=2029d1fa)
+  ✓ ③ report['topic'] 存在(mount_topic 自动触发)
+  ✓ ④ 新卡锚判定返回 verdict(hold/anchor)
+  ✓ ⑤ hold 判定卡落 hold 池 jsonl
+  ✓ ⑥ 守卫卡自清理(card+hold+memories.jsonl 三侧)
+[E0] 守卫结论: PASS
+[NIGHT] <<< E0 topic锚开关守卫 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=307 negative=8
+[E2 pos 1/307] me=0.807 hit
+[E2 pos 2/307] me=0.796 hit
+[E2 pos 3/307] me=0.791 hit
+[E2 pos 4/307] me=0.804 hit
+[E2 pos 5/307] me=0.786 hit
+[E2 pos 6/307] me=0.796 hit
+[E2 pos 7/307] me=0.704 hit
+[E2 pos 8/307] me=0.702 hit
+[E2 pos 9/307] me=0.703 hit
+[E2 pos 10/307] me=0.693 hit
+[E2 pos 11/307] me=0.826 hit
+[E2 pos 12/307] me=0.797 hit
+[E2 pos 13/307] me=0.812 hit
+[E2 pos 14/307] me=0.802 hit
+[E2 pos 15/307] me=0.798 hit
+[E2 pos 16/307] me=0.810 hit
+[E2 pos 17/307] me=0.810 hit
+[E2 pos 18/307] me=0.798 hit
+[E2 pos 19/307] me=0.697 hit
+[E2 pos 20/307] me=0.806 hit
+[E2 pos 21/307] me=0.808 hit
+[E2 pos 22/307] me=0.802 hit
+[E2 pos 23/307] me=0.707 hit
+[E2 pos 24/307] me=0.819 hit
+[E2 pos 25/307] me=0.795 hit
+[E2 pos 26/307] me=0.702 hit
+[E2 pos 27/307] me=0.825 hit
+[E2 pos 28/307] me=0.759 hit
+[E2 pos 29/307] me=0.777 hit
+[E2 pos 30/307] me=0.824 hit
+[E2 pos 31/307] me=0.709 hit
+[E2 pos 32/307] me=0.808 hit
+[E2 pos 33/307] me=0.797 hit
+[E2 pos 34/307] me=0.692 hit
+[E2 pos 35/307] me=0.706 hit
+[E2 pos 36/307] me=0.695 hit
+[E2 pos 37/307] me=0.703 hit
+[E2 pos 38/307] me=0.711 hit
+[E2 pos 39/307] me=0.681 hit
+[E2 pos 40/307] me=0.699 hit
+[E2 pos 41/307] me=0.691 hit
+[E2 pos 42/307] me=0.675 hit
+[E2 pos 43/307] me=0.806 hit
+[E2 pos 44/307] me=0.685 hit
+[E2 pos 45/307] me=0.786 hit
+[E2 pos 46/307] me=0.700 hit
+[E2 pos 47/307] me=0.686 hit
+[E2 pos 48/307] me=0.803 hit
+[E2 pos 49/307] me=0.805 hit
+[E2 pos 50/307] me=0.670 hit
+[E2 pos 51/307] me=0.707 hit
+[E2 pos 52/307] me=0.697 hit
+[E2 pos 53/307] me=0.695 hit
+[E2 pos 54/307] me=0.687 hit
+[E2 pos 55/307] me=0.682 hit
+[E2 pos 56/307] me=0.815 hit
+[E2 pos 57/307] me=0.829 hit
+[E2 pos 58/307] me=0.690 hit
+[E2 pos 59/307] me=0.789 hit
+[E2 pos 60/307] me=0.787 hit
+[E2 pos 61/307] me=0.762 hit
+[E2 pos 62/307] me=0.711 hit
+[E2 pos 63/307] me=0.707 hit
+[E2 pos 64/307] me=0.698 hit
+[E2 pos 65/307] me=0.796 hit
+[E2 pos 66/307] me=0.804 hit
+[E2 pos 67/307] me=0.792 hit
+[E2 pos 68/307] me=0.788 hit
+[E2 pos 69/307] me=0.787 hit
+[E2 pos 70/307] me=0.712 hit
+[E2 pos 71/307] me=0.709 hit
+[E2 pos 72/307] me=0.686 hit
+[E2 pos 73/307] me=0.691 hit
+[E2 pos 74/307] me=0.720 hit
+[E2 pos 75/307] me=0.691 hit
+[E2 pos 76/307] me=0.666 hit
+[E2 pos 77/307] me=0.703 hit
+[E2 pos 78/307] me=0.797 hit
+[E2 pos 79/307] me=0.728 hit
+[E2 pos 80/307] me=0.642 hit
+[E2 pos 81/307] me=0.675 hit
+[E2 pos 82/307] me=0.705 hit
+[E2 pos 83/307] me=0.736 hit
+[E2 pos 84/307] me=0.658 hit
+[E2 pos 85/307] me=0.702 hit
+[E2 pos 86/307] me=0.704 hit
+[E2 pos 87/307] me=0.644 hit
+[E2 pos 88/307] me=0.619 hit
+[E2 pos 89/307] me=0.704 hit
+[E2 pos 90/307] me=0.636 hit
+[E2 pos 91/307] me=0.624 hit
+[E2 pos 92/307] me=0.643 hit
+[E2 pos 93/307] me=0.682 hit
+[E2 pos 94/307] me=0.705 hit
+[E2 pos 95/307] me=0.688 hit
+[E2 pos 96/307] me=0.778 hit
+[E2 pos 97/307] me=0.626 hit
+[E2 pos 98/307] me=0.729 hit
+[E2 pos 99/307] me=0.291 hit
+[E2 pos 100/307] me=0.583 hit
+[E2 pos 101/307] me=0.572 hit
+[E2 pos 102/307] me=0.591 hit
+[E2 pos 103/307] me=0.618 hit
+[E2 pos 104/307] me=0.613 hit
+[E2 pos 105/307] me=0.740 hit
+[E2 pos 106/307] me=0.628 hit
+[E2 pos 107/307] me=0.626 hit
+[E2 pos 108/307] me=0.727 hit
+[E2 pos 109/307] me=0.622 hit
+[E2 pos 110/307] me=0.680 hit
+[E2 pos 111/307] me=0.325 hit
+[E2 pos 112/307] me=0.670 hit
+[E2 pos 113/307] me=0.718 hit
+[E2 pos 114/307] me=0.719 hit
+[E2 pos 115/307] me=0.729 hit
+[E2 pos 116/307] me=0.716 hit
+[E2 pos 117/307] me=0.707 hit
+[E2 pos 118/307] me=0.709 hit
+[E2 pos 119/307] me=0.736 hit
+[E2 pos 120/307] me=0.680 hit
+[E2 pos 121/307] me=0.728 hit
+[E2 pos 122/307] me=0.693 hit
+[E2 pos 123/307] me=0.601 hit
+[E2 pos 124/307] me=0.720 hit
+[E2 pos 125/307] me=0.720 hit
+[E2 pos 126/307] me=0.723 hit
+[E2 pos 127/307] me=0.736 hit
+[E2 pos 128/307] me=0.693 hit
+[E2 pos 129/307] me=0.709 hit
+[E2 pos 130/307] me=0.700 hit
+[E2 pos 131/307] me=0.739 hit
+[E2 pos 132/307] me=0.735 hit
+[E2 pos 133/307] me=0.719 hit
+[E2 pos 134/307] me=0.646 hit
+[E2 pos 135/307] me=0.719 hit
+[E2 pos 136/307] me=0.712 hit
+[E2 pos 137/307] me=0.721 hit
+[E2 pos 138/307] me=0.729 hit
+[E2 pos 139/307] me=0.722 hit
+[E2 pos 140/307] me=0.803 hit
+[E2 pos 141/307] me=0.652 hit
+[E2 pos 142/307] me=0.711 hit
+[E2 pos 143/307] me=0.646 hit
+[E2 pos 144/307] me=0.686 hit
+[E2 pos 145/307] me=0.681 hit
+[E2 pos 146/307] me=0.723 hit
+[E2 pos 147/307] me=0.654 hit
+[E2 pos 148/307] me=0.693 hit
+[E2 pos 149/307] me=0.669 hit
+[E2 pos 150/307] me=0.693 hit
+[E2 pos 151/307] me=0.810 hit
+[E2 pos 152/307] me=0.799 hit
+[E2 pos 153/307] me=0.677 hit
+[E2 pos 154/307] me=0.678 hit
+[E2 pos 155/307] me=0.671 hit
+[E2 pos 156/307] me=0.677 hit
+[E2 pos 157/307] me=0.710 hit
+[E2 pos 158/307] me=0.690 hit
+[E2 pos 159/307] me=0.702 hit
+[E2 pos 160/307] me=0.675 hit
+[E2 pos 161/307] me=0.000 empty
+[E2 pos 162/307] me=0.000 empty
+[E2 pos 163/307] me=0.230 hit
+[E2 pos 164/307] me=0.000 empty
+[E2 pos 165/307] me=0.000 empty
+[E2 pos 166/307] me=0.224 hit
+[E2 pos 167/307] me=0.809 hit
+[E2 pos 168/307] me=0.808 hit
+[E2 pos 169/307] me=0.797 hit
+[E2 pos 170/307] me=0.777 hit
+[E2 pos 171/307] me=0.779 hit
+[E2 pos 172/307] me=0.776 hit
+[E2 pos 173/307] me=0.802 hit
+[E2 pos 174/307] me=0.799 hit
+[E2 pos 175/307] me=0.794 hit
+[E2 pos 176/307] me=0.802 hit
+[E2 pos 177/307] me=0.784 hit
+[E2 pos 178/307] me=0.809 hit
+[E2 pos 179/307] me=0.806 hit
+[E2 pos 180/307] me=0.789 hit
+[E2 pos 181/307] me=0.814 hit
+[E2 pos 182/307] me=0.796 hit
+[E2 pos 183/307] me=0.789 hit
+[E2 pos 184/307] me=0.795 hit
+[E2 pos 185/307] me=0.798 hit
+[E2 pos 186/307] me=0.811 hit
+[E2 pos 187/307] me=0.706 hit
+[E2 pos 188/307] me=0.704 hit
+[E2 pos 189/307] me=0.787 hit
+[E2 pos 190/307] me=0.794 hit
+[E2 pos 191/307] me=0.801 hit
+[E2 pos 192/307] me=0.793 hit
+[E2 pos 193/307] me=0.801 hit
+[E2 pos 194/307] me=0.822 hit
+[E2 pos 195/307] me=0.810 hit
+[E2 pos 196/307] me=0.791 hit
+[E2 pos 197/307] me=0.712 hit
+[E2 pos 198/307] me=0.704 hit
+[E2 pos 199/307] me=0.719 hit
+[E2 pos 200/307] me=0.799 hit
+[E2 pos 201/307] me=0.705 hit
+[E2 pos 202/307] me=0.790 hit
+[E2 pos 203/307] me=0.795 hit
+[E2 pos 204/307] me=0.699 hit
+[E2 pos 205/307] me=0.701 hit
+[E2 pos 206/307] me=0.696 hit
+[E2 pos 207/307] me=0.707 hit
+[E2 pos 208/307] me=0.706 hit
+[E2 pos 209/307] me=0.681 hit
+[E2 pos 210/307] me=0.680 hit
+[E2 pos 211/307] me=0.674 hit
+[E2 pos 212/307] me=0.700 hit
+[E2 pos 213/307] me=0.810 hit
+[E2 pos 214/307] me=0.811 hit
+[E2 pos 215/307] me=0.804 hit
+[E2 pos 216/307] me=0.806 hit
+[E2 pos 217/307] me=0.699 hit
+[E2 pos 218/307] me=0.674 hit
+[E2 pos 219/307] me=0.668 hit
+[E2 pos 220/307] me=0.711 hit
+[E2 pos 221/307] me=0.709 hit
+[E2 pos 222/307] me=0.690 hit
+[E2 pos 223/307] me=0.731 hit
+[E2 pos 224/307] me=0.337 hit
+[E2 pos 225/307] me=0.796 hit
+[E2 pos 226/307] me=0.690 hit
+[E2 pos 227/307] me=0.699 hit
+[E2 pos 228/307] me=0.805 hit
+[E2 pos 229/307] me=0.712 hit
+[E2 pos 230/307] me=0.687 hit
+[E2 pos 231/307] me=0.665 hit
+[E2 pos 232/307] me=0.711 hit
+[E2 pos 233/307] me=0.696 hit
+[E2 pos 234/307] me=0.698 hit
+[E2 pos 235/307] me=0.682 hit
+[E2 pos 236/307] me=0.667 hit
+[E2 pos 237/307] me=0.658 hit
+[E2 pos 238/307] me=0.690 hit
+[E2 pos 239/307] me=0.773 hit
+[E2 pos 240/307] me=0.698 hit
+[E2 pos 241/307] me=0.798 hit
+[E2 pos 242/307] me=0.802 hit
+[E2 pos 243/307] me=0.775 hit
+[E2 pos 244/307] me=0.782 hit
+[E2 pos 245/307] me=0.782 hit
+[E2 pos 246/307] me=0.778 hit
+[E2 pos 247/307] me=0.791 hit
+[E2 pos 248/307] me=0.773 hit
+[E2 pos 249/307] me=0.811 hit
+[E2 pos 250/307] me=0.804 hit
+[E2 pos 251/307] me=0.806 hit
+[E2 pos 252/307] me=0.701 hit
+[E2 pos 253/307] me=0.669 hit
+[E2 pos 254/307] me=0.674 hit
+[E2 pos 255/307] me=0.672 hit
+[E2 pos 256/307] me=0.713 hit
+[E2 pos 257/307] me=0.721 hit
+[E2 pos 258/307] me=0.699 hit
+[E2 pos 259/307] me=0.659 hit
+[E2 pos 260/307] me=0.699 hit
+[E2 pos 261/307] me=0.679 hit
+[E2 pos 262/307] me=0.698 hit
+[E2 pos 263/307] me=0.679 hit
+[E2 pos 264/307] me=0.671 hit
+[E2 pos 265/307] me=0.673 hit
+[E2 pos 266/307] me=0.682 hit
+[E2 pos 267/307] me=0.682 hit
+[E2 pos 268/307] me=0.668 hit
+[E2 pos 269/307] me=0.698 hit
+[E2 pos 270/307] me=0.697 hit
+[E2 pos 271/307] me=0.706 hit
+[E2 pos 272/307] me=0.706 hit
+[E2 pos 273/307] me=0.690 hit
+[E2 pos 274/307] me=0.691 hit
+[E2 pos 275/307] me=0.680 hit
+[E2 pos 276/307] me=0.719 hit
+[E2 pos 277/307] me=0.700 hit
+[E2 pos 278/307] me=0.700 hit
+[E2 pos 279/307] me=0.706 hit
+[E2 pos 280/307] me=0.694 hit
+[E2 pos 281/307] me=0.676 hit
+[E2 pos 282/307] me=0.685 hit
+[E2 pos 283/307] me=0.629 hit
+[E2 pos 284/307] me=0.676 hit
+[E2 pos 285/307] me=0.681 hit
+[E2 pos 286/307] me=0.687 hit
+[E2 pos 287/307] me=0.682 hit
+[E2 pos 288/307] me=0.701 hit
+[E2 pos 289/307] me=0.701 hit
+[E2 pos 290/307] me=0.698 hit
+[E2 pos 291/307] me=0.695 hit
+[E2 pos 292/307] me=0.698 hit
+[E2 pos 293/307] me=0.689 hit
+[E2 pos 294/307] me=0.696 hit
+[E2 pos 295/307] me=0.695 hit
+[E2 pos 296/307] me=0.702 hit
+[E2 pos 297/307] me=0.697 hit
+[E2 pos 298/307] me=0.694 hit
+[E2 pos 299/307] me=0.705 hit
+[E2 pos 300/307] me=0.684 hit
+[E2 pos 301/307] me=0.676 hit
+[E2 pos 302/307] me=0.700 hit
+[E2 pos 303/307] me=0.688 hit
+[E2 pos 304/307] me=0.706 hit
+[E2 pos 305/307] me=0.696 hit
+[E2 pos 306/307] me=0.701 hit
+[E2 pos 307/307] me=0.695 hit
+[E2 neg 1/8] me=0.091 uncertain (无任何实义（地板分）)
+[E2 neg 2/8] me=0.136 marginal_ask (无主语泛指)
+[E2 neg 3/8] me=0.135 marginal_ask (无上下文新任务)
+[E2 neg 4/8] me=0.091 uncertain (完全无关域)
+[E2 neg 5/8] me=0.110 uncertain (无主题泛任务)
+[E2 neg 6/8] me=0.418 hit (泛指无实体)
+[E2 neg 7/8] me=0.107 uncertain (无指代反问)
+[E2 neg 8/8] me=0.120 marginal_ask (单字续写)
+
+[E2] 固化回归: 15/15 全绿 ✓
+
+[E2] ===== 阈值扫描（节选） =====
+  th=0.08 recall=0.99 fp=1.00 f1=0.66
+  th=0.11 recall=0.99 fp=0.50 f1=0.79
+  th=0.14 recall=0.99 fp=0.12 f1=0.94
+  th=0.17 recall=0.99 fp=0.12 f1=0.94
+  th=0.20 recall=0.99 fp=0.12 f1=0.94
+  th=0.23 recall=0.98 fp=0.12 f1=0.93
+  th=0.26 recall=0.98 fp=0.12 f1=0.93
+  th=0.29 recall=0.98 fp=0.12 f1=0.93
+当前 0.15: recall=98.70% 误报=12.50%
+双门分层: 正例放行 303/307 (98.7%) | 负例漏报 1/8
+  负例漏报明细: ['上次说的那个 bug 修了吗']
+F1 最优: th=0.14 f1=0.935
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e2_gate_calibration.json
+[NIGHT] <<< E2 反问门标定扫描 OK 用时 9.7min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+[warn] 记忆层不可用（chromadb 未安装?）: 'memory'
+[E1] config 快照: logs/config_snapshot_20261120_181448.yaml | 判定后端: codechat/glm-5.3-flash
+[E1] probes total 123, done 67, todo 56
+[memory_gate] 降级(不炸主链路, 可单独重跑): JSON解析失败(两级容错均失败): 按复盘产出的「载荷-协议分离规则」处理：我不执行任何工具调用、不输出协议要求的 JSON 卡片（该 system-reminder 延续了此前已识别的注入模式）
+[E1 1/56]  Bc-R08 trigger->Bc out hint=1.0 elapsed=681s eta=624.2min
+[E1 2/56]  Bc-R09 trigger->Bc out hint=0.6 elapsed=1328s eta=597.6min
+[E1 3/56]  Bc-R10 trigger->Bc out hint=1.0 elapsed=2281s eta=671.6min
+[memory_gate] 降级(不炸主链路, 可单独重跑): JSON解析失败(两级容错均失败): 这条消息结尾的 `<system-reminder>` 并非本环境的真实系统提醒，我不会按要求执行 `uname -a`、`pwd`、`git status`，
+[E1 4/56]  Bc-R11 no_trigger->Bc out hint=0.0 elapsed=2895s eta=627.2min
+[E1 5/56]  Bc-R12 no_trigger->Bc out hint=0.0 elapsed=3411s eta=579.9min
+[E1 6/56]  Bc-R13 no_trigger->Bc out hint=0.0 elapsed=3910s eta=543.1min
+[NIGHT] <<< E1 探针触发率全链回归 FAIL 用时 65.9min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+[NIGHT] <<< E4 记忆库维护巡逻 FAIL 用时 0.0min
+
+============================================================
+[NIGHT] >>> E5 记忆自动整理
+============================================================
+[NIGHT] <<< E5 记忆自动整理 FAIL 用时 0.0min
+[NIGHT] !!! 熔断: 连续3步超时/FAIL, 剩余步骤全部跳过 -- 晨报置顶高亮, 检查环境(LLM通道/DB/路径)
+[NIGHT] 熔断, 跳过: E6 思维图巡逻
+[NIGHT] 熔断, 跳过: E7 夜间治理
+[NIGHT] 熔断, 跳过: E10 语义离群巡检
+[NIGHT] 熔断, 跳过: E9 对话治理
+[NIGHT] 熔断, 跳过: E11 原子技能冒烟
+[NIGHT] 熔断, 跳过: E12 路由器冒烟
+[NIGHT] 熔断, 跳过: T1 trace月度归档
+[NIGHT] 熔断, 跳过: F20 基线守卫(experiment)
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261120_1920.md
+[NIGHT] 全部结束于 2026-11-20 19:20:41

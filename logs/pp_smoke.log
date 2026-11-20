@@ -1,0 +1,6 @@
+[parallel_pipeline] mode=single workers=4 tasks=3
+[sufficiency] 告警 11 条(只告警不裁决): [指标] hypotheses_n=0: 多步链路未产出竞争假设谱(纯执行类属正常, 请结合任务类型判断); [指标] empty_evidence_fields=1: 关键证据字段存在空值; 对 hypotheses_n=0 的复核：告警条件为“纯执行类属正常，请结合任务类型判断”，但链路节选中没有任何步骤显式...
+  t1: ok=True secs=863.5 steps=4 err=None
+  t2: ok=True secs=338.0 steps=2 err=None
+  t3: ok=True secs=331.1 steps=2 err=None
+[total] 1533.0s mode=single

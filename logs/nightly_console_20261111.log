@@ -1,0 +1,269 @@
+[NIGHT] 开始于 2026-11-11 22:52:33
+[NIGHT] 图快照: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\data\mind_graph_backup_20261111.json
+
+============================================================
+[NIGHT] >>> E3 SFT七池静态体检
+============================================================
+[E3] sft_groupB_performative.jsonl: 8条 clean=8 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_groupC_explicit.jsonl: 35条 clean=35 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_pool_bc_aa.jsonl: 148条 clean=122 空=0 占位=0 src=0 码=0 重复=26 坏JSON=0
+[E3] sft_s1_doubter.jsonl: 35条 clean=35 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s1_pairs.jsonl: 35条 clean=35 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s2_doubter.jsonl: 10条 clean=10 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s5_deepreflect.jsonl: 25条 clean=25 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s6_thinking_assets.jsonl: 48条 clean=48 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+[E3] sft_s7_corpus3_assets.jsonl: 12条 clean=12 空=0 占位=0 src=0 码=0 重复=0 坏JSON=0
+
+[E3] 总计 356 条, dirty 26 (7.3%)
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e3_sft_audit.json
+[NIGHT] <<< E3 SFT七池静态体检 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E2 反问门标定扫描
+============================================================
+[E2] positive=164 negative=8
+[E2 pos 1/164] me=0.709 hit
+[E2 pos 2/164] me=0.702 hit
+[E2 pos 3/164] me=0.700 hit
+[E2 pos 4/164] me=0.705 hit
+[E2 pos 5/164] me=0.686 hit
+[E2 pos 6/164] me=0.696 hit
+[E2 pos 7/164] me=0.706 hit
+[E2 pos 8/164] me=0.685 hit
+[E2 pos 9/164] me=0.701 hit
+[E2 pos 10/164] me=0.703 hit
+[E2 pos 11/164] me=0.690 hit
+[E2 pos 12/164] me=0.706 hit
+[E2 pos 13/164] me=0.730 hit
+[E2 pos 14/164] me=0.696 hit
+[E2 pos 15/164] me=0.714 hit
+[E2 pos 16/164] me=0.704 hit
+[E2 pos 17/164] me=0.698 hit
+[E2 pos 18/164] me=0.710 hit
+[E2 pos 19/164] me=0.709 hit
+[E2 pos 20/164] me=0.698 hit
+[E2 pos 21/164] me=0.698 hit
+[E2 pos 22/164] me=0.719 hit
+[E2 pos 23/164] me=0.707 hit
+[E2 pos 24/164] me=0.702 hit
+[E2 pos 25/164] me=0.711 hit
+[E2 pos 26/164] me=0.719 hit
+[E2 pos 27/164] me=0.701 hit
+[E2 pos 28/164] me=0.701 hit
+[E2 pos 29/164] me=0.725 hit
+[E2 pos 30/164] me=0.661 hit
+[E2 pos 31/164] me=0.677 hit
+[E2 pos 32/164] me=0.709 hit
+[E2 pos 33/164] me=0.724 hit
+[E2 pos 34/164] me=0.709 hit
+[E2 pos 35/164] me=0.710 hit
+[E2 pos 36/164] me=0.697 hit
+[E2 pos 37/164] me=0.692 hit
+[E2 pos 38/164] me=0.707 hit
+[E2 pos 39/164] me=0.701 hit
+[E2 pos 40/164] me=0.703 hit
+[E2 pos 41/164] me=0.710 hit
+[E2 pos 42/164] me=0.679 hit
+[E2 pos 43/164] me=0.697 hit
+[E2 pos 44/164] me=0.692 hit
+[E2 pos 45/164] me=0.673 hit
+[E2 pos 46/164] me=0.707 hit
+[E2 pos 47/164] me=0.684 hit
+[E2 pos 48/164] me=0.689 hit
+[E2 pos 49/164] me=0.700 hit
+[E2 pos 50/164] me=0.689 hit
+[E2 pos 51/164] me=0.700 hit
+[E2 pos 52/164] me=0.705 hit
+[E2 pos 53/164] me=0.670 hit
+[E2 pos 54/164] me=0.707 hit
+[E2 pos 55/164] me=0.703 hit
+[E2 pos 56/164] me=0.696 hit
+[E2 pos 57/164] me=0.688 hit
+[E2 pos 58/164] me=0.681 hit
+[E2 pos 59/164] me=0.716 hit
+[E2 pos 60/164] me=0.729 hit
+[E2 pos 61/164] me=0.696 hit
+[E2 pos 62/164] me=0.689 hit
+[E2 pos 63/164] me=0.686 hit
+[E2 pos 64/164] me=0.663 hit
+[E2 pos 65/164] me=0.711 hit
+[E2 pos 66/164] me=0.713 hit
+[E2 pos 67/164] me=0.698 hit
+[E2 pos 68/164] me=0.703 hit
+[E2 pos 69/164] me=0.703 hit
+[E2 pos 70/164] me=0.694 hit
+[E2 pos 71/164] me=0.687 hit
+[E2 pos 72/164] me=0.693 hit
+[E2 pos 73/164] me=0.711 hit
+[E2 pos 74/164] me=0.715 hit
+[E2 pos 75/164] me=0.686 hit
+[E2 pos 76/164] me=0.693 hit
+[E2 pos 77/164] me=0.720 hit
+[E2 pos 78/164] me=0.692 hit
+[E2 pos 79/164] me=0.666 hit
+[E2 pos 80/164] me=0.704 hit
+[E2 pos 81/164] me=0.697 hit
+[E2 pos 82/164] me=0.729 hit
+[E2 pos 83/164] me=0.644 hit
+[E2 pos 84/164] me=0.683 hit
+[E2 pos 85/164] me=0.704 hit
+[E2 pos 86/164] me=0.735 hit
+[E2 pos 87/164] me=0.655 hit
+[E2 pos 88/164] me=0.704 hit
+[E2 pos 89/164] me=0.703 hit
+[E2 pos 90/164] me=0.674 hit
+[E2 pos 91/164] me=0.643 hit
+[E2 pos 92/164] me=0.702 hit
+[E2 pos 93/164] me=0.645 hit
+[E2 pos 94/164] me=0.632 hit
+[E2 pos 95/164] me=0.643 hit
+[E2 pos 96/164] me=0.685 hit
+[E2 pos 97/164] me=0.704 hit
+[E2 pos 98/164] me=0.704 hit
+[E2 pos 99/164] me=0.687 hit
+[E2 pos 100/164] me=0.681 hit
+[E2 pos 101/164] me=0.624 hit
+[E2 pos 102/164] me=0.637 hit
+[E2 pos 103/164] me=0.688 hit
+[E2 pos 104/164] me=0.589 hit
+[E2 pos 105/164] me=0.573 hit
+[E2 pos 106/164] me=0.593 hit
+[E2 pos 107/164] me=0.620 hit
+[E2 pos 108/164] me=0.622 hit
+[E2 pos 109/164] me=0.648 hit
+[E2 pos 110/164] me=0.627 hit
+[E2 pos 111/164] me=0.635 hit
+[E2 pos 112/164] me=0.636 hit
+[E2 pos 113/164] me=0.622 hit
+[E2 pos 114/164] me=0.679 hit
+[E2 pos 115/164] me=0.225 hit
+[E2 pos 116/164] me=0.674 hit
+[E2 pos 117/164] me=0.617 hit
+[E2 pos 118/164] me=0.620 hit
+[E2 pos 119/164] me=0.632 hit
+[E2 pos 120/164] me=0.617 hit
+[E2 pos 121/164] me=0.606 hit
+[E2 pos 122/164] me=0.613 hit
+[E2 pos 123/164] me=0.636 hit
+[E2 pos 124/164] me=0.579 hit
+[E2 pos 125/164] me=0.628 hit
+[E2 pos 126/164] me=0.593 hit
+[E2 pos 127/164] me=0.599 hit
+[E2 pos 128/164] me=0.620 hit
+[E2 pos 129/164] me=0.618 hit
+[E2 pos 130/164] me=0.623 hit
+[E2 pos 131/164] me=0.636 hit
+[E2 pos 132/164] me=0.593 hit
+[E2 pos 133/164] me=0.606 hit
+[E2 pos 134/164] me=0.602 hit
+[E2 pos 135/164] me=0.639 hit
+[E2 pos 136/164] me=0.636 hit
+[E2 pos 137/164] me=0.621 hit
+[E2 pos 138/164] me=0.547 hit
+[E2 pos 139/164] me=0.620 hit
+[E2 pos 140/164] me=0.613 hit
+[E2 pos 141/164] me=0.622 hit
+[E2 pos 142/164] me=0.628 hit
+[E2 pos 143/164] me=0.621 hit
+[E2 pos 144/164] me=0.710 hit
+[E2 pos 145/164] me=0.552 hit
+[E2 pos 146/164] me=0.610 hit
+[E2 pos 147/164] me=0.546 hit
+[E2 pos 148/164] me=0.588 hit
+[E2 pos 149/164] me=0.580 hit
+[E2 pos 150/164] me=0.624 hit
+[E2 pos 151/164] me=0.553 hit
+[E2 pos 152/164] me=0.600 hit
+[E2 pos 153/164] me=0.567 hit
+[E2 pos 154/164] me=0.595 hit
+[E2 pos 155/164] me=0.715 hit
+[E2 pos 156/164] me=0.700 hit
+[E2 pos 157/164] me=0.574 hit
+[E2 pos 158/164] me=0.579 hit
+[E2 pos 159/164] me=0.570 hit
+[E2 pos 160/164] me=0.674 hit
+[E2 pos 161/164] me=0.709 hit
+[E2 pos 162/164] me=0.690 hit
+[E2 pos 163/164] me=0.701 hit
+[E2 pos 164/164] me=0.674 hit
+[E2 neg 1/8] me=0.132 marginal_ask (无任何实义（地板分）)
+[E2 neg 2/8] me=0.161 marginal_ask (无主语泛指)
+[E2 neg 3/8] me=0.150 marginal_ask (无上下文新任务)
+[E2 neg 4/8] me=0.066 uncertain (完全无关域)
+[E2 neg 5/8] me=0.135 marginal_ask (无主题泛任务)
+[E2 neg 6/8] me=0.418 hit (泛指无实体)
+[E2 neg 7/8] me=0.133 marginal_ask (无指代反问)
+[E2 neg 8/8] me=0.156 marginal_ask (单字续写)
+
+[E2] 固化回归: 14/15 有红 ✗ — 见 gate_regression.cases
+Traceback (most recent call last):
+  File "D:\uidq0280\Downloads\Agent\cognitive_engine_v3\eval\e2_gate_calibration.py", line 257, in <module>
+    main()
+  File "D:\uidq0280\Downloads\Agent\cognitive_engine_v3\eval\e2_gate_calibration.py", line 240, in main
+    print(f"  ✗ {c['id']} expect={c['expect']} verdict={c['verdict']} me={c['match_eff']}", flush=True)
+                                                                          ~^^^^^^^^^^^^^
+KeyError: 'match_eff'
+[NIGHT] <<< E2 反问门标定扫描 FAIL 用时 2.4min
+
+============================================================
+[NIGHT] >>> E1 探针触发率全链回归
+============================================================
+Traceback (most recent call last):
+  File "D:\uidq0280\Downloads\Agent\cognitive_engine_v3\eval\e1_probe_trigger.py", line 135, in <module>
+    main()
+  File "D:\uidq0280\Downloads\Agent\cognitive_engine_v3\eval\e1_probe_trigger.py", line 57, in main
+    engine = Engine()
+             ^^^^^^^^
+  File "D:\uidq0280\Downloads\Agent\cognitive_engine_v3\cgraph\engine.py", line 28, in __init__
+    graph_file = os.path.join(HERE, self.cfg["graph"]["data_file"])
+                                    ~~~~~~~~^^^^^^^^^
+KeyError: 'graph'
+[NIGHT] <<< E1 探针触发率全链回归 FAIL 用时 0.1min
+
+============================================================
+[NIGHT] >>> E4 记忆库维护巡逻
+============================================================
+E4 维护巡逻: 6 项报警
+  [warn] 隔离区近7天新增 22 条非法编码拒收——检查入库管道是否标签错乱
+  [warn] 冲突评审积压 304 条（同源分叉待元思域对撞）
+  [warn] runtime 未跑四档判定 30 条——entity_timeline 挂靠需先补 classify_and_link
+  [warn] event_ts 空值存量 29 条待回填（有线索就补 backfill 叠加层）
+  [warn] watchlist 3 条在池（0 条仍 watching 未推进）——巡检是否该转正/关闭
+  [warn] [warning] 2 条内容疑似五类但 memory_class=null（如 摘要双词规约确立：摘要必须含专有实体锚点+上位概念词——盲测sim3的Q4'复盘… → 疑似 key_pact）——人工复核是否补填；null 合法但防高价值记忆被随手标空
+计数: {"multi_topic_frozen": 0, "multi_topic_suspect_rough": 0, "unclassified_expired": 0, "unclassified_near_limit": 0, "quarantine_total": 22, "quarantine_last7d": 22, "conflict_pending": 304, "experiences": 11, "experience_split_pending": 0, "entities": 6, "entity_dangling_members": 0, "runtime_unlinked": 30, "event_ts_null_remaining": 29, "watchlist": 3, "alias_entries": 6, "alias_pending": 58, "alias_expired_inactive": 0, "high_value_content_without_class": 2, "mc_in_dfcp_tag": 16, "mc_legacy_top_level": 15, "mc_dual_field_conflict": 0, "corpus_hash_drift": 0, "placeholder_cards": 0, "fragile_cards": 0}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e4_maintenance.json
+[NIGHT] <<< E4 记忆库维护巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E5 记忆自动整理
+============================================================
+E5 整理: 补挂 30/30（conflict 0 skipped 0） | 经验 created=0 updated=0
+库态: {'memories': 164, 'graph_edges': 150, 'experiences': 11}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e5_consolidation.json
+[NIGHT] <<< E5 记忆自动整理 OK 用时 0.1min
+
+============================================================
+[NIGHT] >>> E6 思维图巡逻
+============================================================
+E6 思维图巡逻: 全绿
+计数: {"edges_over_hard_cap": 0, "edges_near_soft_cap": 0, "first_hop_concentration_top3": 0.27, "dead_edges": 27, "backup_snapshots": 4, "latest_backup": "mind_graph_backup_20261111.json", "drift_vs_backup": {"edges": 0, "nodes": 0, "max_weight": 0.0}}
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e6_mind_graph_patrol.json
+[NIGHT] <<< E6 思维图巡逻 OK 用时 0.0min
+
+============================================================
+[NIGHT] >>> E8 影子对话实测
+============================================================
+[E8] Q1/8 correct      v=hit           上次咱们聊非农那天金价不涨反跌的事，你说是什么央行买金对冲了流动性冲击，这具体咋
+[E8] Q2/8 correct      v=hit           上次咱们聊的拓普集团那个46到47块挂单的事儿，你后来帮我复核得咋样了来着？
+[E8] Q3/8 correct      v=hit           上次咱们聊的那个把专利矩阵同步入库、还按可复现性分级存全文的事，你当时说要做个架
+[E8] Q4/8 correct      v=hit           上次你讲的那个专利，说校准的时候每个维度反向传播互不干扰，那个具体是咋实现的来着
+[E8] Q5/8 correct      v=hit           上次你说的那个，碰到别人批评得先拆成几块来着？还有自己参与建的东西要标利益相关那
+[E8] Q6/8 miss_B_ranking v=hit           上次咱们聊的那个记忆系统分三层来搭的方案，后来实际跑起来效果咋样来着？
+[E8] Q7/8 correct      v=hit           上次你说咱俩是一体的别见外，让我把那些免责声明去掉，这到底是咋回事来着？
+[E8] Q8/8 correct      v=hit           上次咱们聊的那个车载SystemUI的AI编码技能体系，什么23个技能15个ag
+E8 影子对话: 7/8 正确命中 | 张冠李戴 0 | missA召回 0 / missB排序 1 | 合格池命中率 1.0 | 反问 0 | 均分 0.863
+报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e8_shadow_dialog.jsonl
+[NIGHT] <<< E8 影子对话实测 OK 用时 0.4min
+
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261111_2255.md
+[NIGHT] 全部结束于 2026-11-11 22:55:36

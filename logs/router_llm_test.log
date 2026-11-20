@@ -1,0 +1,15 @@
+[medium] medium任务，图贪心主路径 12 节点
+  plan: Aa->Bb->Cf->Cg->Ch->Di->Dj->Eo->Fp->Fq->Fr->Jw
+  domain: Ch Bc Ht Fq Cf Jw Fr Be Eo Di Bb Dj Fp Cg Aa Bd Em
+  q: 面试官最后说我们内部再讨论一下，我是不是基本稳了？
+
+[complex] complex任务，图贪心主路径 14 节点
+  plan: Aa->Bb->Cf->Cg->Ch->Di->Dj->Dk->Dl->Em->Eo->Fp->Fq->Jw
+  domain: Fr Iv En Di Bb Fp Cg Dl Ch Ht Gw Jw Gy Gx Gs Gz Cf Eo Dj Aa Bd Bc Fq Be Em Dk Iu
+  q: 我想把家里全部积蓄投进朋友推荐的餐饮项目，他说稳赚
+
+[simple] 语义判定: 单点事实查询
+  plan: Aa->Eo->Jw
+  domain: Aa Eo Jw
+  q: 今天天气怎么样
+

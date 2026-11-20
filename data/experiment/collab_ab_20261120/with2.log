@@ -1,0 +1,7 @@
+[collab] branches=2 mode=parallel tau=0.5 synth_override=True
+[sufficiency] 告警 9 条(只告警不裁决): [指标] empty_evidence_fields=1: 关键证据字段存在空值; 机械疑点 empty_evidence_fields=1 复核：skill_scope_scan 的 step_summ; [LLM新发现] skill_weakest_link 的 evidence 为纯推理性描述（'通常由硬编码或静态配置决...
+[sufficiency] 告警 7 条(只告警不裁决): [指标] empty_evidence_fields=1: 关键证据字段存在空值; empty_evidence_fields=1 与 skill_scope_scan 的 step_summary、su; 最薄弱环节自评 score=0.25 且承认'论证全部停留在机制推演层面，缺乏任何实测指标'，而最终综合步骤在此基础上选...
+[collab] done wall=1623.4s report=data\experiment\collab_ab_20261120\with_override2\collab_report.json
+[F50] Y_hat={'converged': 1.0, 'has_deliverable': 1.0, 'confidence': 0.8, 'n_gaps': 0.0, 'n_contradictions': 0.0} baseline=branch0
+  #1 branch0 W=0.5 exit=llm_terminate
+  #2 branch1 W=0.5 exit=llm_terminate

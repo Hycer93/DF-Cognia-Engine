@@ -1,0 +1,25 @@
+
+=== C1: 为什么11-13全天多条用户裁决零入库, 直到次日人工盘点才发现?
+    路线: skill_anchor_target -> skill_scope_scan -> skill_weakest_link
+    完成: steps=3 steps(全局第1..3条) | 终止=True (route_exhausted(固定路线走完))
+
+=== C2: 记忆库topic锚挂载质量的最弱环节在哪, 该怎么补?
+    路线: skill_anchor_target -> skill_scope_scan -> skill_weakest_link -> skill_terminate
+    完成: steps=7 steps(全局第4..7条) | 终止=True (terminate_suggest命中(技能自身判定收敛))
+    自动观测: 2 条
+
+=== C3: 8397认知引擎和DF-Cognia是什么关系, 为什么会被纠正?
+    路线: skill_anchor_target -> skill_scope_scan -> skill_source_intent
+    完成: steps=10 steps(全局第8..10条) | 终止=True (route_exhausted(固定路线走完))
+
+=== C4: F系推演公式v1的R^β清零现状分支是什么问题, 修法对吗?
+    路线: skill_anchor_target -> skill_scope_scan -> skill_f_reason
+    完成: steps=13 steps(全局第11..13条) | 终止=True (route_exhausted(固定路线走完))
+
+=== C5: 紫光国微该不该按71-72元被动挂单建仓?
+    路线: skill_anchor_target -> skill_scope_scan -> skill_f_reason
+    完成: steps=16 steps(全局第14..16条) | 终止=True (route_exhausted(固定路线走完))
+
+产物目录: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\data\experiment\multi_skill_probe_20261116_232353
+  steps.jsonl: 16 步 | report.md 已生成(含人工标注区)
+下一步: 人工审阅 report.md 第四节标注 bug/范式待迭代, 第五节挑 Mock 用例

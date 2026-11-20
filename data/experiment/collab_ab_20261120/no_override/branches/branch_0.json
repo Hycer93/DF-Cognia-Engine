@@ -1,0 +1,32 @@
+{
+ "branch": 0,
+ "view": "【协同分支 S1·机制边界】三路子分析师共研同一目标，你主责机制与边界切面：优先厘清该事物的内在机制、成立条件与作用边界（什么情况下成立/失效）。其他切面有队友负责，但你认可的机制结论要写明依据，便于跨路互证。",
+ "secs": 2.3,
+ "ok": false,
+ "exit_channel": "collapse",
+ "fallback_count": 2,
+ "task_type": "root_cause",
+ "steps": 4,
+ "trail": [
+  "skill_anchor_target",
+  "skill_scope_scan",
+  "matrix_feed",
+  "skill_terminate"
+ ],
+ "summary": "",
+ "hypotheses": null,
+ "weakest_link": null,
+ "deduction_chains": null,
+ "gaps": null,
+ "bd_matrix": null,
+ "unaddressed": null,
+ "evidence_net": null,
+ "isolated_evidence": null,
+ "contradiction_pairs": null,
+ "selection_rationale": null,
+ "final_deliverable": null,
+ "alternatives_appendix": null,
+ "flags": {
+  "scan_confidence": ""
+ }
+}

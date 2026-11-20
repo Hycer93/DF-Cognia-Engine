@@ -1,0 +1,29 @@
+=== NIGHTLY COMPLETED 2026-11-19 14:04 ===
+[NIGHT] <<< E0 topic锚开关守卫 OK 用时 0.0min
+[NIGHT] <<< E2 反问门标定扫描 OK 用时 7.5min
+[NIGHT] E1 探针触发率全链回归 超时 90min(分级阈值)，跳到下一步
+[NIGHT] <<< E1 探针触发率全链回归 FAIL 用时 90.0min
+计数: {"db_jsonl_drift": 69, "db_card_total": 301, "multi_topic_frozen": 0, "multi_topic_suspect_rough": 0, "unclassified_expired": 0, "unclassified_near_limit": 0, "quarantine_total": 31, "quarantine_l
+[NIGHT] <<< E4 记忆库维护巡逻 OK 用时 0.0min
+[NIGHT] <<< E5 记忆自动整理 OK 用时 0.0min
+计数: {"edges_over_hard_cap": 0, "edges_near_soft_cap": 3, "first_hop_concentration_top3": 0.282, "dead_edges": 24, "backup_snapshots": 6, "latest_backup": "mind_graph_backup_20261119.json", "drift_vs_b
+[NIGHT] <<< E6 思维图巡逻 OK 用时 0.0min
+[NIGHT] <<< E7 夜间治理 OK 用时 0.0min
+[NIGHT] <<< E10 语义离群巡检 OK 用时 0.0min
+[NIGHT] <<< E9 对话治理 OK 用时 0.0min
+[NIGHT] <<< E11 原子技能冒烟 OK 用时 1.6min
+[E12] G1-根因 FAIL (256.0s) exit=collapse type=other/other steps=3 fb=0 preempt=0 失败项: ok_true
+[E12] G2-评估 FAIL (376.8s) exit=collapse type=other/other steps=4 fb=0 preempt=1 失败项: ok_true
+[E12] G3-决策 FAIL (392.3s) exit=collapse type=other/other steps=4 fb=0 preempt=0 失败项: ok_true,c3_suppressed
+[E12] S1-短材料直塞 FAIL (363.4s) mode=inline mat=1500chars exit=collapse 词表命中=3/5 ['可复现性', '三级分类', '闪念记忆层']
+[E12] S2-长材料检索 FAIL (528.1s) mode=retrieve mat=8545chars exit=collapse 词表命中=3/5 ['可复现性', '判定单元', '闪念记忆层']
+[E12] S3-超大截断 FAIL (803.8s) mode=oversize mat=181000chars exit=collapse 词表命中=1/5 ['可复现性']
+[E12] S4-CIPP直塞6401 FAIL (368.2s) mode=cipp_inline mat=6401chars exit=collapse CIPP词表命中=5/5 ['二进制', '操作码', '寻址', '扩展接口', 'CIPP']
+[E12][P0-1观测] gate摘要Jaccard分布: n=210 p50=0.19 max=0.77 >0.6占比=2.4% (R14-a: 阈值决策待此分布积累)
+[E12] 总判定: FAIL (warn 0条不阻断) | 明细 D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\e12_router_smoke.json
+[NIGHT] <<< E12 路由器冒烟 FAIL 用时 69.4min
+[NIGHT] <<< T1 trace月度归档 OK 用时 0.0min
+[F20守卫] explore4 FAIL(基线FAIL) top=4304794d,6ed8586c,fb674356
+[NIGHT] <<< F20 基线守卫(experiment) OK 用时 0.5min
+[NIGHT] 晨间速读报告: D:\uidq0280\Downloads\Agent\cognitive_engine_v3\logs\nightly_report_20261119_1403.md
+[NIGHT] 全部结束于 2026-11-19 14:03:59
