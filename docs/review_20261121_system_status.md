@@ -119,7 +119,19 @@
 #### P2-6 memory_judge Q4 血缘检测 O(N) 全库扫描优化
 - **证据**：`memory/memory_judge.py:113-128`（桩）每次 judge 都 `load_memories()` 全库遍历算 2-gram 重叠；LLM 化后此预计算保留作 bloodline_hint，扫描仍在。
 - **方案**：按 domain/behavior 预聚合血缘 gram 快照，或加缓存；先评估样本量级再设计。
-- **状态**：待办（P1-1 明确不并入）
+- **落地（调研，不改代码）**：
+  - 实测脚本 `eval/experiment/p26_judge_q4_profiling.py`（产物 `logs/p26_judge_q4_profiling.json`）：
+    当前库 N=245/高置信 230；单次全库 grams 重算 1.89ms；**候选数近线性放大**
+    （C=1/5/10/20 → 5.14/27.93/52.91/105.13ms，放大 1→20.45×）。
+  - 调研文档 `docs/design_judge_q4_perf_20261121.md`：
+    复杂度实为 **O(C × N × G)**（每条候选重复 `load_memories()` + 全库 `grams()` 重算）；
+    预聚合快照方案实测 **grams 重算省 91.4%**（构建一次 2.49ms，复用扫描 0.16ms vs 1.89ms），
+    候选 C 条总开销由 `C×5.14ms` 降到 `2.49 + C×0.16ms`（C=20 约 5.7ms vs 105ms）；
+    建议 S1~S4 落地步骤（签名加可选 snapshot 参数、批次入口构建一次透传、
+    结果等价回归），**不引入持久化快照**（N≈245 规模下进程内一次构建已足够）。
+  - 结论：问题真实但当前非瓶颈（百毫秒级）；按用户裁决"先调研不直接写代码"，
+    代码改动留待后续迭代评审。
+- **状态**：✅ 完成（调研交付；代码优化列为后续迭代 S1~S4）
 
 #### P2-5 SQLite 连接超时 + 去静默吞错
 - **证据**：`corpus_store.py:102 _conn()` 无 `timeout` 参数（默认可能永久阻塞）；`memory_gate.py:78-79` gate_log 写失败 `except OSError: pass`；`memory_query.py:760-761` cited_log 写失败静默容忍（此项为有意设计，保留但加日志）。
