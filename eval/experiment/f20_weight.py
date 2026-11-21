@@ -40,6 +40,10 @@ BASELINE_PROFILE = "baseline"          # 纪律①: 回归锚点档位
 
 CONF_TIER = {"L0": 1.0, "L1": 0.7, "L2": 0.4}
 EDGE_W = {"rel": 1.0, "topic": 0.5}
+# 步衰减参数(原为 score_branch 内魔法数, A-5 抽常量: 仅命名, 值不变)
+# 待标定: 设计文档 §6 A3 只做过长链存活观察, 未做参数扫描; 后续标定从此处入手。
+DELTA_STEP_BASE = 0.6                  # 首跳(step=1)基础衰减量
+DELTA_STEP_SLOPE = 0.85                # 每远一层的递减斜率(step>1 时叠加)
 FRESH_HALFLIFE_DAYS = 90               # 与范式层 decay_period_days 对齐
 LAMBDA_DEBT = 0.5                      # 债务软惩罚系数(A2 消融默认值)
 # 纪律②红线硬编码守卫: debt_ratio 封顶惩罚后的 D 下限——债务=1.0 时 D 仍>0,
@@ -125,8 +129,8 @@ def score_branch(con, branch, step, profile="baseline", now=None):
     branch: {to, rel, ...}(F10 候选); step: BFS 距锚步数(0=锚直接邻居)。
     返回 (w, factors)——factors 进审计元信息(纪律③: 归因与权重并行)。"""
     beta = BETA_PROFILES[profile]       # 档位表写死, 运行时只读
-    delta_step = 0.6 if step > 0 else 0.0    # 步衰减: 直接邻居不衰减, 每步远一层打折
-    delta_step *= (0.85 ** max(0, step - 1)) # 步数斜率(A3 消融对象): 递减式衰减
+    delta_step = DELTA_STEP_BASE if step > 0 else 0.0    # 步衰减: 直接邻居不衰减, 每步远一层打折
+    delta_step *= (DELTA_STEP_SLOPE ** max(0, step - 1)) # 步数斜率(A3 消融对象): 递减式衰减
     c = factor_conf(con, branch["to"])
     f = factor_fresh(con, branch["to"], now)
     r = factor_edge(branch.get("rel"))
