@@ -152,6 +152,21 @@
   （--compare 基线一致）、置信度读源 3/3、schema 迁移 7/7 全绿；运行时冒烟 OK
 - **状态**：✅ 完成
 
+#### P2-7 memory_judge Q1 分支补 continue（discard 被 Q4 覆写修复）
+- **证据**：`_stub_one` Q1 分支置 `verdict="discard"` 后未 `continue`/`return`，继续执行到 Q4；
+  孤条（零血缘）时 Q4 把 verdict 覆写为 `hold`。P1-1 桩转正按"字节等价"红线原样保留。
+- **方案**：Q1 分支补提前返回，使 discard 不被 Q4 覆盖。**属语义行为变更**（改判定结果 +
+  judge_log 历史分布），须前置 A/B 影响评估，评估通过才编码（用户裁决：严禁提前动手）。
+- **落地（影响评估，不改代码）**：
+  - 评估脚本 `eval/experiment/p27_q1_continue_ab_eval.py`（只读，产物 `logs/p27_q1_continue_ab_eval.json`）。
+  - store_pending 现存 13 条：全部 summary≥8 字符，**修复后 verdict 变化 0 条**（零影响）。
+  - judge_log 历史 hold 9 条可做 Q1 维度回放：**Q1 命中→discard 1 条**（该条 summary 短于 8，
+    本应 discard 被 Q4 误救成 hold）。
+  - **汇总：评估 22 条，变化 1 条（4.55%），全部 hold→discard（方向正确，无误伤、无反向放宽）。**
+  - 报告 `docs/design_p27_q1_continue_impact_20261121.md`：结论影响面极小且方向正确，评估通过；
+    落地清单 S1~S5（Q1 提前返回 + docstring 更新 + 基线重建 + 补孤条回归 + 台账）。
+- **状态**：✅ 完成（影响评估交付，结论"通过"；**编码落地待用户确认后按 S1~S5 执行**，本项未改代码）
+
 ---
 
 ## 三、执行顺序
