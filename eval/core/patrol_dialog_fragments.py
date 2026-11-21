@@ -2,8 +2,13 @@
 """session_dialog 碎片巡检(2026-11-21 用户裁决: 每周跑一次输出碎片占比报告)
 
 背景: 历史 session_dialog 表 93% 是单句碎片(t 通道 transcript 批量导入未过滤),
-     2026-11-21 已归档 811 条 ≤20 字节碎片(见 docs/maintenance_session_dialog_cleanup_20261121.md)。
+     2026-11-21 已归档 ≤20 字节碎片(见 docs/maintenance_session_dialog_cleanup_20261121.md)。
      本脚本长期防护: 定期巡检碎片占比, 超阈值告警, 防止 t/h 通道防护回退再度污染。
+
+口径铁律(2026-11-21 裁决修正): 碎片 = UTF-8 **字节**数 ≤20, 不是字符数。
+     SQLite 里必须用 length(cast(body as blob)), 禁用 length(body)(那是字符)。
+     曾因 length(body) 用了字符尺, 把 552 条 21~60 字节的中文短指令误判碎片,
+     现已回滚主表并对齐为字节口径。
 
 用法:
   python eval/core/patrol_dialog_fragments.py            # 周频锁: 本周首次全量, 其余静默
@@ -22,6 +27,8 @@ DB = os.path.join(_HERE, "data", "memory", "corpus_store.db")
 MARK = os.path.join(_HERE, "data", "memory", "patrol_last_run.json")
 THRESHOLD = 0.15          # 碎片占比告警阈值(≤20 字节视为碎片)
 FRAG_BYTES = 20
+# 字节长度 SQL 片段: 统一口径, 禁用 length(body)(字符) 导致中文误判(2026-11-21 教训)
+_BLEN = "length(cast(body as blob))"
 
 
 def _week_key(dt=None):
@@ -51,12 +58,12 @@ def _write_mark(week, result_ts):
 def patrol():
     con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
     total = con.execute("SELECT COUNT(*) FROM raw_corpus WHERE kind='session_dialog'").fetchone()[0]
-    frag = con.execute("SELECT COUNT(*) FROM raw_corpus WHERE kind='session_dialog' AND length(body)<=?",
+    frag = con.execute(f"SELECT COUNT(*) FROM raw_corpus WHERE kind='session_dialog' AND {_BLEN}<=?",
                        (FRAG_BYTES,)).fetchone()[0]
     buckets = {}
     for lo, hi in [(0, 20), (21, 100), (101, 1000), (1001, 10 ** 9)]:
         n = con.execute("SELECT COUNT(*) FROM raw_corpus WHERE kind='session_dialog' "
-                        "AND length(body) BETWEEN ? AND ?", (lo, hi)).fetchone()[0]
+                        f"AND {_BLEN} BETWEEN ? AND ?", (lo, hi)).fetchone()[0]
         buckets[f"{lo}-{hi if hi < 10**9 else 'inf'}"] = n
     by_ch = {}
     for r in con.execute("SELECT substr(tree_ch,1,1) p, COUNT(*) FROM raw_corpus "
@@ -64,7 +71,9 @@ def patrol():
         by_ch[r[0] or "_"] = r[1]
     archived = 0
     try:
-        archived = con.execute("SELECT COUNT(*) FROM session_dialog_archive_fragment").fetchone()[0]
+        archived = con.execute(
+            f"SELECT COUNT(*) FROM session_dialog_archive_fragment WHERE {_BLEN}<=?",
+            (FRAG_BYTES,)).fetchone()[0]
     except sqlite3.OperationalError:
         pass
     con.close()
