@@ -1,0 +1,164 @@
+{
+ "generated_ts": "2026-11-22T01:19:39",
+ "spec": "docs/design_f40_threshold_234.md §2",
+ "thresholds": {
+  "flip_max": 0,
+  "jaccard_min": 0.6
+ },
+ "scenarios": [
+  {
+   "name": "smoke",
+   "orig_verdict": "PASS",
+   "perturbed_verdict": "PASS",
+   "flip": false,
+   "orig_top3": [
+    "87f66cc1",
+    "f1577a38",
+    "58707552"
+   ],
+   "perturbed_top3": [
+    "87f66cc1",
+    "f1577a38",
+    "58707552"
+   ],
+   "jaccard": 1.0,
+   "debt": {
+    "before": 0.305411,
+    "after": 0.30349
+   },
+   "debt_delta": 0.001921,
+   "perturb_effective": true,
+   "perturb": {
+    "hold_inserted": 7,
+    "rel_deleted": 2,
+    "isolated_members": 2,
+    "members": 22,
+    "protected_goal_nbrs": 0
+   }
+  },
+  {
+   "name": "explore1",
+   "orig_verdict": "FAIL",
+   "perturbed_verdict": "FAIL",
+   "flip": false,
+   "orig_top3": [
+    "04353a35"
+   ],
+   "perturbed_top3": [
+    "04353a35"
+   ],
+   "jaccard": 1.0,
+   "debt": {
+    "before": 0.733115,
+    "after": 0.474107
+   },
+   "debt_delta": 0.259008,
+   "perturb_effective": true,
+   "perturb": {
+    "hold_inserted": 5,
+    "rel_deleted": 2,
+    "isolated_members": 2,
+    "members": 16,
+    "protected_goal_nbrs": 0
+   }
+  },
+  {
+   "name": "explore2",
+   "orig_verdict": "PASS",
+   "perturbed_verdict": "PASS",
+   "flip": false,
+   "orig_top3": [
+    "87f66cc1",
+    "f1577a38",
+    "58707552"
+   ],
+   "perturbed_top3": [
+    "87f66cc1",
+    "f1577a38",
+    "58707552"
+   ],
+   "jaccard": 1.0,
+   "debt": {
+    "before": 0.733115,
+    "after": 0.474107
+   },
+   "debt_delta": 0.259008,
+   "perturb_effective": true,
+   "perturb": {
+    "hold_inserted": 5,
+    "rel_deleted": 2,
+    "isolated_members": 2,
+    "members": 16,
+    "protected_goal_nbrs": 5
+   }
+  },
+  {
+   "name": "explore3",
+   "orig_verdict": "PASS",
+   "perturbed_verdict": "PASS",
+   "flip": false,
+   "orig_top3": [
+    "287e892d",
+    "b178d1f9",
+    "296e4981"
+   ],
+   "perturbed_top3": [
+    "287e892d",
+    "b178d1f9",
+    "296e4981"
+   ],
+   "jaccard": 1.0,
+   "debt": {
+    "before": 0.463252,
+    "after": 0.347715
+   },
+   "debt_delta": 0.115537,
+   "perturb_effective": true,
+   "perturb": {
+    "hold_inserted": 31,
+    "rel_deleted": 2,
+    "isolated_members": 2,
+    "members": 94,
+    "protected_goal_nbrs": 3
+   }
+  },
+  {
+   "name": "explore4",
+   "orig_verdict": "FAIL",
+   "perturbed_verdict": "FAIL",
+   "flip": false,
+   "orig_top3": [
+    "4304794d",
+    "6ed8586c",
+    "fb674356"
+   ],
+   "perturbed_top3": [
+    "4304794d",
+    "6ed8586c",
+    "fb674356"
+   ],
+   "jaccard": 1.0,
+   "debt": {
+    "before": 0.3,
+    "after": 0.3
+   },
+   "debt_delta": 0.0,
+   "perturb_effective": false,
+   "perturb": {
+    "hold_inserted": 6,
+    "rel_deleted": 1,
+    "isolated_members": 1,
+    "members": 18,
+    "protected_goal_nbrs": 1
+   }
+  }
+ ],
+ "flip_total": 0,
+ "min_jaccard": 1.0,
+ "stable": true,
+ "verdict": "PASS",
+ "perturb_ineffective_scenarios": [
+  "explore4"
+ ],
+ "note": "沙箱临时库运行; 真实 corpus_store.db 零改动; flip=0 且逐场景 Jaccard>=0.6 判 PASS。perturb_ineffective_scenarios 列出 debt 未被实质扰动(≈D_FLOOR 下限)的场景, 其 PASS 说服力弱, 人工复核需留意"
+}

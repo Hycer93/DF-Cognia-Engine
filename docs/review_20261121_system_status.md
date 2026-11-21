@@ -208,7 +208,7 @@
 |---|---|---|---|
 | #5 | F20 权重层 | ✅ 已结案 | 守卫告警保留不重定基线（见上 F20 子项）；副线 A-2/A-3/A-5 已落地 `dd8fdfd` |
 | #7 | pending 队列可靠写回（原"sqlite 分片"） | ✅ **完成** | 放弃物理分片；A-1/A-2/A-4/A-5 核心 `6d5a25a`+`431ce52`；A-3 调度接入 + A-6 WAL 显式化 `6880f63` |
-| #10 | 门槛②③④ | 🚧 **已实现（编码落地）** | 口径冻结 `7c6e074`；S2-S4 业务 `82a4ee8`；S5 总回归 `75f8fda`；仅遗留人工评审签字 |
+| #10 | 门槛②③④ | ✅ **完成** | 口径冻结 `7c6e074`；S2-S4 业务 `82a4ee8`；S5 总回归 `75f8fda`；人工评审签字归档 `docs/artifacts/ablation_summary_signed_20261122.json`（reviewer uidq0280） |
 | #8 | forward_check | ⏸ 待启动（低优） | — |
 
 ### #7 进展明细
@@ -243,6 +243,10 @@
 - **验证**：S2 selftest 4/4 + 真实沙箱零写；S3 selftest 5/5 + 真实 PASS；S4 四枚举矩阵全绿 + 存量 20/20；S5 selftest 12/12 + 真实全绿 + 库指纹零改动。
 - **⚠️ 事故与修复（2026-11-22）**：S2 真实模式曾因 `memory_query.ask()` 隐性回写 `trace_cited` 污染真实库 134 条（11-22）；已备份 `logs/rollback_trace_cited_20261122.jsonl` 并从库删除（40373→40239），新增 `_real_sandbox()` 彻底隔离，复验零写入。
 - **遗留（非编码）**：人工评审签字流程（`ablation_summary.json` 的 `human_accept/reviewer/review_ts`），属后期实验评审动作。
+- **人工评审签字（2026-11-22 完成）**：
+  - 真实模式产出 `data/experiment/ablation_f40/20261122_011922/ablation_summary.json`（machine_converged=True）。
+  - 审阅结论：12 条相邻边全 pass，Jaccard 恒 1.0；`top3_order_identical` 于 λ_debt 0.25→0.5 三条边（smoke/explore2）出现位次轮转，核对为同集合纯顺序旋转（`[58707552,87f66cc1,f1577a38]` ↔ `[87f66cc1,f1577a38,58707552]`），集合稳定，判定可接受。
+  - 签字归档：`docs/artifacts/ablation_summary_signed_20261122.json`（human_accept=true, reviewer=uidq0280, review_ts=2026-11-22T01:20:31，含 review_note）；稳定性产物同步归档 `docs/artifacts/stability_summary_20261122.json`（flip_total=0, min_jaccard=1.0）。
 
 **运维红线**：`memory_query.ask()` 每次检索向 `trace_cited` 回写引用统计（隐性写副作用）。今后所有 eval 层仿真/消融脚本，凡调用 `future_sim_minloop.f00_anchor` / `memory_query.ask`，**必须跑在 SQLite 沙箱副本内，禁止直连真实库**。
 
