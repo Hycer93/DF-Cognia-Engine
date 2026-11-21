@@ -30,6 +30,18 @@ DOWNGRADE = {"L1": "L2", "L0": "L2"}      # 证伪：强推论/已证实 → 弱
 
 
 def _load_memories():
+    """读源分派（2026-11-21 P0-2）：与 memory_query 同源，避免双读漂移。
+
+    原实现固定读 memories.jsonl，主库切 sqlite 后会对过期 jsonl 做升降级，
+    与主库漂移。现复用 memory_query.load_memories()（默认 sqlite 主库，
+    支持 DF_MEMORY_SOURCE=jsonl 应急回切），口径与检索侧统一。
+    jsonl 直读仅作兜底（memory_query 不可用时）。
+    """
+    try:
+        from memory_query import load_memories as _source_loader
+        return _source_loader()
+    except Exception as e:  # noqa: BLE001  兜底：极少数环境缺依赖时回落 jsonl
+        print(f"[confidence_dynamics] 读源降级 jsonl: {e}", file=sys.stderr)
     out = []
     with io.open(os.path.join(MEM, "memories.jsonl"), encoding="utf-8") as f:
         for line in f:
