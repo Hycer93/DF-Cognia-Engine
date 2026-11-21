@@ -157,15 +157,19 @@
   孤条（零血缘）时 Q4 把 verdict 覆写为 `hold`。P1-1 桩转正按"字节等价"红线原样保留。
 - **方案**：Q1 分支补提前返回，使 discard 不被 Q4 覆盖。**属语义行为变更**（改判定结果 +
   judge_log 历史分布），须前置 A/B 影响评估，评估通过才编码（用户裁决：严禁提前动手）。
-- **落地（影响评估，不改代码）**：
-  - 评估脚本 `eval/experiment/p27_q1_continue_ab_eval.py`（只读，产物 `logs/p27_q1_continue_ab_eval.json`）。
-  - store_pending 现存 13 条：全部 summary≥8 字符，**修复后 verdict 变化 0 条**（零影响）。
-  - judge_log 历史 hold 9 条可做 Q1 维度回放：**Q1 命中→discard 1 条**（该条 summary 短于 8，
-    本应 discard 被 Q4 误救成 hold）。
-  - **汇总：评估 22 条，变化 1 条（4.55%），全部 hold→discard（方向正确，无误伤、无反向放宽）。**
-  - 报告 `docs/design_p27_q1_continue_impact_20261121.md`：结论影响面极小且方向正确，评估通过；
-    落地清单 S1~S5（Q1 提前返回 + docstring 更新 + 基线重建 + 补孤条回归 + 台账）。
-- **状态**：✅ 完成（影响评估交付，结论"通过"；**编码落地待用户确认后按 S1~S5 执行**，本项未改代码）
+- **落地（S1~S5 已执行，commit `981a032`）**：
+  - S1 `_stub_one` Q1 fail 分支改 `return {"verdict": "discard", ...}` 提前返回，
+    Q1 一票否决生效；Q2~Q5 及其余桩逻辑零改动；docstring 同步为 P2-7 说明。
+  - S2 重建桩基线 `logs/memory_judge_stub_baseline.json`（md5 `173e8b0ae6544c134574f7ec265bc1be`）。
+    顺带修复脚本缺陷：`_run_stub` 强制 `JUDGE_USE_LLM=0`，否则矩阵随 LLM 路径漂移、基线对照失效。
+  - S3 回归全绿：stub `--compare` 8/8 与新基线一致；`memory_judge_llm_regression` 7/7；
+    `test_skill_router` 63 OK；8 个库 `PRAGMA integrity_check` 全 ok；另
+    schema_migrate/connect_timeout/executor_split/hebbian_wording/retrieval_weight_doc_sync 全 PASS。
+  - 新增用例 `Q1_discard_not_overwritten_by_q4`：summary="置信度五级"（len=5 触发 Q1，
+    与库内 L0 条目 2-gram 重叠 4，Q4 本会放行），断言仍为 discard，专测 Q1 early-return 阻断覆写。
+  - 边界遵守：仅改规则桩 `_stub_one`；LLM 提示词、五问契约文档、`review_holds()` 均未动。
+- **状态**：✅ 完成（commit `981a032`；影响评估 22 条变化 1 条 4.55%，hold 池 13 条零影响）
+- **风险备注**：行为方向为收紧（hold→discard），不影响既有 hold 池；历史 judge_log 分布有 1 条口径变化。
 
 ---
 
