@@ -40,8 +40,13 @@
 #### P1-1 memory_judge 规则桩接 LLM
 - **证据**：`memory/memory_judge.py:57-140` 五问全为 if/else 长度检查 + 硬编码特征词匹配（Q1 `len(summary)<8`、Q2 `len(detail)<30`、Q4 全库 2-gram 重叠 `<6`）；注释自标"规则桩…Week2 换基座"。
 - **风险**：系统的准入闸门靠长度判断守，且 Q4 每次全库 `load_memories()` O(N) 扫描。
-- **方案**：接入 LLM 判定主路径，规则桩降级为 fallback（LLM 不可用时）；Q4 血缘检测避免全库扫描（改用索引/缓存）。
-- **状态**：待办
+- **方案**：接入 LLM 判定主路径（`llm_codechat.py` / glm-5.3-flash / agent_free=True），规则桩降级为强制 fallback；Q4 全库扫描本次保留，另立 P2-6。
+- **设计文档**：`docs/design_memory_judge_llm_fallback.md`（v1.0 方案已出，待确认后编码）
+- **状态**：✅ 完成 commit c8455d6
+- **代码**：`memory/memory_judge.py` 拆四组件 `_judge_call`(调度)/`_judge_call_llm`/`_judge_call_stub`/`_stub_one`，`_bloodline` 共用 Q4 预计算；`judge_log.jsonl` 强制写 `judge_source`(llm/stub)
+- **回归**：`memory_judge_stub_regression.py` 7/7（--compare 基线一致，桩字节等价）；`memory_judge_llm_regression.py` 7/7（L1~L6 mock）；`test_skill_router.py` 63 项全绿
+- **开关**：`JUDGE_USE_LLM=0` 纯桩；`JUDGE_LLM_MODEL` 可覆盖模型
+- **冒烟**：`memory_judge_llm_smoke.py`（手动，不进 nightly）
 
 ### 🟡 P2 — 中长期技术债（不阻断当前冒烟/A/B）
 
@@ -64,6 +69,11 @@
 - **证据**：`memory_query.py:661-663` 打分 `sem*0.30 + kw*0.30` 硬编码，`W_*` 在 `constants.py` 标 `[先验-业务设定]` 无标定报告；keyword 为朴素 n-gram 子串 + 1-gram Jaccard，无 IDF、无词序。
 - **方案**：补权重标定对照实验文档；迭代引入 IDF 与词序特征。
 - **状态**：待办
+
+#### P2-6 memory_judge Q4 血缘检测 O(N) 全库扫描优化
+- **证据**：`memory/memory_judge.py:113-128`（桩）每次 judge 都 `load_memories()` 全库遍历算 2-gram 重叠；LLM 化后此预计算保留作 bloodline_hint，扫描仍在。
+- **方案**：按 domain/behavior 预聚合血缘 gram 快照，或加缓存；先评估样本量级再设计。
+- **状态**：待办（P1-1 明确不并入）
 
 #### P2-5 SQLite 连接超时 + 去静默吞错
 - **证据**：`corpus_store.py:102 _conn()` 无 `timeout` 参数（默认可能永久阻塞）；`memory_gate.py:78-79` gate_log 写失败 `except OSError: pass`；`memory_query.py:760-761` cited_log 写失败静默容忍（此项为有意设计，保留但加日志）。

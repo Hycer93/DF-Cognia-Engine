@@ -46,6 +46,26 @@ JUDGE_LOG_JSONL = os.path.join(DATA_DIR, "judge_log.jsonl")
 JUDGE_BATCH_LIMIT = 8          # [先验-业务设定] 单次触发批量上限，超限截断+E4告警
 HOLD_MAX_AGE_DAYS = 14        # [先验-可校准→calib] hold 沉睡债务线，E4 老化报警
 
+# LLM 判定卡（2026-11-21 P1-1 转正）。五问契约原样继承，输出严格 JSON。
+_JUDGE_SYSTEM_PROMPT = """你是记忆入库判定卡。对每条候选记忆回答五问，只输出 JSON，不要任何解释文字或 markdown 围栏。
+
+五问（门槛链，任一不过即降级）：
+Q1 新认知：这轮是否产生了新的、可复用的认知？占位/寒暄/重复表述 → 不算。
+Q2 定义本体：是否有实质内容（具体做法/结论/证据），而非空壳标题？
+Q3 归类：归入且仅归入以下五类之一，或 null（普通记录）：
+   skill_refine（方法/工程改进）、scar_case（踩坑/失效教训）、
+   strategy_evolve（路线/裁决演进）、relation_milestone（实体血缘打通）、
+   key_pact（规约/契约/边界约束）。
+Q4 血缘：与已有记忆是否有同源/实体链关系？candidates 里 bloodline_hint 给出本地预计算的
+   best_overlap（2-gram 重叠数值）与 conflict_suspect 作辅助参考；数值证据以代码为准，
+   你只做语义综合。孤条无血缘 → 降权；疑似高度同源重复/冲突 → conflict_suspect=true。
+Q5 分池：知识层（可复现方法论，须去个体化）还是经验层（事故/裁决/里程碑，可含个体性）？
+
+输出 JSON（严格）：
+{"verdicts":[{"idx":0,"verdict":"store","memory_class":"scar_case","conflict_suspect":false,"reasons":["Q1...","Q2..."],"evidence_gap":null}]}
+verdict 取值规则：五问全过=store；有可补缺口=hold（evidence_gap 写清缺什么）；无新认知=discard。
+memory_class 取值必须是上述五类之一或 null。"""
+
 
 def _load_pending():
     if not os.path.exists(STORE_PENDING_JSONL):
@@ -54,90 +74,188 @@ def _load_pending():
         return [json.loads(l) for l in f if l.strip()]
 
 
-def _judge_call(candidates, context):
-    """LLM 判定卡调用。返回 {idx: verdict_dict}；异常由调用方捕获走 fallback-hold。
+def _bloodline(c):
+    """Q4 血缘本地预计算（2026-11-21 P1-1：桩与 LLM 路径共用）。
 
-    verdict_dict: {"verdict": "store"|"hold"|"discard",
-                   "memory_class": str|None, "conflict_suspect": bool,
-                   "reasons": [..五问逐条理由..], "evidence_gap": str|None(hold专用)}
-    本周先用规则桩实现（无LLM依赖路径，供夜间管线离线跑）；LLM 卡 Week2 换基座后接入。
+    返回 (gram_set, conflict_suspect, best_overlap)。
+    数值证据由代码算出（不交 LLM 猜），LLM 只做语义综合。
     """
-    # 规则桩：逐条问五个本地可判的问（血缘/本体长度可本地判；语义类判定留给LLM卡）
+    from memory_relations import grams  # 词级锚点判定走 2-gram（bge 切换适配 2026-11-11）
+    summary = (c.get("summary") or "").strip()
+    gram_set = grams(summary)
+    suspect, best_overlap = False, 0
+    for m in load_memories():
+        if (m.get("confidence") or "") in ("L0", "L1"):
+            ov = len(gram_set & grams(m.get("summary") or ""))
+            best_overlap = max(best_overlap, ov)
+            if ov >= 6:
+                suspect = True; break
+    return gram_set, suspect, best_overlap
+
+
+def _stub_one(c):
+    """规则桩单条判定（原 _judge_call 逻辑逐字搬迁，2026-11-21 P1-1）。
+
+    供 _judge_call_stub 全量降级 与 _judge_call_llm 单条降级 复用。
+    行为与重构前 _judge_call 内循环体完全一致（含 Q1 discard 未 continue、
+    后续被 Q4 覆盖为 hold 的既有行为——守字节等价红线，不改）。
+    """
+    import schema
+    summary = (c.get("summary") or "").strip()
+    detail = (c.get("detail") or "").strip()
+    reasons, verdict = [], "store"
+    # Q1 新认知（桩口径：summary 非占位非空）
+    if not summary or len(summary) < 8:
+        verdict = "discard"; reasons.append("Q1fail: summary空/占位，无新认知")
+    # Q2 定义本体（桩口径：detail 提供实质内容或明确定义）
+    elif not detail or len(detail) < 30:
+        verdict = "hold"; reasons.append("Q2fail: 定义本体不足，缺 detail 实质内容")
+        return {"verdict": verdict, "memory_class": c.get("memory_class"),
+                "conflict_suspect": False, "reasons": reasons,
+                "evidence_gap": "detail 过薄，等补定义/来源/血缘"}
+    # Q3 归类（件② 2026-11-10 用户终裁改版：null 是合法值不是缺失）
+    mc = c.get("memory_class")
+    if mc not in schema.MEMORY_CLASS_ENUM and mc is not None:
+        verdict = "hold"; reasons.append(f"Q3fail: memory_class 非法字符串({mc})；null 合法=普通记录")
+        return {"verdict": verdict, "memory_class": mc, "conflict_suspect": False,
+                "reasons": reasons, "evidence_gap": "分类取值非法（白名单外字符串）"}
+    # behavior 软先验表（件②：仅可疑提示非硬拦截——字面枚举不可靠，结构性判据才可靠）
+    _PRIOR = {"scar_case": ("Dl", "Bc"), "skill_refine": ("Jw", "Cf"),
+              "strategy_evolve": ("Jw", "Ht"), "relation_milestone": ("Em", "Eo"),
+              "key_pact": ("Ht", "Iv")}
+    beh = c.get("behavior")
+    if mc in _PRIOR and beh not in _PRIOR[mc]:
+        reasons.append(f"Q3hint: class_behavior_mismatch_suspect（{mc} 先验 behavior={_PRIOR[mc]}，实际 {beh}）——软提示不拦截")
+    if mc is None:
+        # 内容五类特征词粗筛（结构性判断的桩版；LLM 判定卡上线后语义化）
+        _FEATURES = {
+            "strategy_evolve": ("路线", "范式", "架构切换", "终裁", "裁决定案"),
+            "skill_refine": ("阈值", "调优", "微调", "优化", "工程改进"),
+            "scar_case": ("事故", "bug", "失效", "错误方案", "踩坑", "误"),
+            "relation_milestone": ("实体", "血缘", "关联打通", "链路"),
+            "key_pact": ("规约", "契约", "准入", "边界约束", "口径"),
+        }
+        hit = next((k for k, ws in _FEATURES.items() if any(w in summary for w in ws)), None)
+        if hit:
+            reasons.append(f"Q3hint: class_missing_suspect——内容特征疑似 {hit} 但 memory_class=null，已放行待 E4 high_value_content_without_class 复核")
+    # Q4 血缘+冲突疑似（桩口径：与库内高置信条目 2-gram 重叠——重叠高即疑似同源，
+    #        标 conflict_suspect 不拦截；零重叠=孤条降权→hold 而非 discard）
+    _gram_set, suspect, best_overlap = _bloodline(c)
+    if best_overlap == 0:
+        verdict = "hold"; reasons.append("Q4fail: 孤条零血缘，无实体链/同源先例")
+        return {"verdict": verdict, "memory_class": mc, "conflict_suspect": False,
+                "reasons": reasons, "evidence_gap": "缺血缘互指，等实体链或同源先例"}
+    reasons.append(f"Q1-4 pass（血缘重叠gram={best_overlap}，conflict_suspect={suspect}）")
+    # Q5 分池（桩口径：memory_class∈{skill_refine} 且无个体指涉词 → 知识层六标准弱验；
+    #        其余经验层豁免。LLM 卡上线后语义化）
+    if mc == "skill_refine" and any(w in summary for w in ("我", "用户", "主人", "厂长")):
+        verdict = "hold"; reasons.append("Q5fail: 疑似知识层但含个体指涉，需去个体化或改经验层")
+        return {"verdict": verdict, "memory_class": mc, "conflict_suspect": suspect,
+                "reasons": reasons, "evidence_gap": "知识层/经验层归属存疑"}
+    reasons.append("Q5 pass")
+    return {"verdict": verdict, "memory_class": mc,
+            "conflict_suspect": suspect, "reasons": reasons, "evidence_gap": None}
+
+
+def _judge_call_stub(candidates, context):
+    """纯规则桩全量判定（JUDGE_USE_LLM=0 或 LLM 整体不可用时）。"""
+    return {i: _stub_one(c) for i, c in enumerate(candidates)}
+
+
+def _judge_call_llm(candidates, context):
+    """LLM 五问判定主路径。成功返回 {idx: verdict_dict}；任何整体性失败返回 None。
+
+    整体失败（→ 上层切桩）：token 获取失败 / chat 返回 None / JSON 整批解析失败。
+    单条畸形：仅该条 _stub_one 降级，其余保留 LLM 结果。
+    """
+    from cgraph.json_utils import extract_json_obj
+    from cgraph.llm_codechat import CodeChatLLM
+
+    # 构造 payload（含 Q4 本地预计算 bloodline_hint 作辅助）
+    items = []
+    for i, c in enumerate(candidates):
+        _gs, suspect, overlap = _bloodline(c)
+        items.append({
+            "idx": i,
+            "summary": (c.get("summary") or "")[:200],
+            "detail": (c.get("detail") or "")[:800],
+            "memory_class": c.get("memory_class"),
+            "domain": c.get("domain"), "behavior": c.get("behavior"),
+            "relation": c.get("relation"), "confidence": c.get("confidence"),
+            "bloodline_hint": {"best_overlap": overlap, "conflict_suspect": suspect},
+        })
+    payload = json.dumps({"context": context, "candidates": items}, ensure_ascii=False)
+
+    llm = CodeChatLLM(model=os.environ.get("JUDGE_LLM_MODEL") or None,
+                      agent_free=True, timeout=120)
+    resp = llm.chat([{"role": "system", "content": _JUDGE_SYSTEM_PROMPT},
+                     {"role": "user", "content": payload}])
+    if not resp:
+        return None
+    obj = extract_json_obj(resp)
+    if not obj or not isinstance(obj.get("verdicts"), list):
+        return None
+
+    # 逐条校验 + 单条降级
     import schema
     out = {}
-    for i, c in enumerate(candidates):
-        summary = (c.get("summary") or "").strip()
-        detail = (c.get("detail") or "").strip()
-        reasons, verdict = [], "store"
-        # Q1 新认知（桩口径：summary 非占位非空）
-        if not summary or len(summary) < 8:
-            verdict = "discard"; reasons.append("Q1fail: summary空/占位，无新认知")
-        # Q2 定义本体（桩口径：detail 提供实质内容或明确定义）
-        elif not detail or len(detail) < 30:
-            verdict = "hold"; reasons.append("Q2fail: 定义本体不足，缺 detail 实质内容")
-            verdict_dict = {"verdict": verdict, "memory_class": c.get("memory_class"),
-                            "conflict_suspect": False, "reasons": reasons,
-                            "evidence_gap": "detail 过薄，等补定义/来源/血缘"}
-            out[i] = verdict_dict; continue
-        # Q3 归类（件② 2026-11-10 用户终裁改版：null 是合法值不是缺失）
-        #   - mc 合法五类 → 采；behavior 软先验不符 → class_behavior_mismatch_suspect 提示（不拦截）
-        #   - mc=None 且内容普通 → 放行（普通记录，S015 定位：五类非万能分类）
-        #   - mc=None 但内容明显命中五类特征词 → class_missing_suspect 标记放行，交 E4 人工复核
-        #   - mc 为白名单外字符串 → hold（唯一硬拦路径）
-        mc = c.get("memory_class")
-        if mc not in schema.MEMORY_CLASS_ENUM and mc is not None:
-            verdict = "hold"; reasons.append(f"Q3fail: memory_class 非法字符串({mc})；null 合法=普通记录")
-            out[i] = {"verdict": verdict, "memory_class": mc, "conflict_suspect": False,
-                      "reasons": reasons, "evidence_gap": "分类取值非法（白名单外字符串）"}
+    for v in obj["verdicts"]:
+        if not isinstance(v, dict):
             continue
-        # behavior 软先验表（件②：仅可疑提示非硬拦截——字面枚举不可靠，结构性判据才可靠）
-        _PRIOR = {"scar_case": ("Dl", "Bc"), "skill_refine": ("Jw", "Cf"),
-                  "strategy_evolve": ("Jw", "Ht"), "relation_milestone": ("Em", "Eo"),
-                  "key_pact": ("Ht", "Iv")}
-        beh = c.get("behavior")
-        if mc in _PRIOR and beh not in _PRIOR[mc]:
-            reasons.append(f"Q3hint: class_behavior_mismatch_suspect（{mc} 先验 behavior={_PRIOR[mc]}，实际 {beh}）——软提示不拦截")
-        if mc is None:
-            # 内容五类特征词粗筛（结构性判断的桩版；LLM 判定卡上线后语义化）
-            _FEATURES = {
-                "strategy_evolve": ("路线", "范式", "架构切换", "终裁", "裁决定案"),
-                "skill_refine": ("阈值", "调优", "微调", "优化", "工程改进"),
-                "scar_case": ("事故", "bug", "失效", "错误方案", "踩坑", "误"),
-                "relation_milestone": ("实体", "血缘", "关联打通", "链路"),
-                "key_pact": ("规约", "契约", "准入", "边界约束", "口径"),
-            }
-            hit = next((k for k, ws in _FEATURES.items() if any(w in summary for w in ws)), None)
-            if hit:
-                reasons.append(f"Q3hint: class_missing_suspect——内容特征疑似 {hit} 但 memory_class=null，已放行待 E4 high_value_content_without_class 复核")
-        
-        # Q4 血缘+冲突疑似（桩口径：与库内高置信条目 2-gram 重叠——重叠高即疑似同源，
-        #        标 conflict_suspect 不拦截；零重叠=孤条降权→hold 而非 discard）
-        from memory_relations import grams  # 词级锚点判定走 2-gram（bge 切换适配 2026-11-11）
-        gram_set = grams(summary)
-        suspect, best_overlap = False, 0
-        for m in load_memories():
-            if (m.get("confidence") or "") in ("L0", "L1"):
-                ov = len(gram_set & grams(m.get("summary") or ""))
-                best_overlap = max(best_overlap, ov)
-                if ov >= 6:
-                    suspect = True; break
-        if best_overlap == 0:
-            verdict = "hold"; reasons.append("Q4fail: 孤条零血缘，无实体链/同源先例")
-            out[i] = {"verdict": verdict, "memory_class": mc, "conflict_suspect": False,
-                      "reasons": reasons, "evidence_gap": "缺血缘互指，等实体链或同源先例"}
+        try:
+            idx = int(v.get("idx"))
+        except (TypeError, ValueError):
             continue
-        reasons.append(f"Q1-4 pass（血缘重叠gram={best_overlap}，conflict_suspect={suspect}）")
-        # Q5 分池（桩口径：memory_class∈{skill_refine} 且无个体指涉词 → 知识层六标准弱验；
-        #        其余经验层豁免。LLM 卡上线后语义化）
-        if mc == "skill_refine" and any(w in summary for w in ("我", "用户", "主人", "厂长")):
-            verdict = "hold"; reasons.append("Q5fail: 疑似知识层但含个体指涉，需去个体化或改经验层")
-            out[i] = {"verdict": verdict, "memory_class": mc, "conflict_suspect": suspect,
-                      "reasons": reasons, "evidence_gap": "知识层/经验层归属存疑"}
+        if not (0 <= idx < len(candidates)):
             continue
-        reasons.append("Q5 pass")
-        out[i] = {"verdict": verdict, "memory_class": mc,
-                  "conflict_suspect": suspect, "reasons": reasons, "evidence_gap": None}
+        verdict = v.get("verdict")
+        if verdict not in ("store", "hold", "discard"):
+            continue                         # 非法 verdict → 留给下方补齐时降桩
+        mc = v.get("memory_class")
+        if mc is not None and mc not in schema.MEMORY_CLASS_ENUM:
+            mc = candidates[idx].get("memory_class")   # 非法分类 → 回退候选原值
+        reasons = v.get("reasons")
+        if not isinstance(reasons, list):
+            reasons = ["llm_no_reason"]
+        out[idx] = {"verdict": verdict, "memory_class": mc,
+                    "conflict_suspect": bool(v.get("conflict_suspect")),
+                    "reasons": [str(r) for r in reasons],
+                    "evidence_gap": (v.get("evidence_gap") if verdict == "hold" else None)}
+    # 漏答 / 畸形条 → 单条降桩补齐
+    for i in range(len(candidates)):
+        if i not in out:
+            out[i] = _stub_one(candidates[i])
+            out[i]["_fallback"] = "stub_one"
     return out
+
+
+def _judge_call(candidates, context):
+    """判定调度器（2026-11-21 P1-1）。
+
+    优先级：JUDGE_USE_LLM=0 → 纯桩；否则 LLM 优先，整体失败切桩。
+    返回 {idx: verdict_dict}；每条 verdict_dict 额外带 _source: "llm"|"stub"。
+    异常仍由调用方 judge_and_store 捕获走 fallback-hold（契约不变）。
+    """
+    if os.environ.get("JUDGE_USE_LLM", "1") == "0":
+        out = _judge_call_stub(candidates, context)
+        for v in out.values():
+            v["_source"] = "stub"
+        return out
+    try:
+        out = _judge_call_llm(candidates, context)
+        if out is None:
+            raise RuntimeError("judge_llm_unavailable")
+        for v in out.values():
+            v.setdefault("_source", "llm")
+            if v.get("_fallback") == "stub_one":
+                v["_source"] = "stub"
+        return out
+    except Exception as e:  # noqa: BLE001  LLM 不可用（token/网络/解析）→ 整体切桩，不阻断
+        print(f"[memory_judge] LLM 判定不可用，切规则桩: {str(e)[:120]}", file=sys.stderr)
+        out = _judge_call_stub(candidates, context)
+        for v in out.values():
+            v["_source"] = "stub"
+        return out
 
 
 def judge_and_store(candidates, context=None):
@@ -184,6 +302,8 @@ def judge_and_store(candidates, context=None):
                              "conflict_suspect": False, "reasons": ["no_verdict"],
                              "evidence_gap": "判定未返回，fallback hold"})
         log_entry = {"ts": now, "op": "judge", "trigger": context.get("trigger"),
+                     # 2026-11-21 P1-1：judge_source 强制记录判定路径(llm/stub)，供 A/B 口径审计
+                     "judge_source": v.get("_source", "stub"),
                      "summary": (c.get("summary") or "")[:200],
                      "verdict": v["verdict"], "memory_class": v.get("memory_class"),
                      "conflict_suspect": v.get("conflict_suspect"), "reasons": v.get("reasons"),
