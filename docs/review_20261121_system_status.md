@@ -213,7 +213,7 @@
 | 编号 | 任务 | 优先级 | 状态 | 说明 / 依赖 |
 |---|---|---|---|---|
 | **#12** | 对话会话归组 & 历史追溯（轻量版） | **P0** | ✅ **完成** | 根治 h 通道断流（实证：1508段仅1条h,全靠E9兜底）；stdin transcript 解析落库+降级md+list_dialog+cards_from_dialog+E9断流告警；回归 27/27；详见 §六 |
-| **#11** | 回执态度元标签子通路（方案A） | **P1** | 📌 待立项 | 独立子通路提「态度+目标记忆ID」入附属表，主链路零改动，机器不消费；详见 §五 |
+| **#11** | 回执态度元标签子通路（方案A） | **P1** | ✅ **完成** | `memory_attitude.py` 附属 JSONL + judge LLM 通路接入 attitude 解析；stub 零副作用、主表零改动；回归 22/22；详见 §五 |
 | **#8** | forward_check 第二环深度正演（复用 minloop.verify） | **P2** | ⏸ 第一环已实装+回归，第二环待立项 | 第一环静态版 `collab_pipeline.py:407` + 回归 15/15；第二环补齐推理正演自证闭环（原 #A 并入）；详见 `docs/review_8_forward_check_20261122.md` |
 | **#15** | 桩—LLM 判定一致性对照回归 | **P2** | 📋 待裁决 | 抓入库闸门降级行为漂移；纯 eval/audit 不改生产，成本低收益高；原 #B |
 | **#16** | topic_layer 决断（开启 or 删除） | **P2** | 📋 待裁决 | 消除 556 行默认关闭悬空资产；原 #C |
@@ -317,6 +317,18 @@ mock LLM 输出测试解析 + 落表；**只读主库，不碰原有业务表**�
 - 采纳**方案 A**，作为下一独立立项；本批（P0-P2/#5/#7/#10/#8）已完成闭环，先维持现状。
 - 现实取舍：此类回执占比不高但信息价值高；严格隔离「主观态度」与「客观记忆事实」。
 - **若不做**：确认/认可回执全部 discard，态度信息永久丢失，无痕迹留存。
+
+### ✅ 实施完成（2026-11-22，方案 A）
+
+**改动清单**（1 新模块 + 1 处接入 + 1 回归）：
+1. `memory/memory_attitude.py`（新）：`record_attitude` 落库 / `list_attitudes` 查询 / `summarize_attitudes` 汇总。存储=**独立 JSONL** `data/memory/memory_attitude.jsonl`（与 judge_log/gate_log 审计日志同构，**主库 core_memory_card 零改动、不建 sqlite 表**）。三型 approve/disapprove/neutral，非法类型/缺 target 防御性拒绝。多条回执可对同一记忆叠加。
+2. `memory/memory_judge.py`：
+   - `_JUDGE_SYSTEM_PROMPT` 增「附加可选字段 attitude」约定（**不改变 verdict 枚举**），target_memory_id 须取自 `context.entity_hint`。
+   - `_judge_call_llm` 解析时若 verdict 对象含合法 `attitude`，挂 `_attitude` 键（仅搬运，不改 verdict）。
+   - `judge_and_store` 主循环：`_source=="llm"` 且带 `_attitude` → `memory_attitude.record_attitude` 落库；失败只打 stderr 不阻断主判定。
+3. `eval/audit/attitude_regression.py`（新）：**22/22 全绿**（落库/查询/LLM解析/端到端/stub零副作用/主表零改动 6 类，全沙箱）。
+
+**红线守持验证**：stub 通路零 attitude（JUDGE_USE_LLM=0 时无记录）；态度落库不改 card 数/superseded_by 分布、不产新记忆；机器推演/F20/检索默认不消费 attitude。既有回归 judge 8/8、pending 18/18、dialog 27/27 全绿无破坏，真实库零污染（320 卡不变）。
 
 ## 六、记忆过程能力立项（#12/#13，2026-11-22 裁决）
 

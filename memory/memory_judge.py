@@ -64,7 +64,16 @@ Q5 分池：知识层（可复现方法论，须去个体化）还是经验层�
 输出 JSON（严格）：
 {"verdicts":[{"idx":0,"verdict":"store","memory_class":"scar_case","conflict_suspect":false,"reasons":["Q1...","Q2..."],"evidence_gap":null}]}
 verdict 取值规则：五问全过=store；有可补缺口=hold（evidence_gap 写清缺什么）；无新认知=discard。
-memory_class 取值必须是上述五类之一或 null。"""
+memory_class 取值必须是上述五类之一或 null。
+
+附加可选字段（仅当该候选是「对已有记忆的认可/不认可回执」时填写；否则省略）：
+若候选本质是对某条已有记忆的主观态度（"我认可/不同意/这说法对"），除按五问照常判 discard 外，
+在该 verdict 对象内追加 attitude 对象（不改变 verdict 枚举！）：
+  "attitude": {"attitude_type":"approve|disapprove|neutral",
+               "target_memory_id":"<从 context.entity_hint 中选取被评价记忆的 inst_id>",
+               "comment":"<用户原话摘要>"}
+target_memory_id 必须取自 context.entity_hint 提供的候选 id；若 entity_hint 为空或无法确定
+指向哪条记忆，则省略 attitude（无法归因的态度不落库）。attitude 仅作人审参考，机器不消费。"""
 
 
 def _load_pending():
@@ -313,6 +322,15 @@ def _judge_call_llm(candidates, context):
                     "conflict_suspect": bool(v.get("conflict_suspect")),
                     "reasons": [str(r) for r in reasons],
                     "evidence_gap": (v.get("evidence_gap") if verdict == "hold" else None)}
+        # #11 态度子通路：LLM 可选输出 attitude（仅人对已有记忆的回执时）。合法性校验
+        # 在 record_attitude 内做（非法类型/缺 target → 不落库）；此处仅搬运，不改 verdict。
+        att = v.get("attitude")
+        if isinstance(att, dict):
+            out[idx]["_attitude"] = {
+                "attitude_type": att.get("attitude_type"),
+                "target_memory_id": att.get("target_memory_id"),
+                "comment": att.get("comment"),
+            }
     # 漏答 / 畸形条 → 单条降桩补齐
     for i in range(len(candidates)):
         if i not in out:
@@ -400,6 +418,23 @@ def judge_and_store(candidates, context=None):
                      "verdict": v["verdict"], "memory_class": v.get("memory_class"),
                      "conflict_suspect": v.get("conflict_suspect"), "reasons": v.get("reasons"),
                      "evidence_gap": v.get("evidence_gap"), "snapshot": c}
+        # #11 态度子通路：LLM 判定带出的态度元标签 → 附属存储落库。
+        # 仅 _source=llm 且带 _attitude 才有（stub 永不产生 → 天然零副作用）；
+        # 只写 memory_attitude 附属 JSONL，绝不改 card 可信度/存活（红线）。
+        if v.get("_source") == "llm" and isinstance(v.get("_attitude"), dict):
+            try:
+                import memory_attitude
+                arec = memory_attitude.record_attitude(
+                    v["_attitude"].get("attitude_type"),
+                    v["_attitude"].get("target_memory_id"),
+                    comment=v["_attitude"].get("comment"),
+                    source_dialog_id=c.get("source_dialog_id"),
+                    context=context)
+                if arec:
+                    log_entry["attitude_recorded"] = {k: arec[k] for k in
+                                                      ("attitude_type", "target_memory_id")}
+            except Exception as e:  # noqa: BLE001  态度子通路失败绝不阻断主判定
+                print(f"[memory_judge] attitude 落库失败(不阻断): {e!r}", file=sys.stderr)
         if v["verdict"] == "store":
             # store 免人确认（Jw 自主闭环）；conflict_suspect 只打标签入 detail，不拦截
             detail = c.get("detail") or ""
