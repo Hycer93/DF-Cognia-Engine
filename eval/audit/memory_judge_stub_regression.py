@@ -29,22 +29,29 @@ BASE = os.path.join(_HERE, "logs", "memory_judge_stub_baseline.json")
 def _cases():
     """(名称, 候选dict, 期望 verdict, 期望证据线索子串/None)。
 
-    覆盖五问全部出口分支。期望值对齐**现桩实际行为**（非理想语义），
+    覆盖五问全部出口分支。期望值对齐**现桩实际行为**，
     基线作用靠 --baseline/--compare 对照，防止搬迁时手滑改逻辑。
 
-    ⚠ 固化时发现两处现桩行为需记录（P1-1 不改，守字节等价红线）：
-    1. Q1 fail 设 verdict=discard 但代码无 continue，继续走 Q4；若 Q4 判孤条
-       则 verdict 被覆盖为 hold —— 故 summary 空的样本最终是 hold 而非 discard。
+    P2-7（2026-11-21）变更：Q1 命中改为 early return discard（一票否决），
+    阻断后续 Q2-Q4。故 Q1 fail 样本期望由 hold 改为 discard，并新增
+    "Q1 短摘要 + 有血缘重叠" 用例专测「即便 Q4 能判有血缘，也不得覆写 discard」。
+    历史发现保留记录：
     2. Q4 用中文 2-gram，零重叠极难达成，构造的"独特"摘要仍判 store。
     """
     long_detail = ("该条为回归样本, 具体做法与结论完整给出, detail 长度超过三十字以满足 Q2 "
                    "定义本体要求, 用于验证 store 路径。")
     return [
-        # Q1 fail: summary 空 / 过短 —— 现状被 Q4 覆盖为 hold（见 docstring 发现1）
+        # Q1 fail: summary 空 / 过短 —— P2-7 后 early return discard，不再被 Q4 覆盖
         ("Q1_empty_summary", {"summary": "", "detail": long_detail,
-                              "memory_class": "scar_case", "behavior": "Dl"}, "hold", "血缘"),
+                              "memory_class": "scar_case", "behavior": "Dl"}, "discard", "Q1fail"),
         ("Q1_short_summary", {"summary": "短", "detail": long_detail,
-                              "memory_class": "scar_case", "behavior": "Dl"}, "hold", "血缘"),
+                              "memory_class": "scar_case", "behavior": "Dl"}, "discard", "Q1fail"),
+        # P2-7 专测: 短摘要(必 Q1 fail) + 与库内高置信条目有 2-gram 重叠(Q4 本会判有血缘)，
+        # 断言仍为 discard——证明 Q1 early return 阻断了 Q4 覆写。
+        # "置信度五级" len=5<8 触发 Q1；实测与 L0 条目 "置信度五级分类L0-L4" 重叠 4 gram>0。
+        ("Q1_discard_not_overwritten_by_q4",
+         {"summary": "置信度五级", "detail": long_detail,
+          "memory_class": "scar_case", "behavior": "Dl"}, "discard", "Q1fail"),
         # Q2 fail: detail 空 / 过短
         ("Q2_no_detail", {"summary": "这是一个足够长的摘要用于验证Q2分支逻辑",
                           "detail": "", "memory_class": "scar_case", "behavior": "Dl"}, "hold", "detail"),
@@ -66,7 +73,12 @@ def _cases():
 
 
 def _run_stub(cands):
-    """调用当前桩判定, 返回逐条 verdict dict。不落库。"""
+    """调用当前桩判定, 返回逐条 verdict dict。不落库。
+
+    强制 JUDGE_USE_LLM=0：本脚本固化的就是**规则桩**判定矩阵, 若走 LLM 路径
+    结果随模型/网络漂移, 基线对照失去意义（P2-7 发现该脚本未强制开关）。
+    """
+    os.environ["JUDGE_USE_LLM"] = "0"
     import memory_judge as mj
     return mj._judge_call(cands, {"trigger": "regression"})
 

@@ -97,16 +97,20 @@ def _stub_one(c):
     """规则桩单条判定（原 _judge_call 逻辑逐字搬迁，2026-11-21 P1-1）。
 
     供 _judge_call_stub 全量降级 与 _judge_call_llm 单条降级 复用。
-    行为与重构前 _judge_call 内循环体完全一致（含 Q1 discard 未 continue、
-    后续被 Q4 覆盖为 hold 的既有行为——守字节等价红线，不改）。
+    P2-7（2026-11-21）：Q1 命中即 early return discard，阻断后续 Q2-Q4。
+    历史缺陷：Q1 置 discard 后无 return，孤条场景被 Q4 覆写为 hold；A/B 评估
+    现存 hold 池 13 条零影响、22 条样本 1 条 hold→discard（4.55%），已裁决修复。
     """
     import schema
     summary = (c.get("summary") or "").strip()
     detail = (c.get("detail") or "").strip()
     reasons, verdict = [], "store"
-    # Q1 新认知（桩口径：summary 非占位非空）
+    # Q1 新认知（桩口径：summary 非占位非空）——命中即一票否决 discard，不再往下判
     if not summary or len(summary) < 8:
-        verdict = "discard"; reasons.append("Q1fail: summary空/占位，无新认知")
+        reasons.append("Q1fail: summary空/占位，无新认知")
+        return {"verdict": "discard", "memory_class": c.get("memory_class"),
+                "conflict_suspect": False, "reasons": reasons,
+                "evidence_gap": None}
     # Q2 定义本体（桩口径：detail 提供实质内容或明确定义）
     elif not detail or len(detail) < 30:
         verdict = "hold"; reasons.append("Q2fail: 定义本体不足，缺 detail 实质内容")
