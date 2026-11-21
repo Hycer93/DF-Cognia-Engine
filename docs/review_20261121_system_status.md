@@ -207,7 +207,7 @@
 | # | 任务 | 状态 | 说明 |
 |---|---|---|---|
 | #5 | F20 权重层 | ✅ 已结案 | 守卫告警保留不重定基线（见上 F20 子项）；副线 A-2/A-3/A-5 已落地 `dd8fdfd` |
-| #7 | pending 队列可靠写回（原"sqlite 分片"） | 🚧 **进行中** | 重定义：放弃物理分片；A-1/A-2/A-4/A-5 已落地，A-3 调度后置 | 
+| #7 | pending 队列可靠写回（原"sqlite 分片"） | ✅ **完成** | 放弃物理分片；A-1/A-2/A-4/A-5 核心 `6d5a25a`+`431ce52`；A-3 调度接入 + A-6 WAL 显式化 `6880f63` |
 | #10 | 门槛②③④ | 🚧 **已实现（编码落地）** | 口径冻结 `7c6e074`；S2-S4 业务 `82a4ee8`；S5 总回归 `75f8fda`；仅遗留人工评审签字 |
 | #8 | forward_check | ⏸ 待启动（低优） | — |
 
@@ -219,7 +219,11 @@
   - A-2 `_PendingLock`：lockfile(pid+超时过期)；`review_holds` 入口抢锁，抢不到返 skipped 不阻塞。
   - A-4 `_write_card_to_db`：BEGIN IMMEDIATE + busy_timeout=5000 + 指数退避 3 次重试，仅落卡路径。
   - A-5 `eval/audit/pending_writeback_regression.py`：6 类 16 用例全绿（原子/锁/幂等/重试/fsync）。
-- **待做**：A-3 接入 nightly 调度（须 A-1/A-2/A-4/A-5 就绪后）；A-6 WAL 显式化收尾。
+- **收尾落地（2026-11-22，commit `6880f63`）**：
+  - A-3 调度接入：新建 `eval/core/e_hold_review.py`（CLI 包装 `review_holds`，锁冲突 skipped 退出 0 不阻断夜跑、异常退出 1 触发晨报）；`scripts/nightly_run.py` STEPS 在 E9 后插入 "E-hold复审"(60min)。
+  - A-6 WAL 显式化：`memory/corpus_store.py:_conn()` 显式 `PRAGMA journal_mode=WAL` + `wal_autocheckpoint=1000`（幂等切换，兼容 delete 模式存量库；只读场景 try/except 降级）。
+  - A-5 回归扩至 18 用例：新增 `case_e_hold_review_cli`（锁冲突 skipped+退出0 / 正常 退出0+报告落盘）全绿。
+  - 验证：journal_mode=wal / autocheckpoint=1000 / integrity ok；真实库零污染（316 卡 / 245 memories / 13 pending）。
 - **约束**：业务判断逻辑零改动（hold/转正/丢弃逐字不变）；真实 pending 池未改动（diff 确认）。
 
 ### #10 进展明细
