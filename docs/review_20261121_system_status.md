@@ -208,7 +208,7 @@
 |---|---|---|---|
 | #5 | F20 权重层 | ✅ 已结案 | 守卫告警保留不重定基线（见上 F20 子项）；副线 A-2/A-3/A-5 已落地 `dd8fdfd` |
 | #7 | pending 队列可靠写回（原"sqlite 分片"） | 🚧 **进行中** | 重定义：放弃物理分片；A-1/A-2/A-4/A-5 已落地，A-3 调度后置 | 
-| #10 | 门槛②③④ | ⏸ 待启动 | — |
+| #10 | 门槛②③④ | 🚧 **进行中** | 口径已冻结 `docs/design_f40_threshold_234.md`；盘点见 `aa11354`；路线 A 骨架优先，S1-S5 执行中 |
 | #8 | forward_check | ⏸ 待启动（低优） | — |
 
 ### #7 进展明细
@@ -221,5 +221,15 @@
   - A-5 `eval/audit/pending_writeback_regression.py`：6 类 16 用例全绿（原子/锁/幂等/重试/fsync）。
 - **待做**：A-3 接入 nightly 调度（须 A-1/A-2/A-4/A-5 就绪后）；A-6 WAL 显式化收尾。
 - **约束**：业务判断逻辑零改动（hold/转正/丢弃逐字不变）；真实 pending 池未改动（diff 确认）。
+
+### #10 进展明细
+
+- **口径冻结（2026-11-22 用户裁决，路线 A）**：`docs/design_f40_threshold_234.md`。
+  - D1 门槛②消融收敛：β∈[0.6,1.0,1.6] × λ_debt∈[0.25,0.5,0.75] 9 点网格；相邻命中率变化≤5% 且 top-3 Jaccard≥0.7；机器达标 + 人工签字（`human_accept/reviewer/review_ts`）。
+  - D2 门槛③边覆盖率：debt_ratio 作代理；沙箱临时库扰动，判定翻转=0 且 top-3 Jaccard≥0.6。
+  - D4 门槛④降级分支：`degraded` 标记 + `failure_reason` + `low_confidence_candidates` top-k；仅 step_exhausted/goal_isolated 触发。
+  - D5/D6 默认：本期不做 `promote_check()` 门面；新建独立 `eval/audit/f40_promotion_gate_regression.py`。
+- **红线**：新增代码全落 `eval/*`；`core/cgraph/memory` 只读；`f20_weight.py` 仅末尾新增 `degrade_path_candidates()`，不改既有逻辑；③全沙箱零真实库写入。
+- **执行（S1-S5）**：S1 文档 ✅（本提交）；S2 `f20_ablation_convergence.py`；S3 `f20_coverage_stability.py`；S4 `f20_weight.degrade_path_candidates`；S5 总回归。
 
 每条完成后在标题下追加 `✅ 完成 commit <hash>`。
