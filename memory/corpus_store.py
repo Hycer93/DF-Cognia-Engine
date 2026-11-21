@@ -96,6 +96,17 @@ def _conn():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     c = sqlite3.connect(DB_PATH, timeout=5)
     c.row_factory = sqlite3.Row
+    # A-6（2026-11-22 #7 收尾）：显式设置 WAL 模式 + 自动检查点，不依赖历史遗留状态。
+    # - 兼容存量：journal_mode=WAL 幂等——已是 WAL 则无操作; 原 delete/rollback 模式库
+    #   首次连接即切 WAL（对所有连接立即生效，持久于库文件）。
+    # - wal_autocheckpoint=1000（默认同值，此处显式声明防未来漂移）：约 1000 页(~4MB)
+    #   触发 checkpoint，控制 -wal 文件膨胀同时平衡写放大。
+    # 注：本函数为读写连接（mode=ro 的只读连接不设 journal_mode，由调用方自行处理）。
+    try:
+        c.execute("PRAGMA journal_mode=WAL")
+        c.execute("PRAGMA wal_autocheckpoint=1000")
+    except sqlite3.Error:
+        pass  # 只读/受限场景降级：沿用当前模式，不阻断（守卫式非致命）
     return c
 
 

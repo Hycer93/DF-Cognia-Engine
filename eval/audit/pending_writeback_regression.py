@@ -199,6 +199,64 @@ def case_fsync_append():
         _check("append_jsonl fsync", False, repr(e))
 
 
+def case_e_hold_review_cli():
+    """A-3: e_hold_review.py 接入 nightly 的调度分支。
+    (a) 锁被占用 → review_holds 返 skipped, CLI 仍退出 0 不阻断夜跑
+    (b) 正常 → CLI 退出 0 且报告落盘含 reviewed 字段
+    全程沙箱(临时 MEM_DIR), 不碰真实库。"""
+    print("[7] A-3 e_hold_review 调度分支")
+    import types
+    try:
+        d = tempfile.mkdtemp(prefix="pw_eholreview_")
+        # 沙箱: 空 pending + 独立 judge log; patch 全部路径(含 MEM_DIR 派生)
+        sp = os.path.join(d, "store_pending.jsonl")
+        io.open(sp, "w", encoding="utf-8").write("")
+        orig = {"pend": MJ.STORE_PENDING_JSONL, "log": MJ.JUDGE_LOG_JSONL,
+                "data": MJ.DATA_DIR, "mo_mem": MO.MEM_DIR, "mo_jsonl": MO.MEMORIES_JSONL}
+        MJ.STORE_PENDING_JSONL = sp
+        MJ.JUDGE_LOG_JSONL = os.path.join(d, "judge_log.jsonl")
+        MJ.DATA_DIR = d
+        MO.MEM_DIR = d
+        MO.MEMORIES_JSONL = os.path.join(d, "memories.jsonl")
+        io.open(MO.MEMORIES_JSONL, "w", encoding="utf-8").write("")
+
+        # 载入 e_hold_review 模块(独立加载, 指向沙箱报告路径)
+        import importlib.util
+        mod_path = os.path.join(_HERE, "eval", "core", "e_hold_review.py")
+        spec = importlib.util.spec_from_file_location("e_hold_review", mod_path)
+        ehr = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ehr)
+        ehr.REPORT = os.path.join(d, "e_hold_review.json")
+
+        # (b) 正常分支: 空 pending → reviewed=0, 退出 0, 报告落盘
+        rc_ok = ehr.main()
+        rep = json.loads(io.open(ehr.REPORT, encoding="utf-8").read())
+        _check("A-3 正常分支: 退出0 + 报告ok + reviewed字段",
+               rc_ok == 0 and rep.get("ok") is True
+               and "reviewed" in rep.get("report", {}), str(rep))
+
+        # (a) 锁冲突分支: 先占锁, 再 main → skipped, 仍退出 0
+        lp = sp + ".lock"
+        holder = MJ._PendingLock(lp)
+        holder.__enter__()
+        try:
+            rc_lk = ehr.main()
+            rep2 = json.loads(io.open(ehr.REPORT, encoding="utf-8").read())
+            _check("A-3 锁冲突分支: 退出0(不阻断夜跑) + skipped",
+                   rc_lk == 0 and rep2.get("skipped") is True, str(rep2))
+        finally:
+            holder.__exit__()
+
+        # 还原
+        MJ.STORE_PENDING_JSONL = orig["pend"]
+        MJ.JUDGE_LOG_JSONL = orig["log"]
+        MJ.DATA_DIR = orig["data"]
+        MO.MEM_DIR = orig["mo_mem"]
+        MO.MEMORIES_JSONL = orig["mo_jsonl"]
+    except Exception as e:
+        _check("A-3 e_hold_review 调度分支", False, repr(e))
+
+
 def main():
     case_atomic_write()
     case_lock_mutex()
@@ -206,6 +264,7 @@ def main():
     case_write_card_idempotent()
     case_retry_backoff()
     case_fsync_append()
+    case_e_hold_review_cli()
     failed = [r for r in _R if not r["ok"]]
     print("\n[pending 写回回归] %d/%d 通过" % (len(_R) - len(failed), len(_R)))
     out = os.path.join(_HERE, "logs", "pending_writeback_regression.json")

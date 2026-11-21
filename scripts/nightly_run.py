@@ -55,6 +55,11 @@ STEPS = [
     # 复跑归档判定, 高价值拟卡送pending, 只提案绝不直写主库; probe假阴性攒scar_case;
     # transcript兜底: 只读扫applog提取当日用户提交→simhash去重→复本隔离入raw_corpus)
     ("E9 对话治理", [PY, "eval/core/e9_dialog_governance.py"], "logs/e9_dialog_governance.json", 240),
+    # hold 复审（A-3, 2026-11-22 #7 收尾: 把 memory_judge.review_holds 接入夜间调度）。
+    # 紧随 E9(提案入池) 之后消费 pending 池——证据补齐转正/仍不足维持/反向证据丢弃。
+    # 锁契约(A-2): 抢锁失败(另一进程消费中)仅告警跳过, 不阻断夜跑, 退出0。
+    # A-1/A-2/A-4 原子写+文件锁+事务重试已就绪, 故可安全无人值守运行。
+    ("E-hold复审", [PY, "eval/core/e_hold_review.py"], "logs/e_hold_review.json", 60),
     # 对话碎片巡检(2026-11-21 用户裁决: 挂 nightly 做调度底座, 但脚本内周频锁——
     # 本周已跑→静默 exit 0 不出报告不推失败; 本周首跑→统计 ≤20 字节碎片占比,
     # 超 15% 阈值 exit 1 触发晨报高亮。报告含长度分桶+t/h 通道拆分, 便于定位
