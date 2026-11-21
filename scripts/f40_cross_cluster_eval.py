@@ -33,7 +33,7 @@ PASS_RATE, MIN_DENOM, MAX_PER_ROUND, MIN_PER_ROUND = 0.8, 3, 6, 3
 
 def _con():
     import sqlite3
-    return sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    return sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
 
 
 # ---------------- 图与簇 ----------------

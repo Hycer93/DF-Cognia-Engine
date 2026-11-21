@@ -453,7 +453,7 @@ def write_report(durations):
     try:
         import sqlite3 as _sq
         _db = os.path.join(HERE, "data", "memory", "corpus_store.db")
-        _c = _sq.connect(f"file:{_db}?mode=ro", uri=True)
+        _c = _sq.connect(f"file:{_db}?mode=ro", uri=True, timeout=5)
         _cards = _c.execute("SELECT COUNT(*) FROM core_memory_card WHERE status='active'").fetchone()[0]
         _cards_all = _c.execute("SELECT COUNT(*) FROM core_memory_card").fetchone()[0]
         _tp = _c.execute("SELECT COUNT(*) FROM core_thinking_paradigm WHERE status='active'").fetchone()[0]
