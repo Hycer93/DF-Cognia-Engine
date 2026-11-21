@@ -171,6 +171,25 @@
 - **状态**：✅ 完成（commit `981a032`；影响评估 22 条变化 1 条 4.55%，hold 池 13 条零影响）
 - **风险备注**：行为方向为收紧（hold→discard），不影响既有 hold 池；历史 judge_log 分布有 1 条口径变化。
 
+#### F20 权重层守卫告警（#5 主线，2026-11-21 结案：保留现状不重定基线）
+
+- **现象**：`logs/f20/guard_latest.json`（2026-11-21 21:34）`flipped=true, rank_shifted=true`。
+- **根因（A-1 溯源已钉死，非权重/代码 bug，是两处正向图谱治理变更）**：
+  1. **explore1**：`f7a20eb7` 于 2026-11-20 17:43:31 `method='final-review'` 语义正确重归类，
+     由 `topic_reflection_trace` → `topic_atomic_metacore`；与 `04353a35` 失去 topic 交集，
+     切断 F40 topic 弱边路径 → `step_exhausted`（PASS→FAIL）。
+  2. **smoke/explore2**：11-16~11-19 期间簇债务/连通性演化，D 因子打分使 top-3 位次由
+     `f4198bf7`(D=0.300，被压至 floor) 漂移至 `58707552`(D=0.419)。
+- **处置裁决（用户 2026-11-21）**：**暂不重定守卫基线**，`f20_nightly_guard.py` 的 SCENARIOS
+  预期判定与 expected_top 维持原值，夜间守卫继续告警。待后续完成图谱治理、大规模更新
+  topic 归属/簇构成后，统一批量刷新整套 F20 基线，不零散单点改。
+- **归档审计产物**（日后批量重定基线参考素材）：
+  - `logs/f20/guard_audit_report_20261121.md`（新旧对比报告）
+  - `logs/f20/guard_audit_20261121_run.json`（真实运行快照）
+  - 备份 `logs/f20/guard_latest.before_audit.json`（审计前基线，diff 确认未改）
+- **约束遵守**：未改任何 F20 代码/常量/守卫配置；回归脚本维持现状。
+- **状态**：✅ 结案（保留告警，台账标记；相关副线 A-2/A-3/A-5 已落地 commit `dd8fdfd`）
+
 ---
 
 ## 三、执行顺序
