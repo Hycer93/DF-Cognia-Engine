@@ -175,6 +175,109 @@ def attribute_failure(con, goal_prefix, anchor_ids, max_steps):
     return "step_exhausted", "搜索步数耗尽"
 
 
+# ---------- 门槛④ 降级分支(docs/design_f40_threshold_234.md §3 冻结口径) ----------
+# 仅新增函数: 生产主链不自动调用, 仅供审计/人工分析素材。
+# 契约: 复用 attribute_failure 四枚举; 仅 step_exhausted / goal_isolated 触发降级;
+#      候选取"已探索边界内"(有界 BFS ≤ max_steps, 只走真实边)的分支按 score_branch 排序 top-k;
+#      不突破 max_steps、不凭空构造边; 降级产出不自动晋升为正常可达路径。
+
+_DEGRADE_TRIGGERS = ("step_exhausted", "goal_isolated")
+_DEGRADE_SENSITIVE = {"topic_user_relation"}   # 与 attribute_failure 内 sensitive 口径一致
+_DEGRADE_MAX_VISIT = 5000                        # BFS 上界, 防大簇爆炸
+
+
+def degrade_path_candidates(con, goal_prefix, anchor_ids, max_steps, top_k=3):
+    """门槛④降级分支: 失败归因为 step_exhausted/goal_isolated 时, 返回低置信候选。
+
+    返回:
+      {
+        "degraded": bool,                    # 是否进入降级
+        "failure_reason": str|None,          # attribute_failure 四枚举 code
+        "low_confidence_candidates": [       # 低置信候选 top-k (供审计/人工分析)
+            {"branch": "<inst_id>", "w": float, "factors": {...}}, ...
+        ],
+        "note": str
+      }
+    非触发归因(sensitive_blocked/edge_coverage_gap)返回 degraded=False、候选空。
+    只读: 仅 SELECT; 不写库、不构造边、不突破 max_steps。
+    """
+    result = {"degraded": False, "failure_reason": None,
+              "low_confidence_candidates": [], "note": ""}
+    # 归一 anchor(容忍 [str] 或 [{"inst_id":...}])
+    anchors = []
+    for a in (anchor_ids or []):
+        anchors.append(a.get("inst_id") if isinstance(a, dict) else a)
+    anchors = [a for a in anchors if a]
+    con = _ensure_rows(con)
+
+    code, note = attribute_failure(con, goal_prefix, anchors, max_steps)
+    result["failure_reason"] = code
+    if code not in _DEGRADE_TRIGGERS:
+        result["note"] = "非降级触发归因(%s): 不产出低置信候选(%s)" % (code, note)
+        return result
+    if not anchors:
+        result["note"] = "无锚点, 无法探索边界(%s)" % note
+        return result
+
+    # 有界 BFS: 从锚点只走真实边, 深度 ≤ max_steps, 记录 (深度, 入边类型)
+    from collections import deque
+    visited = {}
+    dq = deque()
+    for a in anchors:
+        if a not in visited:
+            visited[a] = (0, None)
+            dq.append(a)
+    while dq and len(visited) < _DEGRADE_MAX_VISIT:
+        cur = dq.popleft()
+        depth, _etype = visited[cur]
+        if depth >= max_steps:
+            continue
+        for other, etype in _degrade_neighbors(con, cur):
+            if other in visited:
+                continue
+            ot = {r[0] for r in con.execute(
+                "SELECT topic_id FROM topic_links WHERE inst_id=?", (other,))}
+            if ot & _DEGRADE_SENSITIVE:
+                continue        # 高敏节点不纳入低置信候选(与推演隔离一致)
+            visited[other] = (depth + 1, etype)
+            dq.append(other)
+
+    anchor_set = set(anchors)
+    cands = []
+    for node, (depth, etype) in visited.items():
+        if node in anchor_set or depth <= 0:
+            continue
+        w, fac = score_branch(con, {"to": node, "rel": etype or "topic_sibling"}, step=depth)
+        cands.append({"branch": node, "w": w, "factors": fac})
+    cands.sort(key=lambda x: (-x["w"], x["branch"]))
+    result["degraded"] = True
+    result["low_confidence_candidates"] = cands[:top_k]
+    result["note"] = ("降级触发(%s): 返回已探索边界内低置信候选 %d 条; "
+                      "仅审计/人工分析素材, 不自动晋升为可达路径" % (code, len(cands[:top_k])))
+    return result
+
+
+def _degrade_neighbors(con, iid):
+    """降级 BFS 的邻居枚举(只走库内真实边, 返回 [(other, etype)])。
+    etype: relation 边 -> 'rel'; topic 同簇 -> 'topic'(供 score_branch 的 R 因子)。"""
+    out = []
+    seen = set()
+    for (o,) in con.execute(
+            "SELECT other_inst FROM core_relation WHERE status='active' AND me_inst=?", (iid,)):
+        if o and o not in seen:
+            seen.add(o); out.append((o, "rel"))
+    for (o,) in con.execute(
+            "SELECT me_inst FROM core_relation WHERE status='active' AND other_inst=?", (iid,)):
+        if o and o not in seen:
+            seen.add(o); out.append((o, "rel"))
+    for (o,) in con.execute(
+            "SELECT DISTINCT b.inst_id FROM topic_links a JOIN topic_links b "
+            "ON a.topic_id=b.topic_id WHERE a.inst_id=? AND b.inst_id<>?", (iid, iid)):
+        if o and o not in seen:
+            seen.add(o); out.append((o, "topic"))
+    return out
+
+
 def main():
     """自检: 因子单测 + memory_ops 债务红线守卫用例(纪律②)"""
     con = _conn()
