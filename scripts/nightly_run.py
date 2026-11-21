@@ -55,6 +55,11 @@ STEPS = [
     # 复跑归档判定, 高价值拟卡送pending, 只提案绝不直写主库; probe假阴性攒scar_case;
     # transcript兜底: 只读扫applog提取当日用户提交→simhash去重→复本隔离入raw_corpus)
     ("E9 对话治理", [PY, "eval/core/e9_dialog_governance.py"], "logs/e9_dialog_governance.json", 240),
+    # 对话碎片巡检(2026-11-21 用户裁决: 挂 nightly 做调度底座, 但脚本内周频锁——
+    # 本周已跑→静默 exit 0 不出报告不推失败; 本周首跑→统计 ≤20 字节碎片占比,
+    # 超 15% 阈值 exit 1 触发晨报高亮。报告含长度分桶+t/h 通道拆分, 便于定位
+    # 是批量导入还是实时 hook 引入脏数据。--force 可临时手动全量)
+    ("碎片巡检(周频)", [PY, "eval/core/patrol_dialog_fragments.py"], "logs/patrol_dialog_fragments.json", 60),
     # E11 元核原子技能冒烟(2026-11-17 立项: f_reason+memory_gate 上线双准入之
     # nightly 冒烟步骤。真实 LLM 固定样例各跑一次, 断言非降级+schema+红线
     # (f_reason 无plausibility档/memory_gate 绿档类目封闭); FAIL 退出1晨报高亮;

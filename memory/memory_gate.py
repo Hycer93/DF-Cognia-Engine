@@ -17,6 +17,15 @@
 #
 # 独立性: 判定模块单独调用可消融; 判定日志全部入库纳 E6/E7 审计产 scar_case
 # LLM 判定: glm-flash 级(高频轻活经济性); 判定失败=保守 true(读侧)/false(归档侧交夜间)
+#
+# 2026-11-21 碎片防护规约(用户裁决, 见 maintenance_session_dialog_cleanup_20261121.md):
+#   - t 通道(transcript 批量导入, E9): 入库前拦截 ≤20 字节纯碎片, 不灌主表
+#     (历史曾灌 811 条碎片占表 46%, 已归档 session_dialog_archive_fragment);
+#   - h 通道(PreCompact 原生, 本文件 dialog 分支): 入库前同口径长度校验,
+#     碎片返回 too-short-skip 不写 raw_corpus;
+#   - 退出码纪律: 可预期业务跳过(empty-skip/too-short-skip/duplicate-referenced)=RC0;
+#     未捕获异常=RC≠0 且 stderr 打 [memory_hook_abnormal] 告警, 不静默丢记忆;
+#   - 定期巡检: 每周跑 eval/core/patrol_dialog_fragments.py 输出碎片占比报告(阈值 15%)。
 
 import io
 import json
@@ -105,6 +114,12 @@ def main():
         body = io.open(args.file, encoding="utf-8").read().strip()
         if not body:
             print(json.dumps({"op": "dialog", "status": "empty-skip"})); return
+        # 2026-11-21 防护(用户裁决): h 通道长度+语义校验——≤20 字节纯碎片无检索价值,
+        # 前置拦截不灌主表(与 t 通道过滤口径一致, 见 maintenance_session_dialog_cleanup)。
+        if len(body.encode("utf-8")) <= 20:
+            _log("dialog_too_short", {"session": args.session, "bytes": len(body.encode("utf-8"))})
+            print(json.dumps({"op": "dialog", "status": "too-short-skip",
+                              "bytes": len(body.encode("utf-8"))}, ensure_ascii=False)); return
         sh = _simhash(body)
         today = datetime.now().strftime("%Y-%m-%d")
         # 当日热区段落比对(量小内存比对; 不建独立索引表)
@@ -184,4 +199,15 @@ def _llm_archive(body: str) -> dict:
 
 
 if __name__ == "__main__":
-    main()
+    # 2026-11-21 修复(用户裁决): 未捕获异常须 RC≠0 且打告警, 不静默丢记忆。
+    # 业务跳过(empty-skip/duplicate-referenced)在分支内正常返回 0, 不经过这里。
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"[memory_hook_abnormal] gate 未捕获异常: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(4)

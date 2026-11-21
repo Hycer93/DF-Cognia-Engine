@@ -151,8 +151,19 @@ def main():
             print(json.dumps({"error": f"候选JSON解析失败: {e}"}, ensure_ascii=False))
             sys.exit(1)
         from memory_judge import judge_and_store
-        r = judge_and_store(candidates, context={"trigger": "hook"})
+        # 2026-11-21 修复(用户裁决): judge 管道内部吞异常会返回"正常"报告,
+        # 上游 CodeChat 无法感知故障 → 静默丢记忆。judge_failures>0 时显式非 0 退出。
+        try:
+            r = judge_and_store(candidates, context={"trigger": "hook"})
+        except Exception as e:
+            print(json.dumps({"error": f"judge管道异常: {e}"}, ensure_ascii=False))
+            sys.exit(2)
         print(json.dumps(r, ensure_ascii=False, indent=1))
+        if r.get("judge_failures"):
+            # 判定层异常已被内部 fallback 成 hold(不丢), 但入口须告警非 0
+            print(f"[memory_hook_abnormal] judge_failures={r['judge_failures']}, "
+                  f"候选已转 hold 待审", file=sys.stderr)
+            sys.exit(3)
     elif args.cmd == "stat":
         mems = load_memories()
         from collections import Counter
@@ -166,4 +177,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # 2026-11-21 修复(用户裁决): 未捕获异常须 RC≠0 且打告警, 不静默。业务跳过
+    # (空候选/empty-skip)在分支内正常返回 0, 不经过这里。
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"[memory_hook_abnormal] 未捕获异常: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(4)

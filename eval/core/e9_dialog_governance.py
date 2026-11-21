@@ -106,7 +106,14 @@ def _transcript_backfill(day, subs, report):
     day_sh = [gate._simhash(s["body"]) for s in todays if s]
     stored = 0
     dup = 0
+    too_short = 0
     for hhmm, text in subs:
+        # 2026-11-21 防护(用户裁决): t 通道前置过滤——≤20 字节纯碎片("改"/"好的")
+        # 无检索价值, 入库前拦截不灌主表(历史已留 811 条碎片, 见 maintenance_session-
+        # dialog_cleanup_20261121.md)。阈值与碎片归档口径对齐(≤20 字节)。
+        if len((text or "").strip().encode("utf-8")) <= 20:
+            too_short += 1
+            continue
         # 2026-11-16 用户裁决①: 正文与来源前缀解耦——body 存纯净正文, simhash 只作用于
         # 纯正文, 来源通道标签在 title 元字段。杜绝不同通道前缀导致的 hash 形态错位。
         body = text
@@ -126,7 +133,7 @@ def _transcript_backfill(day, subs, report):
         day_sh.append(sh)
         stored += 1
     report["transcript"] = {"scanned": len(subs), "stored": stored,
-                            "dup_skipped": dup}
+                            "dup_skipped": dup, "too_short_skipped": too_short}
 
 
 
