@@ -74,6 +74,26 @@ CREATE TABLE IF NOT EXISTS dialog_seq (
     seq_name TEXT PRIMARY KEY DEFAULT 'dialog',
     last_seq INTEGER NOT NULL DEFAULT 0
 );
+
+-- 2026-11-21 碎片归档表(用户裁决 B 方案): 与 raw_corpus 同构 + archive_reason/archive_ts。
+-- 历史 session_dialog 中 ≤20 字节单句碎片(t 通道批量导入未过滤)迁出主表, 不硬删可追溯。
+-- 见 docs/maintenance_session_dialog_cleanup_20261121.md, 巡检 eval/core/patrol_dialog_fragments.py。
+CREATE TABLE IF NOT EXISTS session_dialog_archive_fragment (
+    id          TEXT PRIMARY KEY,
+    kind        TEXT,
+    tree_vol    TEXT,
+    tree_ch     TEXT,
+    title       TEXT,
+    body        TEXT,
+    version     TEXT,
+    status      TEXT,
+    superseded_by TEXT,
+    content_hash TEXT,
+    source_ref  TEXT,
+    ts          TEXT,
+    archive_reason TEXT,
+    archive_ts  TEXT
+);
 """
 
 
