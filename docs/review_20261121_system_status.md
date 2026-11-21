@@ -51,7 +51,7 @@
 ### 🟡 P2 — 中长期技术债（不阻断当前冒烟/A/B）
 
 #### P2-1 schema 版本与迁移
-- **进展**：✅ 完成（待提交）
+- **进展**：✅ 完成 commit 400f2fe
 - **证据**：`memory/schema.py` 硬编码 dict 白名单；`corpus_store.py` 仅 `CREATE TABLE IF NOT EXISTS`，无 `schema_version` 表、无 migration 脚本；僵尸表 `persona_anchor` 仍在 SCHEMA 但 `add_anchor()` 已写 `core_persona_anchor`（`corpus_store.py:231-245`），`get_anchors()` 用 `LIKE '[已迁范式]%'` 过滤旧数据。
 - **方案**：新增 `schema_version` 元表 + migration 脚本；清理僵尸定义；枚举变更留迁移路径，避免历史 jsonl 旧值静默拒收。
 - **落地**：新增 `memory/schema_migrate.py`（schema_version 元表 + 迁移注册表 + dry-run/status）；
