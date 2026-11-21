@@ -253,3 +253,26 @@ def degrade_path_candidates(con, goal_prefix, anchor_ids, max_steps, top_k=3):
 - 门槛① 常量 `PASS_RATE,MIN_DENOM,MAX_PER_ROUND,MIN_PER_ROUND=0.8,3,6,3`（`scripts/f40_cross_cluster_eval.py:31`）
 - 守卫 5 场景 `SCENARIOS`（`f20_nightly_guard.py:36-51`）：smoke/explore1-4
 - 门槛①题库 `data/experiment/f40_cross_cluster_question_bank.jsonl`
+
+---
+
+## 9. 运维备注（2026-11-22 事故复盘，强制约束）
+
+**`memory_query.ask()` 隐性写副作用**：`memory_query.py:757` 每次检索都会向真实库
+`trace_cited` 表 `INSERT` 引用统计（`_MEMORY_SOURCE == "sqlite"` 分支）。这是检索侧
+"调用统计回写"，非只读。
+
+**强制约束**：所有 eval 层仿真 / 消融 / 稳定性脚本，凡调用
+`future_sim_minloop.f00_anchor`（内部 `mq.ask`）或直接 `memory_query.ask`，
+**必须跑在 SQLite 沙箱副本内，禁止直连真实 `corpus_store.db`**。做法：
+1. `sqlite3` backup API 复制真实库到 `tempfile.mkdtemp()` 副本；
+2. patch 全部模块 DB 路径：`memory_query._DB_PATH` / `future_sim_minloop.DB` /
+   `f20_weight.DB` / `f40_cross_cluster_eval.DB` → 副本；
+3. `finally` 还原路径 + `shutil.rmtree` 删除副本。
+
+参考实现：`eval/audit/f20_ablation_convergence.py::_real_sandbox`、
+`eval/audit/f20_coverage_stability.py::_eval_scenario`。
+
+**事故记录**：S2 初版真实模式未隔离，曾污染 `trace_cited` 134 条（2026-11-22），
+已备份 `logs/rollback_trace_cited_20261122.jsonl` 并回滚。后续新增脚本须在提交前
+用 `git status`/库指纹校验确认零真实库写入。

@@ -208,7 +208,7 @@
 |---|---|---|---|
 | #5 | F20 权重层 | ✅ 已结案 | 守卫告警保留不重定基线（见上 F20 子项）；副线 A-2/A-3/A-5 已落地 `dd8fdfd` |
 | #7 | pending 队列可靠写回（原"sqlite 分片"） | 🚧 **进行中** | 重定义：放弃物理分片；A-1/A-2/A-4/A-5 已落地，A-3 调度后置 | 
-| #10 | 门槛②③④ | 🚧 **进行中** | 口径已冻结 `docs/design_f40_threshold_234.md`；盘点见 `aa11354`；路线 A 骨架优先，S1-S5 执行中 |
+| #10 | 门槛②③④ | 🚧 **已实现（编码落地）** | 口径冻结 `7c6e074`；S2-S4 业务 `82a4ee8`；S5 总回归 `75f8fda`；仅遗留人工评审签字 |
 | #8 | forward_check | ⏸ 待启动（低优） | — |
 
 ### #7 进展明细
@@ -230,6 +230,16 @@
   - D4 门槛④降级分支：`degraded` 标记 + `failure_reason` + `low_confidence_candidates` top-k；仅 step_exhausted/goal_isolated 触发。
   - D5/D6 默认：本期不做 `promote_check()` 门面；新建独立 `eval/audit/f40_promotion_gate_regression.py`。
 - **红线**：新增代码全落 `eval/*`；`core/cgraph/memory` 只读；`f20_weight.py` 仅末尾新增 `degrade_path_candidates()`，不改既有逻辑；③全沙箱零真实库写入。
-- **执行（S1-S5）**：S1 文档 ✅（本提交）；S2 `f20_ablation_convergence.py`；S3 `f20_coverage_stability.py`；S4 `f20_weight.degrade_path_candidates`；S5 总回归。
+- **执行（S1-S5）**：
+  - S1 文档 ✅ `7c6e074`（口径冻结 + 台账）
+  - S2 `eval/audit/f20_ablation_convergence.py` ✅ `82a4ee8`（含 `_real_sandbox()` 修复）
+  - S3 `eval/audit/f20_coverage_stability.py` ✅ `82a4ee8`
+  - S4 `eval/experiment/f20_weight.degrade_path_candidates` ✅ `82a4ee8`（纯新增 103 行）
+  - S5 `eval/audit/f40_promotion_gate_regression.py` ✅ `75f8fda`
+- **验证**：S2 selftest 4/4 + 真实沙箱零写；S3 selftest 5/5 + 真实 PASS；S4 四枚举矩阵全绿 + 存量 20/20；S5 selftest 12/12 + 真实全绿 + 库指纹零改动。
+- **⚠️ 事故与修复（2026-11-22）**：S2 真实模式曾因 `memory_query.ask()` 隐性回写 `trace_cited` 污染真实库 134 条（11-22）；已备份 `logs/rollback_trace_cited_20261122.jsonl` 并从库删除（40373→40239），新增 `_real_sandbox()` 彻底隔离，复验零写入。
+- **遗留（非编码）**：人工评审签字流程（`ablation_summary.json` 的 `human_accept/reviewer/review_ts`），属后期实验评审动作。
+
+**运维红线**：`memory_query.ask()` 每次检索向 `trace_cited` 回写引用统计（隐性写副作用）。今后所有 eval 层仿真/消融脚本，凡调用 `future_sim_minloop.f00_anchor` / `memory_query.ask`，**必须跑在 SQLite 沙箱副本内，禁止直连真实库**。
 
 每条完成后在标题下追加 `✅ 完成 commit <hash>`。
