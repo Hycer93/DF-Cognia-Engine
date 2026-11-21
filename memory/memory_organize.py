@@ -288,12 +288,62 @@ def enforce_unclassified_limit() -> list:
 # + corpus_snapshot_date（门禁2，落 schema/入库侧，此处只管降级动作）。
 
 
+def _sync_demote_to_db(applied, superseded_by, reason):
+    """#14（2026-11-22）：demote 的 db 同步（根因修复）。
+
+    背景：demote() 原只重写 memories.jsonl，不 UPDATE core_memory_card，导致
+    tier=precedent 靠迁移脚本灌入、但 superseded_by 列永久为空（读侧读 db 时
+    溯源链断裂）。本函数把降级状态同步进 db，使 demote 后读写一致。
+
+    只 UPDATE 已存在卡（jsonl 独有卡 db 无则不 INSERT，交由 #14 存量对账工单）；
+    逐条事务，单条失败留痕不阻断其余（审计可查）。
+    返回 (synced_n, failed_n)。
+    """
+    import sqlite3 as _sq
+    _db = os.path.join(MEM_DIR, "corpus_store.db")
+    synced, failed = 0, 0
+    for iid in applied:
+        wc = None
+        try:
+            wc = _sq.connect(_db, timeout=5, isolation_level=None)
+            wc.execute("PRAGMA busy_timeout=5000")
+            wc.execute("BEGIN IMMEDIATE")
+            wc.execute(
+                "UPDATE core_memory_card SET tier='precedent', superseded_by=? "
+                "WHERE inst_id=?", (superseded_by, iid))
+            wc.commit()
+            synced += 1
+        except Exception as _e:  # noqa: BLE001
+            failed += 1
+            if wc is not None:
+                try:
+                    wc.rollback()
+                except Exception:
+                    pass
+            # 降级必留痕：db 同步失败落审计，不静默
+            try:
+                append_jsonl(os.path.join(MEM_DIR, "dual_write_errors.jsonl"),
+                             {"ts": datetime.now().isoformat(), "op": "demote_sync_db",
+                              "inst_id": iid, "superseded_by": superseded_by,
+                              "reason": reason, "err": repr(_e)})
+            except Exception:
+                pass
+        finally:
+            if wc is not None:
+                try:
+                    wc.close()
+                except Exception:
+                    pass
+    return synced, failed
+
+
 def demote(inst_ids, superseded_by, reason, calibration_source=None):
     """外部校准降级：tier→precedent + superseded_by 指校准单，零删除可回溯。
 
     返回 {applied:[], skipped:[], conflicts:[]}；遇 conflict 整批回滚。
     - superseded_by 为空/相同 → skipped（真幂等）
     - 非空且不同 → conflicts，不写，抛调用方裁决
+    #14（2026-11-22）：jsonl 落盘后同步 UPDATE core_memory_card，修复半截同步缺陷。
     """
     if len(inst_ids) > 1 and not calibration_source:
         return {"error": "批量降级缺失 calibration_source（硬门禁1）"}
@@ -325,6 +375,10 @@ def demote(inst_ids, superseded_by, reason, calibration_source=None):
         with io.open(MEMORIES_JSONL, "w", encoding="utf-8") as f:
             for m in mems:
                 f.write(json.dumps(m, ensure_ascii=False) + "\n")
+        # #14：db 同步（根因修复）——补全 superseded_by，使读写一致
+        synced, failed = _sync_demote_to_db(res["applied"], superseded_by, reason)
+        res["db_synced"] = synced
+        res["db_failed"] = failed
         # 维护案例自动采集（§2026-11-11 案例层：demote 落账即记案例，不依赖人工）
         try:
             from maintenance_ledger import append_case
@@ -332,8 +386,8 @@ def demote(inst_ids, superseded_by, reason, calibration_source=None):
                 case_type="calibration",
                 trigger=f"demote×{len(res['applied'])} reason={reason[:60]}",
                 evidence=f"superseded_by={str(superseded_by)[:16]} calibration_source={str(calibration_source or '-')[:16]}",
-                action="tier→precedent+superseded_by 指校准单",
-                outcome=f"applied={len(res['applied'])} skipped={len(res['skipped'])}",
+                action="tier→precedent+superseded_by 指校准单+db同步",
+                outcome=f"applied={len(res['applied'])} skipped={len(res['skipped'])} db_synced={synced} db_failed={failed}",
                 paradigm_hint="外部校准降级三步走")
         except Exception:
             pass   # 案例采集失败不阻断主流程
