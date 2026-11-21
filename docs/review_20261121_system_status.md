@@ -209,7 +209,7 @@
 | #5 | F20 权重层 | ✅ 已结案 | 守卫告警保留不重定基线（见上 F20 子项）；副线 A-2/A-3/A-5 已落地 `dd8fdfd` |
 | #7 | pending 队列可靠写回（原"sqlite 分片"） | ✅ **完成** | 放弃物理分片；A-1/A-2/A-4/A-5 核心 `6d5a25a`+`431ce52`；A-3 调度接入 + A-6 WAL 显式化 `6880f63` |
 | #10 | 门槛②③④ | ✅ **完成** | 口径冻结 `7c6e074`；S2-S4 业务 `82a4ee8`；S5 总回归 `75f8fda`；人工评审签字归档 `docs/artifacts/ablation_summary_signed_20261122.json`（reviewer uidq0280） |
-| #8 | forward_check | 📋 **已盘点（实装）** | 第一环静态版已实装于 `scripts/collab_pipeline.py:407`；零测试覆盖 + 第二环未落地（见 `docs/review_8_forward_check_20261122.md`） |
+| #8 | forward_check | ⏸ **已实装第一环静态版；待补充回归；第二环深度正演待立项** | 第一环静态版实装于 `scripts/collab_pipeline.py:407`（四枚举 PASS/PASS_WITH_GAPS/FAIL/NO_CONSENSUS）；回归 `eval/audit/collab_forward_check_regression.py` 15/15 全绿；第二环"深度正演复用 minloop.verify"仅 docstring 提示未编码（见 `docs/review_8_forward_check_20261122.md`） |
 
 ### #7 进展明细
 

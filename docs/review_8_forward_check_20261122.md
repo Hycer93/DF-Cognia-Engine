@@ -56,7 +56,9 @@ run_f60()    → derive_dx() → forward_check(dx, gk)   [离线 L435]
 
 ## 六、回归测试状态
 
-❌ **零测试覆盖**。`eval/audit/`、`eval/` 均无 f60/collab_pipeline/forward_check 相关测试；全仓唯一引用即 `collab_pipeline.py` 自身。
+✅ **已补（2026-11-22）**：`eval/audit/collab_forward_check_regression.py`，覆盖四枚举
+（PASS / PASS_WITH_GAPS / FAIL / NO_CONSENSUS）+ 单路模式 divergent 计入 + 空关键词边界，
+纯内存用例 15/15 全绿，零 DB 读写。原缺口已闭合。
 
 ## 七、待决策点
 
@@ -76,4 +78,11 @@ run_f60()    → derive_dx() → forward_check(dx, gk)   [离线 L435]
 
 ## 九、建议（待用户裁决）
 
-推荐 **A（维持现状）**：第一环已满足粗筛需求，当前真实缺口是零测试覆盖。补一组 `forward_check` 四枚举（PASS/PASS_WITH_GAPS/FAIL/NO_CONSENSUS）白盒回归，成本最低、收益明确。第二环（B）作为独立需求立项，不混在低优 #8 里。
+推荐 **A（维持现状）**：第一环已满足粗筛需求，当前真实缺口是零测试覆盖。补一组 `forward_check` 四枚枚举（PASS/PASS_WITH_GAPS/FAIL/NO_CONSENSUS）白盒回归，成本最低、收益明确。第二环（B）作为独立需求立项，不混在低优 #8 里。
+
+## 十、执行结果（2026-11-22，采纳方案 A）
+
+- ✅ 回归脚本 `eval/audit/collab_forward_check_regression.py` 落地，15/15 全绿（四枚枚举 + 单路 divergent + 空关键词边界），纯内存零 DB。
+- ✅ 业务逻辑零改动：`forward_check_static` 输出语义不变；docstring "深度正演复用 minloop.verify" 备注保留作为未来迭代提示。
+- ✅ 台账 #8 更新：`已实装第一环静态版；待补充回归；第二环深度正演待立项`。
+- ⏸ 第二环（深度正演）暂不启动，作为独立后续需求，需要时单独开任务。
