@@ -87,7 +87,17 @@
 #### P2-3 hebbian 措辞如实化
 - **证据**：`hebbian.py` 实为 `weight += 0.05` / `weight *= 0.995`，初始权重来自 `graph.py:23-24` P0-P8 主观优先级，`neg` 阈值 0.3 无消融支撑，无显著性检验。
 - **方案**：文档/注释去掉"图学习"虚高描述，如实写"带衰减计数器"；显著性统计留后续迭代。
-- **状态**：待办
+- **落地**：
+  - `cgraph/hebbian.py` 模块 docstring 重写：明示「不是神经网络/图学习，无梯度/无反向传播/
+    无损失函数」，如实描述 `weight += eps` / `weight *= decay` 累加-衰减计数规则，
+    标注初始权重来自 P0-P8 主观优先级、"0.3 阈值无消融实验支撑、无显著性检验"、
+    "慢尺度蒸馏仅统计胜率、未实现蒸馏"。
+  - `HebbianUpdater` 类 docstring 补「命名沿用历史，实现本质是带全局衰减的加权计数器」。
+  - `cgraph/graph.py` 模块 docstring 边权说明同步为「带衰减权重计数器（非图学习）」。
+  - **零逻辑改动**：eps=0.05 / decay=0.995 / min_w=0.05 默认值不变。
+  - 新增 `eval/audit/hebbian_wording_regression.py` 固化"文档不得虚高"断言 8 项。
+- **回归**：hebbian_wording_regression 8/8（含实现默认值未变校验）
+- **状态**：✅ 完成
 
 #### P2-4 检索权重标定 + IDF/词序
 - **证据**：`memory_query.py:661-663` 打分 `sem*0.30 + kw*0.30` 硬编码，`W_*` 在 `constants.py` 标 `[先验-业务设定]` 无标定报告；keyword 为朴素 n-gram 子串 + 1-gram Jaccard，无 IDF、无词序。

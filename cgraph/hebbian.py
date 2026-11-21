@@ -1,12 +1,25 @@
 """
-赫布更新：fire together, wire together。
+路径边权计数器（如实描述，2026-11-21 P2-3 措辞修正）。
+
+**它不是神经网络/图学习**：本模块只对「骨架节点路径」的边权做
+`weight += eps` / `weight *= decay` 的累加-衰减计数，无梯度、无反向传播、
+无损失函数、无嵌入学习。
 
 每轮对话后依据两个信号更新路径边权：
 1. 意图回归比率（executor 的验证自检）——低比率说明链走完但答非所问 → 负反馈
 2. 外部效用反馈（可延迟到达）——用户后续确认有用/没用
 
+更新规则（"带衰减的权重计数器"）：
+- 正反馈：路径上每条边 +epsilon（默认 0.05）
+- 负反馈：路径上每条边 -epsilon，下界 min_weight（默认 0.05）
+- 全局轻衰减：所有边 ×global_decay（默认 0.995），防历史热边永久霸榜
+- 初始权重来自骨架 P0-P8 主观优先级（见 graph.py），非学习所得
+
+阈值说明：负反馈判定 `verify_ratio < 0.3` 为业务先验设定，**无消融实验支撑**，
+无显著性检验；后续如需声称"有效"须补 A/B 对照与统计检验。
+
 快尺度：只改图的边权（JSON 持久化），不动模型。
-慢尺度：edge_log 累积轨迹，留给未来蒸馏用。
+慢尺度：edge_log 累积轨迹，留给未来蒸馏用（当前仅统计胜率，未实现蒸馏）。
 """
 from __future__ import annotations
 
@@ -30,6 +43,9 @@ class WalkFeedback:
 
 
 class HebbianUpdater:
+    """路径边权累加-衰减计数器（非图学习/非神经网络，详见模块 docstring）。
+
+    命名沿用历史（Hebbian）仅为兼容调用面；实现本质是带全局衰减的加权计数。"""
     def __init__(self, graph: MindGraph, cfg: dict | None = None):
         self.g = graph
         cfg = cfg or {}
