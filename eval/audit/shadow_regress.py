@@ -59,7 +59,7 @@ def _ts():
 
 def db_load_memories():
     """core_memory_card → 同 load_memories() 的 dict 列表口径"""
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     con.row_factory = sqlite3.Row
     rows = con.execute("SELECT * FROM core_memory_card WHERE status='active'").fetchall()
     out = []
@@ -80,7 +80,7 @@ def db_load_memories():
 
 def db_load_graph():
     """core_relation → 同 load_graph() 口径 {inst_id, entity_id, best_match...}"""
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     con.row_factory = sqlite3.Row
     rows = con.execute("SELECT * FROM core_relation WHERE status='active'").fetchall()
     out = []
@@ -98,7 +98,7 @@ def db_recency_table():
     """trace_cited → 同 _recency_table() 口径(7d 窗半衰期; E8 排除不适用——
     trace_cited 的 score 列当前未灌 source, 与 cited_log 全量对齐)"""
     from memory import constants as C
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     cutoff = datetime.now().timestamp() - 7 * 86400
     halflife = C.RECENCY_HALFLIFE_DAYS * 86400
     now = datetime.now().timestamp()
@@ -187,7 +187,7 @@ def drift_check():
     切换日应先重跑 v3_migrate_batch1 增量同步, 让 drift 归零再准入。"""
     with io.open(os.path.join(_HERE, "data", "memory", "cited_log.jsonl"), encoding="utf-8") as f:
         n_cited_jsonl = sum(1 for line in f if line.strip())
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     n_cited_db = con.execute("SELECT COUNT(*) FROM trace_cited").fetchone()[0]
     max_db_ts = con.execute("SELECT MAX(ts) FROM trace_cited").fetchone()[0] or ""
     n_card_db = con.execute("SELECT COUNT(*) FROM core_memory_card").fetchone()[0]
@@ -209,7 +209,7 @@ def _db_freeze_ts():
     """新库 trace 最后灌入时刻(=迁移冻结点)。晚于它的引用 = 迁移后新增, 漂移。"""
     global _DB_FREEZE_TS
     if _DB_FREEZE_TS is None:
-        con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+        con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
         _DB_FREEZE_TS = con.execute("SELECT MAX(ts) FROM trace_cited").fetchone()[0] or ""
         con.close()
     return _DB_FREEZE_TS
@@ -289,7 +289,7 @@ def judge_edge_check():
             pair = (rec["inst_id"], rec.get("best_match"))
             if pair not in old_by_pair or rank.get(rec["relation"], 0) > rank.get(old_by_pair[pair][2], 0):
                 old_by_pair[pair] = (rec["inst_id"], rec.get("best_match"), rec["relation"])
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     new_by_pair = {}
     for me, other, rel in con.execute("SELECT me_inst, other_inst, relation FROM core_relation"):
         new_by_pair[(me, other)] = (me, other, rel)

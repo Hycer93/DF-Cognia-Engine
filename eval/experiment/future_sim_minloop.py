@@ -77,7 +77,7 @@ def f00_anchor():
                      "entity_id": h[1].get("entity_id")}
                     for h in hits]
     # 图谱邻接: anchor 卡的 relation 邻居
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     anchor_ids = [c["inst_id"] for c in anchor_cards]
     neighbors = {}
     qmarks = ",".join("?" * len(anchor_ids))
@@ -112,7 +112,7 @@ def f10_diverge(snapshot):
       锚卡簇内邻居(同topic/relation相连) → δ≈0 贴主线;
       relation 'new' 边连出簇外 → δ 按 memory_class 差异放大;
       'conflict' 边 → δ 取负(反向/矛盾分支)。"""
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     anchor_ids = [c["inst_id"] for c in snapshot["anchor_cards"]]
     qmarks = ",".join("?" * len(anchor_ids))
     # 锚卡归属主题集
@@ -213,7 +213,7 @@ def f40_backward(goal_prefix, anchor_ids):
     (无显式演化边时 scar_case↔strategy_evolve 类跨跳一律拒绝)。
     返回 (路径[inst_id 序列, G在前], 边类型记录) 或 (None, 失败原因)。
     BFS 等权搜索(优先扩展 relation 边), 找到任一锚卡即停。"""
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     goal = con.execute("SELECT inst_id FROM core_memory_card WHERE inst_id LIKE ?",
                        (goal_prefix + "%",)).fetchone()
     if not goal:
@@ -274,7 +274,7 @@ def etype_lbl(t):
 
 def verify(path, branches, truth_seq):
     """三独立指标: 正向可达 / 路径相交 / 步数偏差。可达=false 直接判失败。"""
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     # ① 正向可达: 路径反转后, 每步相邻转移是否库内真实存在
     fwd = list(reversed(path))
     unreachable = []
@@ -333,7 +333,7 @@ def main():
     # F10(锚定 top-1 中心卡, 防锚集混入近目标卡导致 F40 假收敛)
     branches, n_avail, all_branches = f10_diverge({**snapshot, "anchor_cards": snapshot["anchor_cards"][:1]})
     # 真值链(考题已知答案): 锚→G 的库内最短路径(BFS 双边), 非整簇时序
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     anchor0 = snapshot["anchor_cards"][0]["inst_id"]
     goal_full = con.execute("SELECT inst_id FROM core_memory_card WHERE inst_id LIKE ?",
                             (CONFIG["goal_prefix"] + "%",)).fetchone()[0]
@@ -353,7 +353,7 @@ def main():
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # 同目录 f20_weight
     import f20_weight as f20
     _profile = CONFIG.get("beta_profile", f20.BASELINE_PROFILE)   # 纪律①: 默认 baseline
-    _con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    _con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     _scored = []
     for b in all_branches:
         w2, fac = f20.score_branch(_con, b, step=1, profile=_profile)
@@ -369,7 +369,7 @@ def main():
     # 纪律③: 失败归因四枚举(与权重并行)——失败时必打标签, 成功链也记录归因=空
     failure_attr = None
     if path is None:
-        _con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+        _con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
         _con.row_factory = sqlite3.Row
         fa_code, fa_note = f20.attribute_failure(
             _con, CONFIG["goal_prefix"],

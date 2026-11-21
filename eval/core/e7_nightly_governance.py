@@ -60,7 +60,7 @@ def _ts():
 
 
 def _conn():
-    con = sqlite3.connect(DB)
+    con = sqlite3.connect(DB, timeout=5)
     con.row_factory = sqlite3.Row
     return con
 
@@ -73,8 +73,9 @@ def _log(op, payload):
             "INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
             (op, json.dumps(payload, ensure_ascii=False), _ts()))
         con.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        # P2-5: 原为 pass, 审计日志写入失败须留痕(否则夜间治理动作无记录可查)
+        print(f"[e7_audit_log_fail] {type(e).__name__}: {e} | op={op}", file=sys.stderr)
     finally:
         con.close()
 

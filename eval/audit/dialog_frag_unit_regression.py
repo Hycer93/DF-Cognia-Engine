@@ -34,7 +34,7 @@ MULTIBYTE_SAMPLE = "帮我编译apk然后推包"
 
 def _blen_sql():
     """直接字节 SQL 统计主表碎片(作为 patrol 的对照真值)。"""
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     n = con.execute("SELECT COUNT(*) FROM raw_corpus WHERE kind='session_dialog' "
                     "AND length(cast(body as blob))<=20").fetchone()[0]
     con.close()
@@ -58,7 +58,7 @@ def main():
         check("import_patrol", False, repr(e))
 
     # 2. 归档表纯净: 全部字节 <= 20
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     dirty = con.execute(
         "SELECT COUNT(*) FROM session_dialog_archive_fragment WHERE length(cast(body as blob))>20"
     ).fetchone()[0]

@@ -68,7 +68,7 @@ SKILL = [
 # persona 删除行 id: 2,3,5,6,7,8 (已迁出为范式)
 
 def migrate():
-    con = sqlite3.connect(DB)
+    con = sqlite3.connect(DB, timeout=5)
     cur = con.cursor()
     moved_ids = []
     for row in THINKING:

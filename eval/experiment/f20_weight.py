@@ -48,7 +48,7 @@ D_FLOOR = 0.3
 
 
 def _conn():
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     con.row_factory = sqlite3.Row
     return con
 

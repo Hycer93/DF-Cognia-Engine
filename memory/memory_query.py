@@ -38,7 +38,7 @@ def load_memories() -> list:
     """读源分派: sqlite(新主库) / jsonl(应急回切)。口径对齐 shadow_regress 双路验证。"""
     if _MEMORY_SOURCE == "jsonl":
         return _load_memories_jsonl()
-    con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+    con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True, timeout=5)
     con.row_factory = _sq.Row
     rows = con.execute("SELECT * FROM core_memory_card WHERE status='active'").fetchall()
     con.close()
@@ -59,7 +59,7 @@ def load_memories() -> list:
 def load_graph() -> list:
     if _MEMORY_SOURCE == "jsonl":
         return _load_graph_jsonl()
-    con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+    con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True, timeout=5)
     rows = con.execute("SELECT * FROM core_relation WHERE status='active'").fetchall()
     con.close()
     import json as _j
@@ -86,7 +86,10 @@ def _governance_families() -> dict:
     p = _os.path.join(MEM_DIR, "corpus_registry.jsonl")
     try:
         mtime = _os.path.getmtime(p)
-    except OSError:
+    except OSError as e:
+        # P2-5: 原为 return {} 静默; registry 缺失会让治理映射整体失效, 须留痕
+        print(f"[governance_registry_stat_fail] {p}: {type(e).__name__}: {e}",
+              file=sys.stderr)
         return {}
     if _GOV_CACHE["mtime"] == mtime:
         return _GOV_CACHE["families"]
@@ -161,14 +164,14 @@ def _recency_table() -> dict:
         return min(1.0, 0.5 + decay * 0.5)
 
     if _MEMORY_SOURCE == "sqlite":
-        con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+        con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True, timeout=5)
         n, max_tid = con.execute("SELECT COUNT(*), COALESCE(MAX(tid),0) FROM trace_cited").fetchone()
         key = (n, max_tid)
         con.close()
         if _recency_cache.get("sqlite_key") == key:
             return _recency_cache["table"]
         best = {}
-        con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
+        con = _sq.connect(f"file:{_DB_PATH}?mode=ro", uri=True, timeout=5)
         for ts_str, inst, src in con.execute("SELECT ts, inst_id, source FROM trace_cited"):
             if src == "e8":
                 continue

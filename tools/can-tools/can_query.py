@@ -23,7 +23,7 @@ DB_PATH = Path(__file__).parent / "can_protocol.db"
 
 def search_keyword(keyword):
     """跨三表搜索关键词"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     cur = conn.cursor()
 
     print(f"\n{'='*80}")
@@ -78,7 +78,7 @@ def search_keyword(keyword):
 
 def query_by_property(prop):
     """按 Property 名称查完整链路"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     cur = conn.cursor()
     cur.execute(
         "SELECT msg_id, signal_name, property, ehv_vdb_id, property_id, area, type, access, property_meaning "
@@ -98,7 +98,7 @@ def query_by_property(prop):
 
 def query_by_vdbid(vdbid):
     """按 VDB ID 查"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     cur = conn.cursor()
     cur.execute(
         "SELECT msg_id, signal_name, property, property_id, type, access, property_meaning "
@@ -118,7 +118,7 @@ def query_by_vdbid(vdbid):
 
 def query_signal(signame):
     """按信号名查 CAN + VDB 信息"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     cur = conn.cursor()
 
     # CAN FD
@@ -148,7 +148,7 @@ def query_signal(signame):
 
 def query_can_msg(msg_id):
     """按 CAN 报文 ID 查所有信号"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     cur = conn.cursor()
     cur.execute(
         "SELECT signal_name, byte_order, bit_length, start_bit, date_type, resolution, offset_val, signal_description "
@@ -197,7 +197,7 @@ def simulate_signal(spec):
         sig = spec.strip()
         value = None
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     cur = conn.cursor()
 
     # 精确匹配信号名

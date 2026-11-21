@@ -75,8 +75,10 @@ def _log(op: str, payload: dict):
     try:
         with io.open(GATE_LOG, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    except OSError:
-        pass
+    except OSError as e:
+        # P2-5: 原为 pass 静默丢弃; 改为告警但不阻断判定主链路
+        print(f"[memory_gate_log_fail] {type(e).__name__}: {e} | op={op}",
+              file=sys.stderr)
 
 
 def _miss(hint, topic):

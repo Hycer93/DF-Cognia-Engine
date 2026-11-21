@@ -86,7 +86,7 @@ def render_one(p, verbose=True):
 
 
 def main(pid=None):
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     if pid:
         for t in TABLES:
             row = con.execute(f"SELECT * FROM {t} WHERE pid=?", (pid,)).fetchone()

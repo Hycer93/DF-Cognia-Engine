@@ -139,7 +139,7 @@ check("R8④ 非法丢弃入note", "证据字段非法丢弃整条: 1条" in r8.
 check("R8⑤ 列表内空串/空白项清洗", hyps.get("H_mix", {}).get("supporting") == ["a", "b"])
 
 # R9 审计落库
-con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
 n = con.execute("SELECT COUNT(*) FROM audit_topic_log WHERE op='atomic_skill:skill_f_reason'").fetchone()[0]
 con.close()
 check("R9 审计落库(op=atomic_skill:skill_f_reason, 独立归属)", n >= 8, str(n))

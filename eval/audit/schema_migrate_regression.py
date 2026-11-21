@@ -34,7 +34,7 @@ def main():
     def check(name, ok, detail=""):
         results.append({"name": name, "ok": bool(ok), "detail": str(detail)[:240]})
 
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
 
     # 1. schema_version 元表 + 已应用迁移
     try:

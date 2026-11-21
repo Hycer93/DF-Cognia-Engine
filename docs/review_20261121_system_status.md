@@ -85,7 +85,21 @@
 #### P2-5 SQLite 连接超时 + 去静默吞错
 - **证据**：`corpus_store.py:102 _conn()` 无 `timeout` 参数（默认可能永久阻塞）；`memory_gate.py:78-79` gate_log 写失败 `except OSError: pass`；`memory_query.py:760-761` cited_log 写失败静默容忍（此项为有意设计，保留但加日志）。
 - **方案**：所有连接补 `timeout`；无条件 `pass` 改告警日志。
-- **状态**：待办
+- **落地**：
+  - `timeout=5` 全量补齐：AST codemod `scripts/p25_add_connect_timeout.py` 一次性处理
+    42 个文件 / 80 处调用（合计 82 处，含原有 2 处）。注：`sqlite3.connect` 默认 timeout
+    本就是 5.0s，本次为显式化/统一/可审计，运行时行为等价。
+  - 高危静默吞错改 stderr 留痕（7 处）：`memory_gate._log`、`cgraph/atomic_skill._audit_log`、
+    `cgraph/executor` entry_hit/entry_fallback 审计、`memory/memory_organize` dual_write 错误日志、
+    `eval/core/e7_nightly_governance._log`、`eval/core/e0_topic_gate_guard` 清理、
+    `memory/memory_query._governance_families` registry stat。
+  - 评估后**不改**：`cgraph/matrix_knowledge` 3 处（docstring 契约「异常恒返回 []」，空矩阵为常态
+    降级，告警会刷屏）；`e12_router_smoke` 两处（测试脚本，可选样本缺失属预期）；
+    `llm.py`/`router_atomic.py` 返回默认值项（非 silent failure，语义即降级）。
+  - 新增永久校验 `eval/audit/connect_timeout_regression.py`（AST 断言无 timeout 嫌疑清零）。
+- **回归**：connect_timeout_regression 82/82 带 timeout；路由器 63 项、judge 桩矩阵 7/7
+  （--compare 基线一致）、置信度读源 3/3、schema 迁移 7/7 全绿；运行时冒烟 OK
+- **状态**：✅ 完成
 
 ---
 

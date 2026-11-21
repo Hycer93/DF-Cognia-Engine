@@ -66,15 +66,16 @@ def _purge_db_rows(inst_id):
     import sqlite3
     db = os.path.join(HERE, "data", "memory", "corpus_store.db")
     try:
-        con = sqlite3.connect(db)
+        con = sqlite3.connect(db, timeout=5)
         con.execute("DELETE FROM core_hold_pool WHERE inst_id=?", (inst_id,))
         con.execute("DELETE FROM core_memory_card WHERE inst_id=?", (inst_id,))
         # 卡片挂载痕迹(零锚卡不应有 topic_links, 防御性清理)
         con.execute("DELETE FROM topic_links WHERE inst_id=?", (inst_id,))
         con.commit()
         con.close()
-    except Exception:
-        pass                                        # 清理失败不阻断守卫结论
+    except Exception as e:
+        # P2-5: 原为 pass, 清理失败虽不阻断守卫结论, 但须留痕
+        print(f"[e0_cleanup_fail] inst={inst_id} {type(e).__name__}: {e}", file=sys.stderr)
 
 def main():
     print("[E0] topic_layer 开关守卫探针")

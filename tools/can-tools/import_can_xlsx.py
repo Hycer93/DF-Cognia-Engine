@@ -158,7 +158,7 @@ def insert_dbc_to_vdb(cur, ws):
 
 def main():
     wb = openpyxl.load_workbook(XLSX_PATH, data_only=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     cur = conn.cursor()
 
     # Drop existing tables for clean re-import

@@ -64,7 +64,7 @@ def load_paradigms(con):
     return out
 
 def render():
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     anchor = load_anchor(con)
     evolution = load_evolution(con)
     think, think_decayed = load_paradigms(con)["thinking"]

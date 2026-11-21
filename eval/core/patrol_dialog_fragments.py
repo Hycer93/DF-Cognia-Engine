@@ -56,7 +56,7 @@ def _write_mark(week, result_ts):
 
 
 def patrol():
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     total = con.execute("SELECT COUNT(*) FROM raw_corpus WHERE kind='session_dialog'").fetchone()[0]
     frag = con.execute(f"SELECT COUNT(*) FROM raw_corpus WHERE kind='session_dialog' AND {_BLEN}<=?",
                        (FRAG_BYTES,)).fetchone()[0]

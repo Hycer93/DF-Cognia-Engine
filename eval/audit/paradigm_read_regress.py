@@ -68,7 +68,7 @@ def expected_order(items):
 
 
 def main():
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     con.row_factory = sqlite3.Row
     data = load_all(con)
     results, ok = [], True
@@ -87,7 +87,7 @@ def main():
 
     # 2 排序对拍: render_persona 实际输出 vs 独立实现
     import render_persona as rp
-    con_ro = sqlite3.connect(DB)
+    con_ro = sqlite3.connect(DB, timeout=5)
     rp_out = rp.load_paradigms(con_ro)
     con_ro.close()
     for t, key in ((TABLES[0], "thinking"), (TABLES[1], "skill")):

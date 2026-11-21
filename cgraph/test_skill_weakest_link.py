@@ -169,7 +169,7 @@ check("上游登记: scope_scan 与 source_intent menu 均含 weakest_link(无�
       and "skill_weakest_link" in {o.get("skill") for o in ADJ["entries"]["skill_source_intent"]["next_options"]})
 
 # --- 审计落库 ---
-con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
 n = con.execute("SELECT COUNT(*) FROM audit_topic_log WHERE op='atomic_skill:skill_weakest_link'").fetchone()[0]
 con.close()
 check("审计落库(op=atomic_skill:skill_weakest_link, 独立归属)", n >= 7, str(n))

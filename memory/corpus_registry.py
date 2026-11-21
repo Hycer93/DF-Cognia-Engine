@@ -35,7 +35,7 @@ def content_hash(path):
 # 不动则锚稳定, 库里其他表/其他 kind 的写入不再造成假漂移。
 def db_corpus_hash(path, kind_prefix):
     import sqlite3
-    con = sqlite3.connect(path)
+    con = sqlite3.connect(path, timeout=5)
     try:
         rows = con.execute(
             "SELECT id, content_hash FROM raw_corpus WHERE kind LIKE ? ORDER BY id",

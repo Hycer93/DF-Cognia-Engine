@@ -45,7 +45,7 @@ def archive_path(mk):
 def ensure_archive(mk):
     os.makedirs(ARCHIVE_DIR, exist_ok=True)
     p = archive_path(mk)
-    con = sqlite3.connect(p)
+    con = sqlite3.connect(p, timeout=5)
     con.executescript(ARCHIVE_SCHEMA.format(
         t="trace_cited", extra="query TEXT, inst_id TEXT, score REAL"))
     con.executescript(ARCHIVE_SCHEMA.format(
@@ -114,13 +114,13 @@ def do_archive(main_con, dry=False):
 
 def global_check():
     """全链对账: 主库 + 所有归档库 行数总和"""
-    main = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    main = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     total_by_table = {}
     for t in TRACE_TABLES:
         n = main.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
         total_by_table[t] = [("主库", n)]
     for p in sorted(glob.glob(os.path.join(ARCHIVE_DIR, "trace_archive_*.db"))):
-        acon = sqlite3.connect(f"file:{p}?mode=ro", uri=True)
+        acon = sqlite3.connect(f"file:{p}?mode=ro", uri=True, timeout=5)
         for t in TRACE_TABLES:
             n = acon.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
             if n: total_by_table.setdefault(t, []).append((os.path.basename(p), n))
@@ -137,7 +137,7 @@ def global_check():
 if __name__ == "__main__":
     if "--check" in sys.argv:
         global_check(); sys.exit(0)
-    con = sqlite3.connect(DB)
+    con = sqlite3.connect(DB, timeout=5)
     dry = "--dry-run" in sys.argv
     if dry:
         dry_run_report(con)

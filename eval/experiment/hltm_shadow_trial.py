@@ -76,7 +76,7 @@ def hltm_table():
     now = datetime.now().timestamp()
     agg = {}  # inst -> {latest_ts, freq}
     # 主源: 新库
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     for ts_str, inst in con.execute("SELECT ts, inst_id FROM trace_cited"):
         try:
             ts = datetime.fromisoformat(ts_str[:19]).timestamp()
@@ -90,7 +90,7 @@ def hltm_table():
     con.close()
     # 增量源: cited_log 冻结后新行(jsonl 侧持续写入)
     freeze_ts = None
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     freeze_ts = con.execute("SELECT MAX(ts) FROM trace_cited").fetchone()[0] or ""
     con.close()
     if os.path.exists(CITED_LOG):

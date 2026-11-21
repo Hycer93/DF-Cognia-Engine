@@ -181,8 +181,10 @@ def atomic_store(
             append_jsonl(os.path.join(MEM_DIR, "dual_write_errors.jsonl"),
                           {"ts": datetime.now().isoformat(), "inst_id": entry["inst_id"],
                            "err": repr(_e)})
-        except Exception:
-            pass
+        except Exception as _el:
+            # P2-5: 原为 pass, 双写错误记录本身失败也须留痕, 否则错误链完全断裂
+            print(f"[dual_write_error_log_fail] {type(_el).__name__}: {_el} | "
+                  f"orig_err={_e!r}", file=sys.stderr)
     return "stored", f"{inst_id[:8]} 入库（repro={repro}）"
 
 

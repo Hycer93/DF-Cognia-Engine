@@ -187,7 +187,7 @@ check("O2③ 有效显式条目不误伤(正常通过非降级)",
       str(r4.result.get("_degraded")))
 
 # --- 审计落库 ---
-con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
 n = con.execute("SELECT COUNT(*) FROM audit_topic_log WHERE op='atomic_skill:skill_source_intent'").fetchone()[0]
 con.close()
 check("审计落库(op=atomic_skill:skill_source_intent, 独立归属)", n >= 7, str(n))

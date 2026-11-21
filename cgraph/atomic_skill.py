@@ -282,13 +282,15 @@ def _audit_log(skill_id: str, payload: dict):
     仅当思考产出结论并提案入库时, 整条轨迹作为提案附件过人闸(裁决①)"""
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
     try:
-        con = sqlite3.connect(AUDIT_DB)
+        con = sqlite3.connect(AUDIT_DB, timeout=5)
         con.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
                     (ts, f"atomic_skill:{skill_id}", json.dumps(payload, ensure_ascii=False)))
         con.commit()
         con.close()
-    except Exception:
-        pass                                        # 审计失败不阻断思考链路
+    except Exception as e:
+        # 审计失败不阻断思考链路; P2-5: 原为 pass 静默, 改为 stderr 告警留痕
+        print(f"[atomic_skill_audit_fail] {type(e).__name__}: {e} | skill={skill_id}",
+              file=sys.stderr)
 
 
 # ---------------- 共享清洗工具(沿用 executor._parse_node_json 范式) ----------------

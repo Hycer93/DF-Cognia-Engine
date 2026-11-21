@@ -76,7 +76,7 @@ def patrol(as_of=None):
     try:
         import sqlite3 as _sq
         _db = os.path.join(HERE, "data", "memory", "corpus_store.db")
-        _c = _sq.connect(f"file:{_db}?mode=ro", uri=True)
+        _c = _sq.connect(f"file:{_db}?mode=ro", uri=True, timeout=5)
         _db_n = _c.execute("SELECT COUNT(*) FROM core_memory_card").fetchone()[0]
         _c.close()
         _drift = _db_n - len(mems)

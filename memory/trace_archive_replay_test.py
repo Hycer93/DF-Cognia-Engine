@@ -21,7 +21,7 @@ def make_shadow():
     if os.path.exists(SHADOW): os.remove(SHADOW)
     shutil.copy(SRC, SHADOW)
     # 清空 shadow 旧 trace, 灌入伪造跨月数据
-    con = sqlite3.connect(SHADOW)
+    con = sqlite3.connect(SHADOW, timeout=5)
     con.execute("DELETE FROM trace_cited")
     now = datetime.datetime.now()
     fake_insts = ["10764d3b", "7a499925", "32684974", "7808dbac"]
@@ -43,7 +43,7 @@ def cited_counts(paths):
     agg = {}
     for p in paths:
         if not os.path.exists(p): continue
-        con = sqlite3.connect(f"file:{p}?mode=ro", uri=True)
+        con = sqlite3.connect(f"file:{p}?mode=ro", uri=True, timeout=5)
         for inst, c in con.execute("SELECT inst_id, COUNT(*) FROM trace_cited GROUP BY inst_id"):
             agg[inst] = agg.get(inst, 0) + c
         con.close()
@@ -66,7 +66,7 @@ def main():
     import trace_archive as ta
     ta.DB = SHADOW  # 重定向到影子库
     ta.ARCHIVE_DIR = ARCHIVE_DIR  # 真归档目录 (产物即回放测试的归档样例)
-    con = sqlite3.connect(SHADOW)
+    con = sqlite3.connect(SHADOW, timeout=5)
     r = ta.do_archive(con, dry=False)
     print("归档执行:", r)
     ta.global_check()

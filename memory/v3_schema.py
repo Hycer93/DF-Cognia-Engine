@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS trace_embedding (
 
 
 def build():
-    c = sqlite3.connect(DB)
+    c = sqlite3.connect(DB, timeout=5)
     c.executescript(SCHEMA)
     # 与旧表并存：旧 topic_abstraction/topic_links/persona_anchor/raw_corpus/corpus_tags/iterations
     # 暂不 DROP，迁移对账完成后再冻结（第二批清退）

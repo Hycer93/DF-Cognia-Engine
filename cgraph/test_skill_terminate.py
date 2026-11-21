@@ -141,7 +141,7 @@ check("附① trail非列表 → assembler_crash降级", "assembler_crash" in st
 check("附② 降级仍保final_output/steps_used", r11.result.get("final_output") == "" and r11.result.get("steps_used") == 5)
 
 # 审计落库
-con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
 n = con.execute("SELECT COUNT(*) FROM audit_topic_log WHERE op='atomic_skill:skill_terminate'").fetchone()[0]
 con.close()
 check("审计落库(op=atomic_skill:skill_terminate, 独立归属)", n >= 13, str(n))

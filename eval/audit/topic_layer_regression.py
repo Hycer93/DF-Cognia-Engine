@@ -97,7 +97,7 @@ os.environ["TOPIC_LAYER_ON"] = "1"     # 后续用例仍需开态
 #     必须有存量卡片对比用例守卫) ---
 import re, sqlite3
 print("\n== ID 收口回归(短id迁移/兼容摘除守卫) ==")
-_rc = sqlite3.connect(os.path.join(HERE, "data/memory/corpus_store.db"))
+_rc = sqlite3.connect(os.path.join(HERE, "data/memory/corpus_store.db"), timeout=5)
 _rc.row_factory = sqlite3.Row
 
 # 用例8: 三表零短id残留(topic_links/core_topic_links/core_hold_pool)
@@ -152,7 +152,7 @@ _rc.close()
 # 场景: 贪婪cue 2张卡单命中挂本簇 + 3张多锚歧义进hold
 # v2.1口径 disc=2/(2+0)=1.0 满分洗白; v2.2 disc=2/(2+0+3)=0.4 判死
 import sqlite3 as _sq, datetime as _dt
-_rc12 = _sq.connect(os.path.join(HERE, "data/memory/corpus_store.db"))
+_rc12 = _sq.connect(os.path.join(HERE, "data/memory/corpus_store.db"), timeout=5)
 _now12 = _dt.datetime.now().isoformat(timespec="seconds")
 for _s12 in ["DELETE FROM topic_links WHERE inst_id LIKE 'dd%' OR topic_id='topic_dd_mock'",
              "DELETE FROM core_hold_pool WHERE inst_id LIKE 'dd%'",
@@ -203,7 +203,7 @@ try:
     _rc13 = _rc  if False else None
     import sqlite3 as _sq13, datetime as _dt13, os as _os13
     _dbp13 = _os13.path.join(HERE, "data", "memory", "corpus_store.db")
-    _rc13 = _sq13.connect(_dbp13)
+    _rc13 = _sq13.connect(_dbp13, timeout=5)
     _now13 = _dt13.datetime.now().isoformat(timespec="seconds")
     for _s in ["DELETE FROM topic_links WHERE inst_id LIKE 'ee%' OR topic_id='topic_ee_mock'",
                "DELETE FROM core_memory_card WHERE inst_id LIKE 'ee%'",
@@ -247,7 +247,7 @@ except Exception as _e13:
 try:
     _s14 = "星型拓扑%d号节点中心进化外围固化策略 P10联邦演进"
     import sqlite3 as _sq14, datetime as _dt14, os as _os14
-    _rc14 = _sq14.connect(_os14.path.join(HERE, "data", "memory", "corpus_store.db"))
+    _rc14 = _sq14.connect(_os14.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
     _now14 = _dt14.datetime.now().isoformat(timespec="seconds")
     for _s in ["DELETE FROM topic_links WHERE inst_id LIKE 'ff%' OR topic_id='topic_ff_mock'",
                "DELETE FROM core_memory_card WHERE inst_id LIKE 'ff%'",

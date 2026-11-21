@@ -59,7 +59,7 @@ LOG = os.path.join(HERE, "logs", "e10_semantic_audit.json")
 
 def _conn():
     import sqlite3
-    return sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+    return sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
 
 
 def _card_text(summary, detail):

@@ -39,7 +39,7 @@ def now():
     return datetime.now().isoformat(timespec="seconds")
 
 def migrate():
-    c = sqlite3.connect(DB)
+    c = sqlite3.connect(DB, timeout=5)
     c.execute("PRAGMA journal_mode=WAL")
     ok = lambda: True
     # 重跑幂等: 清可重灌表（审计流水类无业务主键, 靠清表保证不翻倍）

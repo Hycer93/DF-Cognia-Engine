@@ -114,7 +114,7 @@ check("next_options 含 skill_terminate 与 skill_f_reason 实边(模型不可�
       and "skill_source_intent" in {o.get("skill") for o in r.next_options})  # 分歧④: 试点③登记后多项化
 
 # --- 审计落库 ---
-con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
 n = con.execute("SELECT COUNT(*) FROM audit_topic_log WHERE op='atomic_skill:skill_scope_scan'").fetchone()[0]
 con.close()
 check("审计落库(op=atomic_skill:skill_scope_scan, 独立归属)", n >= 7, str(n))

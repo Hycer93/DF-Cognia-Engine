@@ -183,7 +183,7 @@ def check_alias(con, checks):
 
 
 def main():
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     checks = {}
     check_quarantine(con, checks)
     check_conflict(con, checks)
@@ -197,7 +197,7 @@ def main():
     old_ref_cards = {r["inst_id"] for r in _load_jsonl("governor_pending.jsonl")
                      if "引用性提及" in (r.get("reason") or "")}
     old_ref = len(old_ref_cards)
-    _con2 = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    _con2 = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     flag_rows = _con2.execute(
         "SELECT inst_id, reason FROM core_hold_pool WHERE reference_mention=1").fetchall()
     self_consistent = all("引用性提及" in (r[1] or "") for r in flag_rows)

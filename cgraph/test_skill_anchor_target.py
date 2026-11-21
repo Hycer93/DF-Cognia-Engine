@@ -108,7 +108,7 @@ check("降级③: anchored_goal 空 → 降级不透传半成品", bool(r7.resul
 check("state 写回白名单: 技能未写 trail/steps", st.goal_anchored != "" and len(st.trail) == 0)
 
 # --- ⑦ 审计落库 ---
-con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+con = sqlite3.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
 n = con.execute("SELECT COUNT(*) FROM audit_topic_log WHERE op='atomic_skill:skill_anchor_target'").fetchone()[0]
 con.close()
 check("审计轨迹落库(audit_topic_log 独立归属, 不进E7晨报)", n >= 7, str(n))

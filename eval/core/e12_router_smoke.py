@@ -215,7 +215,7 @@ def main():
     # N3 新增: 原文材料(≈4045 ≤8000)直塞, 断言 retrieval_dependent 消除(P-C6 指标2 夜间哨兵)
     n1_mat = patent_full + "\n\n背景补充: " + ("相关论述。" * 1600)
     import sqlite3 as _sq0
-    _c0 = _sq0.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+    _c0 = _sq0.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
     _bm = _c0.execute("SELECT MAX(rowid) FROM audit_topic_log WHERE op='sufficiency:alert'").fetchone()[0] or 0
     _c0.close()
     for tag, goal, expect_assembly, expect_applicable in [
@@ -257,7 +257,7 @@ def main():
     # N3 反向哨兵: 直塞(≤8000)后新产生的 sufficiency:alert 须 retrieval_dependent 非 True
     try:
         import sqlite3 as _sq
-        _con = _sq.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"))
+        _con = _sq.connect(os.path.join(HERE, "data", "memory", "corpus_store.db"), timeout=5)
         rows = _con.execute("SELECT payload FROM audit_topic_log WHERE op='sufficiency:alert' "
                             "AND rowid > ? ORDER BY rowid DESC LIMIT 6", (_bm,)).fetchall()
         _con.close()
@@ -298,7 +298,7 @@ def main():
         import sqlite3 as _sq
         import itertools as _it
         _db = os.path.join(HERE, "data", "memory", "corpus_store.db")
-        _con = _sq.connect(_db)
+        _con = _sq.connect(_db, timeout=5)
         _rows = _con.execute(
             "SELECT summary FROM core_memory_card WHERE source_ref LIKE 'memory_gate%' "
             "ORDER BY rowid DESC LIMIT 60").fetchall()

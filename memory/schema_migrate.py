@@ -159,7 +159,7 @@ def _applied_versions(con):
 
 
 def run_migrations(db_path=DB_PATH, dry_run=False):
-    con = sqlite3.connect(db_path)
+    con = sqlite3.connect(db_path, timeout=5)
     con.isolation_level = None          # 手动事务控制
     _ensure_version_table(con)
     applied = _applied_versions(con)
@@ -193,7 +193,7 @@ def run_migrations(db_path=DB_PATH, dry_run=False):
 
 
 def current_version(db_path=DB_PATH):
-    con = sqlite3.connect(db_path)
+    con = sqlite3.connect(db_path, timeout=5)
     _ensure_version_table(con)
     rows = con.execute("SELECT version,name,applied_ts FROM schema_version ORDER BY version").fetchall()
     con.close()

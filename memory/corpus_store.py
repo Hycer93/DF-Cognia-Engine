@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS session_dialog_archive_fragment (
 
 def _conn():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    c = sqlite3.connect(DB_PATH)
+    c = sqlite3.connect(DB_PATH, timeout=5)
     c.row_factory = sqlite3.Row
     return c
 

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 import time
 from dataclasses import dataclass, field
 
@@ -202,24 +203,27 @@ class ChainExecutor:
                     user_input = goal_part
                     try:
                         import sqlite3 as _sq, time as _tm
-                        _c = _sq.connect(_os.path.join(_os.path.dirname(_adj_path), "memory", "corpus_store.db"))
+                        _c = _sq.connect(_os.path.join(_os.path.dirname(_adj_path), "memory", "corpus_store.db"), timeout=5)
                         _c.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
                                    (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "ref_material:entry_hit",
                                     _json.dumps({"len": len(ref_material), **(_audit_note or {})}, ensure_ascii=False)))
                         _c.commit(); _c.close()
-                    except Exception:
-                        pass                    # 审计失败不阻断
+                    except Exception as _ae:
+                        # 审计失败不阻断; P2-5 原为 pass 静默, 改为 stderr 留痕
+                        print(f"[executor_audit_fail] entry_hit {type(_ae).__name__}: {_ae}",
+                              file=sys.stderr)
                 # 标记后为空: 视同无标记, 交 anchor LLM 通道
         except Exception:
             try:
                 import sqlite3 as _sq, time as _tm
-                _c = _sq.connect(_os.path.join(_os.path.dirname(_adj_path), "memory", "corpus_store.db"))
+                _c = _sq.connect(_os.path.join(_os.path.dirname(_adj_path), "memory", "corpus_store.db"), timeout=5)
                 _c.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
                            (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "ref_material:entry_fallback",
                             _json.dumps({"why": "入口切片异常, 材料留goal"}, ensure_ascii=False)))
                 _c.commit(); _c.close()
-            except Exception:
-                pass
+            except Exception as _ae2:
+                print(f"[executor_audit_fail] entry_fallback {type(_ae2).__name__}: {_ae2}",
+                      file=sys.stderr)
             ref_material = ""
         state = ThinkState(goal=user_input, ref_material=ref_material,
                            collab_synthesize_override=collab_synthesize_override)
@@ -300,7 +304,7 @@ class ChainExecutor:
             r = sr.result or {}
             # 审计载荷(段五5.3): 独立 op=sufficiency:alert(非 atomic_skill:* 归属,
             # 段二2.5裁决); metrics全量+alerts清单+复核标记; 不进steps_log(段四B)
-            con = _sq.connect(AUDIT_DB)
+            con = _sq.connect(AUDIT_DB, timeout=5)
             con.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
                         (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "sufficiency:alert",
                          _js.dumps({
@@ -516,7 +520,7 @@ def commit_green_cards(result, gate, user_input: str):
         return len(wa & wb) / len(wa | wb) if (wa | wb) else 0.0
 
     try:
-        con = sqlite3.connect(db)
+        con = sqlite3.connect(db, timeout=5)
         # 语义级幂等补强(段七红线5编排侧实现): full_hash 只防完全同文,
         # 真实 LLM 两次盘点同资产措辞漂移→bigram-Jaccard>0.6 视为同资产跳过。
         # 对称口径: existing summary 剥 "[类型] "前缀与 "(evidence:...)"后缀后再比
@@ -561,7 +565,7 @@ def commit_green_cards(result, gate, user_input: str):
         errs.append(f"db_error:{type(e).__name__}")
     # 段六b案: 成败一律落独立审计行
     try:
-        con = sqlite3.connect(db)
+        con = sqlite3.connect(db, timeout=5)
         con.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
                     (ts, "memory_commit:green",
                      json.dumps({"written": written, "cards": ids,

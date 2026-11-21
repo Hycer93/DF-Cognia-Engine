@@ -44,7 +44,7 @@ def main():
           f"cd={len(a)} mq={len(b)} cd_only={len(a-b)} mq_only={len(b-a)}")
 
     # 2. 默认读源应等于 sqlite active 全集
-    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
     sq_active = {r[0] for r in con.execute(
         "SELECT inst_id FROM core_memory_card WHERE status='active'")}
     con.close()

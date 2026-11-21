@@ -49,7 +49,7 @@ BATCH2 = [
 
 
 def migrate():
-    con = sqlite3.connect(DB)
+    con = sqlite3.connect(DB, timeout=5)
     cur = con.cursor()
     for row in BATCH2:
         cur.execute("""INSERT OR REPLACE INTO core_thinking_paradigm

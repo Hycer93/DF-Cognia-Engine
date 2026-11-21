@@ -61,7 +61,7 @@ CREATE INDEX IF NOT EXISTS idx_topic_links ON topic_links(topic_id);
 
 
 def _conn():
-    c = sqlite3.connect(DB_PATH)
+    c = sqlite3.connect(DB_PATH, timeout=5)
     c.row_factory = sqlite3.Row
     return c
 

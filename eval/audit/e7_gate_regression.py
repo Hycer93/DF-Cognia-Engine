@@ -54,7 +54,7 @@ C = {
     "refmounted": "aabbccdd000000000000000000000006", # 引用+已挂锚→自动 release
     "refstale": "aabbccdd000000000000000000000007",   # 引用+超龄无核心→人工
 }
-con = sqlite3.connect(test_db)
+con = sqlite3.connect(test_db, timeout=5)
 con.row_factory = sqlite3.Row
 for iid in C.values():
     mk_card(con, iid, "测试卡-" + iid[-4:])
