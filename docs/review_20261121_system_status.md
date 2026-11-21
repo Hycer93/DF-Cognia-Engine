@@ -102,7 +102,19 @@
 #### P2-4 检索权重标定 + IDF/词序
 - **证据**：`memory_query.py:661-663` 打分 `sem*0.30 + kw*0.30` 硬编码，`W_*` 在 `constants.py` 标 `[先验-业务设定]` 无标定报告；keyword 为朴素 n-gram 子串 + 1-gram Jaccard，无 IDF、无词序。
 - **方案**：补权重标定对照实验文档；迭代引入 IDF 与词序特征。
-- **状态**：待办
+- **落地**：
+  - 新增 `docs/design_retrieval_weight_calibration.md`（设计交付）：
+    §1 现状盘点（打分公式两段式、常量标定状态表——仅门控阈值已实测标定，
+    sem/kw 硬编码 0.30 无独立常量、bias 三项仍先验）、§2 实验设计（评测集固化 +
+    R1~R5 单因素对照矩阵 + 执行顺序 + 脚本规格 + 改值人闸纪律）、
+    §3 分批迭代路线（批1测量→批2 kw特征 IDF/词序→批3 bias→批4回归固化）、
+    §4 风险（不过拟合小样本、fw/IDF 隔离、夜间只测不改、不引入黑盒）。
+  - kw 短板如实记录：无 IDF（gram 等权，泛词稀释召回）、无词序（集合交集不可区分短语顺序）。
+  - 新增 `eval/audit/retrieval_weight_doc_sync_regression.py`：固化"文档记录的权重值
+    == constants.py 实际值"（8 项常量对照）+ 状态标注不虚高。
+  - **本轮不改线上权重常量**（用户裁决"产文档为主，可迭代引入"）；实标定实验为批1起后续迭代。
+- **回归**：retrieval_weight_doc_sync_regression 12/12
+- **状态**：✅ 完成（设计交付；实标定实验列为后续迭代）
 
 #### P2-6 memory_judge Q4 血缘检测 O(N) 全库扫描优化
 - **证据**：`memory/memory_judge.py:113-128`（桩）每次 judge 都 `load_memories()` 全库遍历算 2-gram 重叠；LLM 化后此预计算保留作 bloodline_hint，扫描仍在。
