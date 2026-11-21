@@ -199,3 +199,27 @@
 3. P2-1 ~ P2-5（按迭代节奏）
 
 每条完成后在标题下追加 `✅ 完成 commit <hash>`。
+
+---
+
+## 四、主线队列（P0-P2 技术债闭环后）
+
+| # | 任务 | 状态 | 说明 |
+|---|---|---|---|
+| #5 | F20 权重层 | ✅ 已结案 | 守卫告警保留不重定基线（见上 F20 子项）；副线 A-2/A-3/A-5 已落地 `dd8fdfd` |
+| #7 | pending 队列可靠写回（原"sqlite 分片"） | 🚧 **进行中** | 重定义：放弃物理分片；A-1/A-2/A-4/A-5 已落地，A-3 调度后置 | 
+| #10 | 门槛②③④ | ⏸ 待启动 | — |
+| #8 | forward_check | ⏸ 待启动（低优） | — |
+
+### #7 进展明细
+
+- **任务重定义（用户 2026-11-21 裁决）**：放弃物理分片（33MB 无依据），改为 pending 队列可靠写回。
+- **已落地（A-1/A-2/A-4/A-5）**：
+  - A-1 `_atomic_write_jsonl`：temp+fsync+os.replace 原子覆盖写；`append_jsonl` 增 fsync 可选参数。
+  - A-2 `_PendingLock`：lockfile(pid+超时过期)；`review_holds` 入口抢锁，抢不到返 skipped 不阻塞。
+  - A-4 `_write_card_to_db`：BEGIN IMMEDIATE + busy_timeout=5000 + 指数退避 3 次重试，仅落卡路径。
+  - A-5 `eval/audit/pending_writeback_regression.py`：6 类 16 用例全绿（原子/锁/幂等/重试/fsync）。
+- **待做**：A-3 接入 nightly 调度（须 A-1/A-2/A-4/A-5 就绪后）；A-6 WAL 显式化收尾。
+- **约束**：业务判断逻辑零改动（hold/转正/丢弃逐字不变）；真实 pending 池未改动（diff 确认）。
+
+每条完成后在标题下追加 `✅ 完成 commit <hash>`。
