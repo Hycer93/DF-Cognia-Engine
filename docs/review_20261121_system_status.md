@@ -65,7 +65,24 @@
 #### P2-2 executor 巨型函数拆分 + 移除生产 assert
 - **证据**：`executor.py:165-288 run_atomic` ~120 行混入 ref_material 切片/audit 写库/matrix 注入/terminate 补跑 4 个关注点；`commit_green_cards`（~80 行 DB 逻辑 + Jaccard 去重 + 审计双写）嵌在 executor；`engine.py:64` 用 `assert decision.is_valid` 做生产校验（`python -O` 下消失）。
 - **方案**：`commit_green_cards` 移出 executor 独立模块；`run_atomic` 按关注点拆分；`assert` 改显式异常。
-- **状态**：待办
+- **落地**：
+  - `commit_green_cards`（~84 行 DB 逻辑）迁出至新模块 `cgraph/green_card_writer.py`，
+    executor 侧以 `from cgraph.green_card_writer import commit_green_cards` 重导出，
+    调用面（含单测 monkey-patch `EX.commit_green_cards`）零变化；SQL/阈值/幂等语义原样迁移。
+  - `run()` 111→38 行：抽出 `_walk_chain`（主链循环，62 行）、`_run_jw_sidebranch`、
+    `_run_summary`。
+  - `run_atomic()` 127→32 行：抽出 `_split_ref_material`（P-C4 入口分隔符通道）、
+    `_load_matrix_feed`（P-matrix-feed）、`_post_exit_terminate_and_sufficiency`（P-C5 后置）。
+  - 消除重复：`run`/`run_atomic` 共用的 gate+commit 收尾收敛为 `_gate_and_commit`。
+  - 生产 `assert` 改显式异常：`engine.py:64`（路由缺保底节点 → ValueError）；
+    `trace_archive.py` 两处数据守恒断言（归档对账 / 删除守恒 → RuntimeError，
+    `-O` 下不再静默跳过继续删主库）。
+  - executor.py 583→544 行；R17 源码断言同步改读 green_card_writer 并断言 executor 重导出。
+- **回归**：新增 `eval/audit/executor_split_equivalence.py` 13/13（主链/Jw/汇总链路、
+  汇总降级、ref_material 四分支、gate+commit 复用恰一次、重导出同源）；路由器 63 项、
+  judge 桩矩阵 7/7（--compare 一致）、connect_timeout、schema 迁移 7/7、置信度读源 3/3、
+  碎片口径 7/7、trace 归档 replay PASS 全绿
+- **状态**：✅ 完成
 
 #### P2-3 hebbian 措辞如实化
 - **证据**：`hebbian.py` 实为 `weight += 0.05` / `weight *= 0.995`，初始权重来自 `graph.py:23-24` P0-P8 主观优先级，`neg` 阈值 0.3 无消融支撑，无显著性检验。

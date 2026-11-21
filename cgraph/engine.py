@@ -61,7 +61,9 @@ class Engine:
         """utility: 外部效用反馈。+1=本轮回答有用 / -1=没用 / 0=未评价"""
         # 1. 路由（保底三条强制）
         decision = self.router.route(user_input)
-        assert decision.is_valid, "路由结果缺保底节点"
+        # P2-2: 原 assert 在 python -O 下会消失, 生产校验须显式异常
+        if not decision.is_valid:
+            raise ValueError("路由结果缺保底节点")
 
         # 2. 记忆上下文（可选，失败不阻断）
         context = ""

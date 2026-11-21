@@ -94,7 +94,9 @@ def do_archive(main_con, dry=False):
             in_arch = acon.execute(
                 f"SELECT COUNT(*) FROM {t} WHERE tid IN ({','.join('?'*len(mrows))})",
                 [r[0] for r in mrows]).fetchone()[0]
-            assert in_arch == len(mrows), f"{t} {mk}: 归档对账失败 {in_arch}!={len(mrows)}"
+            # P2-2: 原 assert 在 python -O 下消失→可能跳过对账继续删主库, 改显式异常
+            if in_arch != len(mrows):
+                raise RuntimeError(f"{t} {mk}: 归档对账失败 {in_arch}!={len(mrows)}")
             acon.execute("INSERT INTO archive_meta (batch_ts,table_name,archived,min_ts,max_ts,month_key) VALUES (?,?,?,?,?,?)",
                          (_ts(), t, len(mrows), mrows[0][1], mrows[-1][1], mk))
             acon.commit(); acon.close()
@@ -103,7 +105,9 @@ def do_archive(main_con, dry=False):
         main_con.execute(f"DELETE FROM {t} WHERE ts < ?", (cut,))
         after = main_con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
         results[t] = (archived_total, len(rows), after)
-        assert archived_total == len(rows), f"{t}: 删除行数与归档行数不守恒"
+        # P2-2: 原 assert 在 python -O 下消失→可能带不一致结果静默删除, 改显式异常
+        if archived_total != len(rows):
+            raise RuntimeError(f"{t}: 删除行数与归档行数不守恒")
     if not dry:
         # 主库留痕
         main_con.execute("INSERT INTO audit_maintenance (ts,case_desc,resolution) VALUES (?,?,?)",

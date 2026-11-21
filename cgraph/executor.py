@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 from cgraph.graph import MindGraph
 from cgraph.router import RouteDecision
 from cgraph.json_utils import extract_json_obj
+# P2-2: 绿档落库 writer 迁出至独立模块(职责分离); 此处重导出保持原调用面不变
+from cgraph.green_card_writer import commit_green_cards
 
 DEEPEN_MARK = "[[DEEPEN:"   # 旧协议标记：仅用于防御性清洗正文残留，不再作为路由信号
 
@@ -55,15 +57,52 @@ class ChainExecutor:
         system = {"role": "system", "content": self._system_prompt(decision)}
         orig_user = {"role": "user", "content": user_input}
 
-        walked = []
-        deepen_events = []
-        trace = []
-        failed_nodes = []
+        # ① 主链逐节点执行(上下文管理: O(1) token 增长, 完整产物不进历史)
+        (walked, deepen_events, trace, failed_nodes, node_outputs,
+         _prev, last_good_answer, last_answer) = self._walk_chain(decision, system, orig_user)
+
+        # ---------- 主链完成，进入两道独立工序 ----------
+
+        # ② 契约③: Jw 支线复盘——产出只写记忆, 不进主回答管线
+        jw_out = self._run_jw_sidebranch(user_input, node_outputs, walked, trace)
+
+        # ③ 契约④: 汇总节点——基于主链全部摘要, 只面向原始用户问题作答
+        final = self._run_summary(user_input, node_outputs, walked, trace,
+                                  last_good_answer or last_answer)
+
+        verify_note = self._verify_gist(user_input, final)
+        # 情感阀1事件计数（代码层实测，不靠 LLM 记性）
+        event_counts = {
+            "failed_nodes": failed_nodes,           # 调用失败节点（tool 类挫折源）
+            "retries": sum(1 for t in trace if t["ms"] > 8000),  # 粗粒度：慢响应近似重试
+            "deepens": len(deepen_events),
+            "total_ms": sum(t["ms"] for t in trace),
+        }
+
+        # 契约⑤(2026-11-17 skill_memory_gate 七段定稿段一B案): 记忆写入闸门——
+        # terminate/汇总完成后的后置收尾步(Jw经验闭环行为4的落库判定)。
+        # 技能零DB写(段二C案): 本体只产 gate_list 分档清单; 绿档落库走
+        # commit_green_cards() 机械执行(段六b案: 独立审计行 memory_commit:green);
+        # 黄档入人闸提示; 红档仅会话内标记(段七a案)。降级只告警不炸主链路(段四a案)。
+        self._gate_and_commit(user_input, node_outputs, walked)
+
+        return WalkResult(user_input=user_input, final_answer=final,
+                          path=walked, planned_path=decision.path,
+                          deepen_events=deepen_events, llm_trace=trace,
+                          verify_note=verify_note, node_outputs=node_outputs,
+                          event_counts=event_counts, jw_sidebranch=jw_out)
+
+    def _walk_chain(self, decision, system, orig_user):
+        """主链逐节点执行(P2-2 从 run() 抽出, 行为零变更)。
+
+        返回 (walked, deepen_events, trace, failed_nodes, node_outputs,
+              prev_summary, last_good_answer, last_answer)。
+        上下文管理: 每节点只携带 system + 原问题 + 上一节点摘要 + 本节点指令,
+        完整中间产物不进历史(token 成本 O(1) 而非 O(n))。"""
+        walked, deepen_events, trace, failed_nodes = [], [], [], []
         node_outputs = {}          # code -> 工作结果正文（不截断，轨迹组装器用）
         queue = [c for c in decision.path]
         deepens_left = self.max_deepen
-        # 上下文管理：防滚雪球。每节点只携带 system + 原问题 + 上一节点的
-        # 摘要 + 本节点指令；完整中间产物不进历史（token 成本 O(1) 而非 O(n)）
         prev_summary = ""
         last_good_answer = ""
         last_answer = ""
@@ -113,9 +152,11 @@ class ChainExecutor:
                 last_good_answer = analysis
             last_answer = analysis
 
-        # ---------- 主链完成，进入两道独立工序 ----------
+        return (walked, deepen_events, trace, failed_nodes, node_outputs,
+                prev_summary, last_good_answer, last_answer)
 
-        # 契约③：支线跑 Jw 复盘——产出只写记忆（engine 归档），不进主回答管线
+    def _run_jw_sidebranch(self, user_input, node_outputs, walked, trace):
+        """契约③: 支线跑 Jw 复盘, 产出只写记忆, 不进主回答管线(P2-2 抽出)。"""
         jw_out = ""
         if "Jw" in walked:
             t0 = time.time()
@@ -126,8 +167,10 @@ class ChainExecutor:
                 jw_out = self._sanitize(jw_out)
                 node_outputs["Jw"] = jw_out     # 轨迹组装器可见（训练数据），用户管线不可见
             trace.append({"code": "Jw#side", "resp_chars": len(jw_out), "ms": ms})
+        return jw_out
 
-        # 契约④：专门汇总节点——基于主链全部节点摘要，只面向原始用户问题作答
+    def _run_summary(self, user_input, node_outputs, walked, trace, fallback):
+        """契约④: 专门汇总节点, 只面向原始用户问题作答(P2-2 抽出)。"""
         t0 = time.time()
         final = self.llm.chat([{"role": "user",
                                 "content": self._summary_prompt(user_input, node_outputs, walked)}]) or ""
@@ -135,33 +178,19 @@ class ChainExecutor:
         final = self._sanitize(final)
         # 汇总失败降级：主链最后成功节点正文兜底（总比空回答好）
         if not final:
-            final = last_good_answer or last_answer or "（无输出）"
+            final = fallback or "（无输出）"
         trace.append({"code": "SUMMARY", "resp_chars": len(final), "ms": ms})
+        return final
 
-        verify_note = self._verify_gist(user_input, final)
-        # 情感阀1事件计数（代码层实测，不靠 LLM 记性）
-        event_counts = {
-            "failed_nodes": failed_nodes,           # 调用失败节点（tool 类挫折源）
-            "retries": sum(1 for t in trace if t["ms"] > 8000),  # 粗粒度：慢响应近似重试
-            "deepens": len(deepen_events),
-            "total_ms": sum(t["ms"] for t in trace),
-        }
+    def _gate_and_commit(self, user_input, node_outputs, walked):
+        """记忆写入闸门 + 绿档落库(P2-2: run/run_atomic 共用收尾, 消除重复)。
 
-        # 契约⑤(2026-11-17 skill_memory_gate 七段定稿段一B案): 记忆写入闸门——
-        # terminate/汇总完成后的后置收尾步(Jw经验闭环行为4的落库判定)。
-        # 技能零DB写(段二C案): 本体只产 gate_list 分档清单; 绿档落库走
-        # commit_green_cards() 机械执行(段六b案: 独立审计行 memory_commit:green);
-        # 黄档入人闸提示; 红档仅会话内标记(段七a案)。降级只告警不炸主链路(段四a案)。
+        契约⑤ 段一B案: 技能零DB写, 绿档落库由本方法机械执行。返回 gate_result。"""
         gate_result = self._run_memory_gate(user_input, node_outputs, walked)
         if gate_result is not None:
             result, gate = gate_result
             commit_green_cards(result, gate, user_input)
-
-        return WalkResult(user_input=user_input, final_answer=final,
-                          path=walked, planned_path=decision.path,
-                          deepen_events=deepen_events, llm_trace=trace,
-                          verify_note=verify_note, node_outputs=node_outputs,
-                          event_counts=event_counts, jw_sidebranch=jw_out)
+        return gate_result
 
     # ---------- 记忆写入闸门(段一B案后置钩子) ----------
     def run_atomic(self, user_input: str, collab_synthesize_override: bool = False):
@@ -182,9 +211,30 @@ class ChainExecutor:
                                  "data", "atomic_skills_adjacency.json")
         with _io.open(_adj_path, encoding="utf-8") as f:
             adjacency = _json.load(f)
-        # P-C4 入口分隔符通道(段二2.2契约): ---ref_material--- 独立成行(大小写敏感),
-        # split(标记,1) 首次出现切分, 标记丢弃; 无标记/标记后空 → 不处理移交 anchor LLM 通道;
-        # 切分异常 → entry_fallback 审计 + 材料留在 goal(回退旧管线行为, fail-safe 段三3.1)
+        # P-C4 入口分隔符通道(P2-2: 抽出为 _split_ref_material, 行为零变更)
+        user_input, ref_material = self._split_ref_material(user_input, _adj_path)
+        state = ThinkState(goal=user_input, ref_material=ref_material,
+                           collab_synthesize_override=collab_synthesize_override)
+        report = RouterAtomic(self.llm, adjacency).run(state)
+        # ---- P-matrix-feed / P-C5 后置时序(P2-2: 抽出为两个 helper) ----
+        self._load_matrix_feed(state)
+        self._post_exit_terminate_and_sufficiency(state, adjacency)
+        # trail → 伪 node_outputs {skill_id: step_summary}(满足 build_trail_digest 读取,
+        # gate 本体零修改); walked = trail 的 skill_id 序列
+        pseudo = {e["skill_id"]: e.get("step_summary", "") for e in report.final_state.trail}
+        walked = [e["skill_id"] for e in report.final_state.trail]
+        gate_result = self._gate_and_commit(user_input, pseudo, walked)
+        return report, report.final_state, gate_result
+
+    def _split_ref_material(self, user_input: str, adj_path: str):
+        """P-C4 入口分隔符通道(P2-2 从 run_atomic 抽出, 行为零变更)。
+
+        ---ref_material--- 独立成行(大小写敏感), partition 首次出现切分, 标记丢弃;
+        无标记/标记后空 → 不处理移交 anchor LLM 通道;
+        切分异常 → entry_fallback 审计 + 材料留在 goal(回退旧管线行为, fail-safe 段三3.1)。
+        返回 (user_input, ref_material)。"""
+        import json as _json
+        import os as _os
         ref_material = ""
         MARK = "---ref_material---"
         try:
@@ -203,7 +253,7 @@ class ChainExecutor:
                     user_input = goal_part
                     try:
                         import sqlite3 as _sq, time as _tm
-                        _c = _sq.connect(_os.path.join(_os.path.dirname(_adj_path), "memory", "corpus_store.db"), timeout=5)
+                        _c = _sq.connect(_os.path.join(_os.path.dirname(adj_path), "memory", "corpus_store.db"), timeout=5)
                         _c.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
                                    (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "ref_material:entry_hit",
                                     _json.dumps({"len": len(ref_material), **(_audit_note or {})}, ensure_ascii=False)))
@@ -216,7 +266,7 @@ class ChainExecutor:
         except Exception:
             try:
                 import sqlite3 as _sq, time as _tm
-                _c = _sq.connect(_os.path.join(_os.path.dirname(_adj_path), "memory", "corpus_store.db"), timeout=5)
+                _c = _sq.connect(_os.path.join(_os.path.dirname(adj_path), "memory", "corpus_store.db"), timeout=5)
                 _c.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
                            (_tm.strftime("%Y-%m-%dT%H:%M:%S"), "ref_material:entry_fallback",
                             _json.dumps({"why": "入口切片异常, 材料留goal"}, ensure_ascii=False)))
@@ -225,14 +275,15 @@ class ChainExecutor:
                 print(f"[executor_audit_fail] entry_fallback {type(_ae2).__name__}: {_ae2}",
                       file=sys.stderr)
             ref_material = ""
-        state = ThinkState(goal=user_input, ref_material=ref_material,
-                           collab_synthesize_override=collab_synthesize_override)
-        report = RouterAtomic(self.llm, adjacency).run(state)
-        # ---- P-matrix-feed(2026-11-18 段二契约2): scan 后一次性统一装载 ----
-        # 时机=router run 返回后(此时 scan 已完成, goal+scan_summary 完备);
-        # 一次性装载, f_reason/weakest_link 复用同一份(输出可复现, trail 可比对)。
-        # 降级契约: 任何异常/零命中/超限 → 恒 [], 链路行为与改造前一致;
-        # 只埋 trail 观测标记(matrix_injected / matrix: degraded), 不抛业务告警。
+        return user_input, ref_material
+
+    def _load_matrix_feed(self, state):
+        """P-matrix-feed(2026-11-18 段二契约2, P2-2 抽出): scan 后一次性统一装载。
+
+        时机=router run 返回后(此时 scan 已完成, goal+scan_summary 完备);
+        一次性装载, f_reason/weakest_link 复用同一份(输出可复现, trail 可比对)。
+        降级契约: 任何异常/零命中/超限 → 恒 [], 链路行为与改造前一致;
+        只埋 trail 观测标记(matrix_injected / matrix: degraded), 不抛业务告警。"""
         try:
             from cgraph.matrix_knowledge import load_matrix, matrix_tokens
             _scan_sum = ""
@@ -251,8 +302,11 @@ class ChainExecutor:
                                 "ts": __import__("time").strftime("%Y-%m-%dT%H:%M:%S")})
         except Exception:
             state.matrix_knowledge = []
-        # ---- P-C5 后置时序(段二2.5裁决): 补汇编(病灶A) → sufficiency → gate ----
-        # 后置段整体 try/except: 任何后置故障不污染主链结果(fail-safe, 段五5.2)
+
+    def _post_exit_terminate_and_sufficiency(self, state, adjacency):
+        """P-C5 后置时序(P2-2 抽出): 补汇编(病灶A) → sufficiency。
+
+        后置段整体 try/except: 任何后置故障不污染主链结果(fail-safe, 段五5.2)。"""
         try:
             # 病灶A修复: llm_terminate 通道退出时 terminate 汇编技能从未执行,
             # 终态=最后一步60字step_summary。汇编本体纯Python零LLM, 编排器补跑
@@ -282,15 +336,6 @@ class ChainExecutor:
             self._run_sufficiency_check(state, adjacency)
         except Exception as _e:
             print(f"[post-exit] 后置段异常(不污染主链): {_e}")
-        # trail → 伪 node_outputs {skill_id: step_summary}(满足 build_trail_digest 读取,
-        # gate 本体零修改); walked = trail 的 skill_id 序列
-        pseudo = {e["skill_id"]: e.get("step_summary", "") for e in report.final_state.trail}
-        walked = [e["skill_id"] for e in report.final_state.trail]
-        gate_result = self._run_memory_gate(user_input, pseudo, walked)
-        if gate_result is not None:
-            result, gate = gate_result
-            commit_green_cards(result, gate, user_input)
-        return report, report.final_state, gate_result
 
     def _run_sufficiency_check(self, state, adjacency):
         """P-C5 后置触发(POST_EXIT_HINT 同 memory_gate 先例): 只告警不裁决(R15);
@@ -495,89 +540,5 @@ class ChainExecutor:
             return None, ""
 
 
-def commit_green_cards(result, gate, user_input: str):
-    """绿档落库 writer(段二C案: 编排层机械执行, 技能外)。
-    仅写绿档条目(asset_type ∈ 观测/测试结果/踩坑), 逐卡 full_hash 去重防重
-    (段七红线5幂等), raw 回链锚=本会话 user_input+日期窗口(0f2f4458 硬约束)。
-    段六b案: 成败一律落独立审计行 op=memory_commit:green。"""
-    import hashlib
-    import sqlite3
-    import uuid as _uuid
-    cards = [x for x in (result.result.get("gate_list") or []) if x["tier"] == "green"]
-    if not cards or result.result.get("_degraded"):
-        return {"written": 0, "skipped": len(cards)}
-    # P0-3 修复(2026-11-18 round5自举审计): 弃相对路径硬编码(CWD漂移会静默
-    # 落错库——E4对账drift嫌疑根因), 改用 atomic_skill.AUDIT_DB 同源绝对路径
-    from cgraph.atomic_skill import AUDIT_DB as db
-    ts = time.strftime("%Y-%m-%dT%H:%M:%S")
-    day = time.strftime("%Y-%m-%d")
-    written, ids, errs = 0, [], []
-
-    def _jaccard(a: str, b: str) -> float:
-        """bigram 重叠度: LLM 措辞漂移的语义级幂等兜底"""
-        wa = {a[i:i + 2] for i in range(len(a) - 1)}
-        wb = {b[i:i + 2] for i in range(len(b) - 1)}
-        return len(wa & wb) / len(wa | wb) if (wa | wb) else 0.0
-
-    try:
-        con = sqlite3.connect(db, timeout=5)
-        # 语义级幂等补强(段七红线5编排侧实现): full_hash 只防完全同文,
-        # 真实 LLM 两次盘点同资产措辞漂移→bigram-Jaccard>0.6 视为同资产跳过。
-        # 对称口径: existing summary 剥 "[类型] "前缀与 "(evidence:...)"后缀后再比
-        existing = []
-        for r in con.execute(
-                "SELECT summary FROM core_memory_card WHERE source_ref LIKE 'memory_gate%' "
-                "AND ts LIKE ?", (day + "%",)).fetchall():
-            e = r[0]
-            e = e.split("] ", 1)[-1] if e.startswith("[") else e
-            e = e.split("(evidence:", 1)[0]
-            existing.append(e.strip())
-        for x in cards:
-            s = f"[{x['asset_type']}] {x['gist']}(evidence: {x['evidence_step']})"
-            fh = hashlib.sha256((s + "\x1f" + user_input).encode()).hexdigest()
-            if con.execute("SELECT 1 FROM core_memory_card WHERE full_hash=?",
-                           (fh,)).fetchone():
-                errs.append(f"dup:{x['gist'][:20]}")
-                continue
-            if any(_jaccard(x["gist"], e) > 0.6 for e in existing):
-                errs.append(f"semidup:{x['gist'][:20]}")
-                continue
-            inst = _uuid.uuid4().hex
-            import json as _json
-            con.execute(
-                "INSERT INTO core_memory_card (inst_id, ts, event_ts, full_hash, "
-                "asset_class, repro, confidence, dfcp_tag, summary, summary_converged, "
-                "detail, source_ref, memory_class, tier, weight, status) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (inst, ts, ts, fh, "runtime", "situational", "L2",
-                 _json.dumps({"domain": "001-003", "behavior": "Ht", "relation": "P",
-                              "memory_class": None}, ensure_ascii=False),
-                 s[:120], "0",
-                 f"绿档自动立卡(memory_gate 0f2f4458双层写入规约); "
-                 f"素材步: {x['evidence_step']}; 档案动词: {x['proposed_action']}",
-                 f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
-                 None, "active", '{"match": 0.0, "cited": 0}', "active"))
-            ids.append(inst[:16])
-            written += 1
-        con.commit()
-        con.close()
-    except Exception as e:
-        errs.append(f"db_error:{type(e).__name__}")
-    # 段六b案: 成败一律落独立审计行
-    try:
-        con = sqlite3.connect(db, timeout=5)
-        con.execute("INSERT INTO audit_topic_log (ts, op, payload) VALUES (?,?,?)",
-                    (ts, "memory_commit:green",
-                     json.dumps({"written": written, "cards": ids,
-                                 "skipped": errs, "raw": f"session {day}",
-                                 "user_input": user_input[:60]}, ensure_ascii=False)))
-        con.commit()
-        con.close()
-    except Exception as e:
-        # 段六b案要求成败一律可追溯——审计失败不阻断链路但必须可见
-        print(f"[memory_commit] 审计行落库失败(不阻断, 需人工核): {type(e).__name__}: {e}")
-    if written:
-        print(f"[memory_gate] 绿档落库 {written} 张: {ids}")
-    return {"written": written, "skipped": errs}
 
 

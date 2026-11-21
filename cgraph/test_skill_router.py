@@ -4,6 +4,7 @@
 mock LLM + mock 原子技能; 禁止真实 LLM; 单测阶段不访问 DB。
 运行: python -X utf8 cgraph/test_skill_router.py  (12P/0F 为准入门槛)
 """
+import io as _io
 import os
 import sys
 import unittest
@@ -1235,18 +1236,20 @@ class R16d_DegradeToTerminate(RouterTestBase):
 
 class R17_CommitDbSameSource(RouterTestBase):
     """R17: P0-3 回归锚——commit_green_cards 使用的 db 必须与 atomic_skill.AUDIT_DB
-    同源(相对路径硬编码=CWD漂移静默落错库, E4 对账 drift 根因嫌疑)。"""
+    同源(相对路径硬编码=CWD漂移静默落错库, E4 对账 drift 根因嫌疑)。
+
+    P2-2 起 writer 已迁出至 cgraph/green_card_writer.py, 故断言改读新模块;
+    executor.py 侧须保持重导出(调用面不变)。"""
     def test(self):
-        import io as _io
-        src = _io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    "executor.py"), encoding="utf-8").read()
-        with _io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   "executor.py"), encoding="utf-8") as _f:
-            src = _f.read()
+        _d = os.path.dirname(os.path.abspath(__file__))
+        src = _io.open(os.path.join(_d, "green_card_writer.py"), encoding="utf-8").read()
         # 禁止出现相对路径硬编码(旧P0-3形态)
         self.assertNotIn('db = "data/memory/corpus_store.db"', src)
         # 必须引用 AUDIT_DB 同源
         self.assertIn("AUDIT_DB as db", src)
+        # executor.py 须重导出, 保持 EX.commit_green_cards 可 patch / 可调用
+        ex_src = _io.open(os.path.join(_d, "executor.py"), encoding="utf-8").read()
+        self.assertIn("from cgraph.green_card_writer import commit_green_cards", ex_src)
 
 
 class R18_WlToFReasonCrossCheck(RouterTestBase):
