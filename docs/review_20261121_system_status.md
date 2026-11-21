@@ -42,7 +42,7 @@
 - **风险**：系统的准入闸门靠长度判断守，且 Q4 每次全库 `load_memories()` O(N) 扫描。
 - **方案**：接入 LLM 判定主路径（`llm_codechat.py` / glm-5.3-flash / agent_free=True），规则桩降级为强制 fallback；Q4 全库扫描本次保留，另立 P2-6。
 - **设计文档**：`docs/design_memory_judge_llm_fallback.md`（v1.0 方案已出，待确认后编码）
-- **状态**：✅ 完成 commit c8455d6
+- **状态**：✅ 完成 commit 5dfc6c6
 - **代码**：`memory/memory_judge.py` 拆四组件 `_judge_call`(调度)/`_judge_call_llm`/`_judge_call_stub`/`_stub_one`，`_bloodline` 共用 Q4 预计算；`judge_log.jsonl` 强制写 `judge_source`(llm/stub)
 - **回归**：`memory_judge_stub_regression.py` 7/7（--compare 基线一致，桩字节等价）；`memory_judge_llm_regression.py` 7/7（L1~L6 mock）；`test_skill_router.py` 63 项全绿
 - **开关**：`JUDGE_USE_LLM=0` 纯桩；`JUDGE_LLM_MODEL` 可覆盖模型
