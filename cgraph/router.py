@@ -13,6 +13,7 @@ import re
 from dataclasses import dataclass, field
 
 from cgraph.graph import MindGraph, MANDATORY_NODES
+from cgraph.json_utils import extract_json_obj
 
 
 @dataclass
@@ -86,9 +87,10 @@ class ComplexityRouter:
             f"用户问题: {text[:500]}"
         )
         try:
-            import json as _json
             resp = self.llm.chat([{"role": "user", "content": prompt}])
-            j = _json.loads(resp[resp.find("{"):resp.rfind("}") + 1])
+            j = extract_json_obj(resp)
+            if j is None:
+                return None
             depth = j.get("depth", "medium")
             if depth not in ("simple", "medium", "complex"):
                 depth = "medium"

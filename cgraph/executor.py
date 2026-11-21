@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 
 from cgraph.graph import MindGraph
 from cgraph.router import RouteDecision
+from cgraph.json_utils import extract_json_obj
 
 DEEPEN_MARK = "[[DEEPEN:"   # 旧协议标记：仅用于防御性清洗正文残留，不再作为路由信号
 
@@ -430,24 +431,20 @@ class ChainExecutor:
     @staticmethod
     def _parse_node_json(text: str) -> dict:
         """契约②：解析节点结构化输出。失败降级——全文当 analysis，deepen=None。
-        调度器不读正文标记：正文里即使残留 [[DEEPEN:xx]] 也不会触发路由。"""
+        调度器不读正文标记：正文里即使残留 [[DEEPEN:xx]] 也不会触发路由。
+
+        2026-11-21 P0-1：改用 json_utils.extract_json_obj（括号计数扫描），
+        修复 find/rfind 在嵌套 JSON / 字符串内花括号场景下切片错位的问题。
+        """
         if not text:
             return {"analysis": "", "deepen": None}
-        t = text.strip()
-        if t.startswith("```"):                       # 剥 markdown fence
-            t = re.sub(r"^```[a-zA-Z]*\n?", "", t)
-            t = re.sub(r"\n?```\s*$", "", t)
-        s, e = t.find("{"), t.rfind("}")
-        if s >= 0 and e > s:
-            try:
-                j = json.loads(t[s:e + 1])
-                analysis = str(j.get("analysis", "")).strip()
-                deepen = j.get("deepen")
-                if analysis:
-                    return {"analysis": analysis,
-                            "deepen": deepen if isinstance(deepen, str) else None}
-            except Exception:
-                pass
+        j = extract_json_obj(text)
+        if j is not None:
+            analysis = str(j.get("analysis", "")).strip()
+            deepen = j.get("deepen")
+            if analysis:
+                return {"analysis": analysis,
+                        "deepen": deepen if isinstance(deepen, str) else None}
         return {"analysis": text, "deepen": None}
 
     def _valid_deepen(self, code_str: str):
