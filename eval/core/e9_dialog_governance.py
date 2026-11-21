@@ -151,6 +151,30 @@ def _load_pending_ids():
     return ids
 
 
+def _check_h_channel_stalled(lookback_days=3):
+    """#12 h 通道断流审计：统计最近 N 天 tree_ch 以 'h' 开头的 session_dialog 记录数。
+    h 通道=PreCompact hook 原生落对话原文; t 通道=E9 applog 兜底(仅用户原文)。
+    h 长期为 0 说明 PreCompact hook 可能异常, 模型回复会有丢失风险。
+    返回 {h_records, t_records, days, stalled}；stalled=True 时 E9 打印告警进晨报。"""
+    from datetime import datetime as _dt, timedelta as _td
+    days = []
+    for i in range(lookback_days):
+        days.append((_dt.now() - _td(days=i)).strftime("%Y-%m-%d"))
+    h_cnt = t_cnt = 0
+    for d in days:
+        for row in cs.list_corpus(kind="session_dialog", tree_vol=d):
+            seg = cs.get_corpus(row["id"])
+            if not seg:
+                continue
+            ch = seg.get("tree_ch") or ""
+            if ch.startswith("h"):
+                h_cnt += 1
+            elif ch.startswith("t"):
+                t_cnt += 1
+    return {"h_records": h_cnt, "t_records": t_cnt,
+            "days": lookback_days, "stalled": h_cnt == 0}
+
+
 def main():
     today = datetime.now().strftime("%Y-%m-%d")
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -217,15 +241,31 @@ def main():
                 report["risk_flag_e7"].append({"topic": d.get("topic", "")[:60],
                                                "note": "疑似probe假阴性(工程信号但判定false), 攒scar_case"})
 
+    # #12 h 通道断流审计(2026-11-22): h=PreCompact原生, t=applog兜底。
+    # h 最近 N 天为 0 → 告警(模型回复有丢失风险), 进晨报。
+    try:
+        hstat = _check_h_channel_stalled(3)
+        report["h_channel"] = hstat
+        if hstat["stalled"]:
+            print("[e9][h_channel_stalled] 最近%d天 h通道(PreCompact) 0 条新对话, "
+                  "t通道兜底 %d 条(仅用户原文)。PreCompact hook 可能异常, "
+                  "模型回复有丢失风险, 请核查 ~/.codechat/settings.json PreCompact 配置。"
+                  % (hstat["days"], hstat["t_records"]))
+    except Exception as e:  # noqa: BLE001
+        report["h_channel"] = {"error": repr(e)}
+
     with io.open(OUT, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
     t = report.get("transcript", {})
+    hc = report.get("h_channel", {})
     print("[E9] 扫描%d段 | 高价值%d | 提案%d(送pending) | 重复跳过%d | miss_case%d | 假阴性疑点%d "
-          "| transcript兜底: 提取%d/入库%d/去重%d"
+          "| transcript兜底: 提取%d/入库%d/去重%d | h通道近%d天%d条%s"
           % (report["scanned"], report["high_value"], report["proposed"],
              report["dup_skipped"], len(report["miss_cases"]),
              len(report["risk_flag_e7"]),
-             t.get("scanned", 0), t.get("stored", 0), t.get("dup_skipped", 0)))
+             t.get("scanned", 0), t.get("stored", 0), t.get("dup_skipped", 0),
+             hc.get("days", 3), hc.get("h_records", -1),
+             "(⚠断流)" if hc.get("stalled") else ""))
     _print_audit_detail(today, report)
     return 0
 

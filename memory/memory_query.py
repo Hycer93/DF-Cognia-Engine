@@ -874,6 +874,61 @@ def fetch_by_ref(source_ref: str) -> dict | None:
     return None
 
 
+def cards_from_dialog(dialog_key: str, include_fiction: bool = False) -> list:
+    """#12 对话追溯：反向查找——给定对话标识，列出由该对话产生的记忆卡。
+    内存遍历 core_memory_card 的 source_ref(不新增 DB 表/索引)，弱关联匹配。
+    与 fetch_by_ref(卡→对话) 互补, 构成双向追溯。
+
+    dialog_key 兼容三种真实 source_ref 形态(大小写/全前缀皆可):
+      1. 树地址 id: 'dialog.2026-11-22.h0015' (新 stdin transcript 路径)
+         命中 source_ref 形如 'sqlite:corpus_store.db#dialog.xxx(...)' 或含该 id;
+      2. session 标识: 'codechat-session/default' / 'sbx-session-001'
+         命中 source_ref 含 'session=<id>' 或 title 关联(弱, 仅字符串包含);
+      3. 会话日期锚: '2026-11-17' 或 'session 2026-11-17'
+         命中历史 'memory_gate; raw锚: session <日期>; ...' 形态。
+
+    返回 list[dict]: {card, corpus|blocked|None}; corpus 走 fetch_by_ref 取正文。
+    弱关联: 字符串包含匹配, 不做强外键; dialog_key 支持完整值或唯一片段。"""
+    if not dialog_key:
+        return []
+    key = dialog_key.strip()
+    # 归一历史『session <date>』锚: 若传入纯日期或 session+日期, 生成匹配片段
+    keys = {key}
+    if key.startswith("session "):
+        keys.add(key[len("session "):])
+    out = []
+    seen = set()
+    for m in load_memories():
+        ref = m.get("source_ref") or ""
+        if not ref:
+            continue
+        hit = False
+        # 形态1: 树地址解析
+        node = _parse_source_ref(ref)
+        if node and (node == key or node.startswith(key + "(") or key in ref):
+            hit = True
+        # 形态2/3: 任意 key 片段包含(source_ref 全文子串)
+        if not hit:
+            for k in keys:
+                if k and k in ref:
+                    hit = True
+                    break
+        if not hit:
+            continue
+        iid = m.get("inst_id")
+        if iid in seen:
+            continue
+        seen.add(iid)
+        item = {"card": m}
+        corpus = fetch_by_ref(ref)
+        if corpus is not None and "blocked" in corpus:
+            item["blocked"] = corpus
+        else:
+            item["corpus"] = corpus
+        out.append(item)
+    return out
+
+
 def fetch_full(inst_id: str, include_fiction: bool = False) -> dict | None:
     """按记忆卡 inst_id 取其 source_ref 指向的正文全量。
     走完整治理链：小说族须显式 include_fiction（与 ask 同口径）。

@@ -66,6 +66,24 @@
 ### 定性
 **当排错审计工具做，不是给终端用户看的聊天历史功能。**
 
+### ✅ 实施完成（2026-11-22，方案一：根治 h 通道断流）
+
+**实证根因**（非推测）：h 通道（PreCompact hook）**已长期静默断流**——1508 条 session_dialog 中仅 1 条来自 h，1505 条来自 t 通道（E9 每晚 applog 兜底）。根因是旧机制依赖「主 AI 每次 compact 前手动覆写 `data/memory/dialog_last_segment.md`」这一**脆弱协作契约**，主 AI 未写 → 文件空 → `≤20 字节` 拦截 → 静默断流，模型回复永久丢失。gate_log 铁证：11-21 两次 hook 触发均 `too_short` 被拦。
+
+**根除方案**：PreCompact hook stdin 自带 `{session_id, transcript_path, hook_event_name}`（已从 agent-pipe guard.js 生产实现确认契约），直接解析 transcript JSONL 拿本轮完整对话，**不再依赖主 AI 手写 md**。
+
+**改动清单**（4 处代码 + 1 回归）：
+1. `memory/memory_gate.py`：提取 `store_dialog(body, session, source_tag)` 可复用函数（原 dialog 分支逻辑内联在 main，抽出供 CLI+hook 共用，去重/取号/落库口径不变）。
+2. `memory/memory_hook.py`：
+   - 新增 `_read_stdin_payload()` / `_extract_text_from_content()` / `_parse_transcript()` / `_session_dialog_from_hook()`；
+   - `session` 子命令：识别 hook payload（含 session_id/transcript_path）→ 解析 transcript 落库（title=session_id, source_ref 标 `precompact-stdin-transcript`）；transcript 缺失/异常 → **降级回 dialog_last_segment.md 旧通路**（向后兼容，日志记录 channel）；候选 judge 管道照跑。
+3. `memory/corpus_store.py`：新增 `list_dialog(session_id=None, tree_vol=None, with_body=False)` 只读查询封装。
+4. `memory/memory_query.py`：新增 `cards_from_dialog(dialog_key)` 反向查找（内存遍历 source_ref，兼容 3 种真实格式：`#dialog-id` / `session=<id>` / `raw锚: session <日期>`；弱关联不强外键）。与 `fetch_by_ref`(卡→对话) 互补成双向。
+5. `eval/core/e9_dialog_governance.py`：新增 `_check_h_channel_stalled(N)`，h 通道近 N 天（默认3）无记录 → 打印 `[e9][h_channel_stalled]` 告警进晨报，report 增 `h_channel` 字段。
+6. 回归：`eval/audit/dialog_trace_regression.py` **27/27 全绿**（解析/落库/降级/查询/反查/告警 6 类，全沙箱隔离），既有 pending 回归 18/18 无破坏，真实库零污染（320 卡不变）。
+
+**明确边界（不可修复项）**：只对**新产生会话**生效；历史存量 t 通道老数据无法复活（旧数据仍只有用户原文，无模型回复）。transcript 格式假设 = Claude Code 标准 `{type, message:{role,content}, timestamp}`，与 agent-pipe 生产 guard.js 同源。
+
 ---
 
 ## 3. #13 记忆卡版本链 + diff（P2 暂缓，带触发条件）

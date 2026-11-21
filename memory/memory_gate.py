@@ -88,6 +88,47 @@ def _miss(hint, topic):
                            ensure_ascii=False) + "\n")
 
 
+def store_dialog(body: str, session: str, source_tag: str = "compact-boundary") -> dict:
+    """对话片段落 raw_corpus(kind=session_dialog) —— #12 提取为可复用函数。
+
+    h 通道(PreCompact)共用：旧 CLI 传 md 文本, 新 hook 传 stdin transcript 解析文本;
+    两者走同一 store_dialog, 保证去重/取号/落库口径一致。
+    body: 对话正文(已 strip); session: 会话标识(存 title); source_tag: 来源标记。
+    规则(2026-11-21 用户裁决): ≤20 字节碎片拦截不灌主表; 当日 simhash 去重打引用标记。
+    返回 dict: {op:'dialog', status: stored/empty-skip/too-short-skip/duplicate-referenced,...}
+    业务跳过=正常返回(不抛异常), 由调用方决定退出码。
+    """
+    import corpus_store as cs
+    body = (body or "").strip()
+    if not body:
+        return {"op": "dialog", "status": "empty-skip"}
+    nb = len(body.encode("utf-8"))
+    if nb <= 20:
+        _log("dialog_too_short", {"session": session, "bytes": nb})
+        return {"op": "dialog", "status": "too-short-skip", "bytes": nb}
+    sh = _simhash(body)
+    today = datetime.now().strftime("%Y-%m-%d")
+    dups = []
+    for row in cs.list_corpus(kind="session_dialog", tree_vol=today):
+        old = cs.get_corpus(row["id"])
+        if old and _hamming(sh, _simhash(old["body"])) <= 6:
+            dups.append({"ref": row["id"], "simhash": sh})
+    if dups:
+        _log("dialog_dedup", {"session": session, "simhash": sh,
+                              "refs": [d["ref"] for d in dups]})
+        return {"op": "dialog", "status": "duplicate-referenced",
+                "refs": [d["ref"] for d in dups]}
+    seq_n = cs.next_dialog_seq()
+    cid = "dialog.%s.h%04d" % (today, seq_n)
+    h = cs.upsert_corpus(cid, "session_dialog", body, tree_vol=today,
+                         tree_ch="h%04d" % seq_n, title=session,
+                         source_ref="%s; %s" % (session, source_tag))
+    _log("dialog_stored", {"id": cid, "content_hash": h, "simhash": sh,
+                           "bytes": nb, "source_tag": source_tag})
+    return {"op": "dialog", "status": "stored", "id": cid,
+            "simhash": sh, "content_hash": h}
+
+
 # ---------- CLI ----------
 
 def main():
@@ -112,42 +153,10 @@ def main():
     import corpus_store as cs
 
     if args.cmd == "dialog":
-        # PreCompact 专属: append-only 原文分段 + simhash 当日比对去重
+        # PreCompact 专属(旧路径): 读 md 文件 → 复用 store_dialog 落库
         body = io.open(args.file, encoding="utf-8").read().strip()
-        if not body:
-            print(json.dumps({"op": "dialog", "status": "empty-skip"})); return
-        # 2026-11-21 防护(用户裁决): h 通道长度+语义校验——≤20 字节纯碎片无检索价值,
-        # 前置拦截不灌主表(与 t 通道过滤口径一致, 见 maintenance_session_dialog_cleanup)。
-        if len(body.encode("utf-8")) <= 20:
-            _log("dialog_too_short", {"session": args.session, "bytes": len(body.encode("utf-8"))})
-            print(json.dumps({"op": "dialog", "status": "too-short-skip",
-                              "bytes": len(body.encode("utf-8"))}, ensure_ascii=False)); return
-        sh = _simhash(body)
-        today = datetime.now().strftime("%Y-%m-%d")
-        # 当日热区段落比对(量小内存比对; 不建独立索引表)
-        dups = []
-        for row in cs.list_corpus(kind="session_dialog", tree_vol=today):
-            old = cs.get_corpus(row["id"])
-            if old and _hamming(sh, _simhash(old["body"])) <= 6:
-                dups.append({"ref": row["id"], "simhash": sh})
-        if dups:
-            # 重复片段: 打引用标记不新增(规约四)
-            _log("dialog_dedup", {"session": args.session, "simhash": sh,
-                                 "refs": [d["ref"] for d in dups]})
-            print(json.dumps({"op": "dialog", "status": "duplicate-referenced",
-                              "refs": [d["ref"] for d in dups]}, ensure_ascii=False))
-            return
-        # 2026-11-16 用户裁决②(方案B): 全局序列池原子取号(与E9 transcript通道共用),
-        # 废弃"当日 len+1"计数(多写入方各算各的撞号根源)。h=hook通道标识。
-        seq_n = cs.next_dialog_seq()
-        cid = "dialog.%s.h%04d" % (today, seq_n)
-        h = cs.upsert_corpus(cid, "session_dialog", body, tree_vol=today,
-                            tree_ch="h%04d" % seq_n, title=args.session,
-                            source_ref="%s; compact-boundary" % args.session)
-        _log("dialog_stored", {"id": cid, "content_hash": h, "simhash": sh,
-                               "bytes": len(body.encode("utf-8"))})
-        print(json.dumps({"op": "dialog", "status": "stored", "id": cid,
-                          "simhash": sh, "content_hash": h}, ensure_ascii=False))
+        r = store_dialog(body, args.session, source_tag="compact-boundary")
+        print(json.dumps(r, ensure_ascii=False))
 
     elif args.cmd == "probe":
         # 深度检索门: 判定失败/超时→保守 true(读侧假阴性代价不对称)

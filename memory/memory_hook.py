@@ -72,6 +72,104 @@ def _overlay_date(inst_id):
     return _load_event_ts_overlay().get(inst_id)
 
 
+# ---------- #12 对话追溯: stdin transcript 解析(cwd 2026-11-22) ----------
+# 背景: 旧机制依赖主 AI 手动覆写 dialog_last_segment.md, 契约脆弱 → h 通道曾静默断流。
+# 新机制: PreCompact hook stdin 自带 {session_id, transcript_path}, 直接解析 transcript
+# JSONL 拿本轮完整对话(用户+模型回复), 不再依赖外部 md 中转。
+# transcript 每行: {type:'user'|'assistant', message:{role, content}, timestamp}。
+#   content 可能是 str, 也可能是 [{type:'text'|'tool_use'|'tool_result', ...}]。
+# 参考生产实现在用的 agent-pipe guard.js(同格式)。
+
+def _read_stdin_payload() -> dict:
+    """读 hook stdin JSON payload; 非 TTY 且空/非法时返回 {}。"""
+    try:
+        if sys.stdin is None or sys.stdin.isatty():
+            return {}
+        raw = sys.stdin.read()
+        return json.loads(raw) if raw and raw.strip() else {}
+    except Exception:
+        return {}
+
+
+def _extract_text_from_content(content):
+    """从 message.content 提取纯文本(content 为 str 或 [{type:'text',text}] 数组)。"""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                t = item.get("text")
+                if t:
+                    parts.append(t)
+            elif isinstance(item, str):
+                parts.append(item)
+        return "\n".join(parts)
+    return ""
+
+
+def _parse_transcript(transcript_path: str) -> str:
+    """解析 transcript JSONL → 组装「用户/助手」对话文本。仅取 user/assistant 的 text
+    内容(tool_use/tool_result 丢弃, 那是工具流水非对话)。失败抛异常由调用方降级。"""
+    out = []
+    with io.open(transcript_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            if not isinstance(rec, dict):
+                continue
+            msg = rec.get("message") or {}
+            role = rec.get("type") or msg.get("role")
+            if role not in ("user", "assistant"):
+                continue
+            text = _extract_text_from_content(msg.get("content"))
+            if text and text.strip():
+                label = "用户" if role == "user" else "模型"
+                out.append("【%s】%s" % (label, text.strip()))
+    return "\n\n".join(out)
+
+
+def _session_dialog_from_hook(payload: dict) -> dict:
+    """#12 主逻辑: 由 hook payload 落对话原文。
+    优先 transcript_path 解析; 缺失/异常降级到 dialog_last_segment.md 旧通路。
+    返回 {channel, status, ...} 供调用方打印与退出码判定。"""
+    import memory_gate
+    session = (payload.get("session_id") or "codechat-session/default")
+    tpath = payload.get("transcript_path") or ""
+    body = ""
+    channel = "none"
+    err = None
+    if tpath:
+        try:
+            body = _parse_transcript(tpath)
+            channel = "transcript"
+        except Exception as e:  # noqa: BLE001
+            err = repr(e)
+            channel = "fallback-md"
+    else:
+        channel = "fallback-md"
+    if channel == "fallback-md" or (channel == "transcript" and not body.strip()):
+        # 降级: 读旧 md 通路(历史行为, 保留向后兼容)
+        md = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "..", "data", "memory", "dialog_last_segment.md")
+        try:
+            body = io.open(md, encoding="utf-8").read().strip()
+            channel = "fallback-md"
+        except Exception as e:  # noqa: BLE001
+            return {"channel": "fallback-md", "status": "md-read-fail",
+                    "err": repr(e), "transcript_err": err, "session": session}
+    source_tag = "precompact-stdin-transcript" if channel == "transcript" else "compact-boundary"
+    r = memory_gate.store_dialog(body, session, source_tag=source_tag)
+    r["channel"] = channel
+    r["transcript_err"] = err
+    return r
+
+
 def main():
     ap = argparse.ArgumentParser(description="DFCP 记忆管道入口")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -136,28 +234,57 @@ def main():
             t_label = f"[{str(ed)[:10]}]" if ed else "[时间未知]"
             print(f"{score:.4f} {t_label} [{m['dfcp_tag']['domain']}|{m['dfcp_tag']['behavior']}] {m['summary'][:60]}")
     elif args.cmd == "session":
-        # hook 入口：读候选（stdin 或 --file），走 judge 四档管道。
-        # 候选格式 = judge_and_store 的 candidates（summary/detail/source/domain/
-        # behavior/relation/confidence/memory_class/event_ts）。
-        # 设计（memory_hook.py 头注）：hook 全自动归档先小窗口试运行——
-        # 候选由 hook 端摘要生成（PreCompact 时主 AI 落盘会话裁决清单后调用），
-        # 本命令只做管道执行不做摘要提取，边界清晰。
-        raw = io.open(args.file, encoding="utf-8").read() if args.file else sys.stdin.read()
+        # hook 入口，双职责(2026-11-22 #12 起):
+        #  A) 对话原文落库: 读 hook stdin payload{session_id,transcript_path}, 解析本轮
+        #     完整对话(用户+模型)写入 raw_corpus(修复 h 通道断流根因)。
+        #  B) 候选记忆 judge 管道: 从 --file(或 payload/旧 stdin)读候选走四档判定。
+        # stdin 分流: 若 payload 含 hook 字段(session_id/transcript_path/hook_event_name)
+        #  → 是 PreCompact payload, 候选只从 --file 读; 否则旧行为(整个 stdin 当候选 list)。
+        payload = {}
+        raw = ""
+        if args.file:
+            raw = io.open(args.file, encoding="utf-8").read()
+        elif not (sys.stdin is None or sys.stdin.isatty()):
+            raw = sys.stdin.read()
+        # 先尝试把 raw 当 hook payload 解析(有 hook 字段才采纳为 payload)
+        _hook_keys = ("session_id", "transcript_path", "hook_event_name")
         try:
-            candidates = json.loads(raw) if raw.strip() else []
+            _parsed = json.loads(raw) if raw.strip() else None
+        except Exception:
+            _parsed = None
+        if isinstance(_parsed, dict) and any(k in _parsed for k in _hook_keys):
+            payload = _parsed
+        # ---- A) 对话原文落库(即使候选解析失败也先做, 对话追溯优先) ----
+        dlg_report = None
+        try:
+            dlg_report = _session_dialog_from_hook(payload)
+        except Exception as e:  # noqa: BLE001
+            dlg_report = {"status": "dialog-error", "err": repr(e)}
+            print(f"[memory_hook_abnormal] 对话落库异常: {e!r}", file=sys.stderr)
+        # ---- B) 候选 judge 管道 ----
+        if payload:
+            candidates = payload.get("candidates") or []
             if isinstance(candidates, dict):
                 candidates = [candidates]
-        except Exception as e:
-            print(json.dumps({"error": f"候选JSON解析失败: {e}"}, ensure_ascii=False))
-            sys.exit(1)
+        else:
+            try:
+                candidates = (_parsed if _parsed is not None else (json.loads(raw) if raw.strip() else []))
+                if isinstance(candidates, dict):
+                    candidates = [candidates]
+            except Exception as e:
+                print(json.dumps({"error": f"候选JSON解析失败: {e}",
+                                  "dialog": dlg_report}, ensure_ascii=False))
+                sys.exit(1)
         from memory_judge import judge_and_store
         # 2026-11-21 修复(用户裁决): judge 管道内部吞异常会返回"正常"报告,
         # 上游 CodeChat 无法感知故障 → 静默丢记忆。judge_failures>0 时显式非 0 退出。
         try:
             r = judge_and_store(candidates, context={"trigger": "hook"})
         except Exception as e:
-            print(json.dumps({"error": f"judge管道异常: {e}"}, ensure_ascii=False))
+            print(json.dumps({"error": f"judge管道异常: {e}", "dialog": dlg_report},
+                             ensure_ascii=False))
             sys.exit(2)
+        r["dialog"] = dlg_report   # 对话落库结果并入报告, 晨报/排错可见
         print(json.dumps(r, ensure_ascii=False, indent=1))
         if r.get("judge_failures"):
             # 判定层异常已被内部 fallback 成 hold(不丢), 但入口须告警非 0

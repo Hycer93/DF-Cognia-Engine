@@ -204,6 +204,31 @@ def list_corpus(*, kind=None, tree_vol=None, status="current") -> list:
     return [dict(r) for r in rows]
 
 
+def list_dialog(*, session_id=None, tree_vol=None, with_body=False,
+                status="current") -> list:
+    """#12 对话追溯：按 session(存 title) 或日期(tree_vol) 取 session_dialog 段。
+    纯只读，不写任何表。session_id 对应 h/t 通道写入时放在 title 的会话标识；
+    tree_vol 为日期(YYYY-MM-DD)。两者可叠加过滤；都不传=取全部对话段(按时间倒序)。
+    with_body=True 时附带 body 正文(默认只返回元字段, 避免大文本误传)。
+    返回 list[dict]，按 ts 倒序(最新在前)。"""
+    c = _conn()
+    cols = "id, kind, tree_vol, tree_ch, title, version, status, content_hash, source_ref, ts"
+    if with_body:
+        cols += ", body"
+    q = "SELECT %s FROM raw_corpus WHERE kind='session_dialog' AND status=?" % cols
+    args = [status]
+    if session_id:
+        q += " AND title=?"
+        args.append(session_id)
+    if tree_vol:
+        q += " AND tree_vol=?"
+        args.append(tree_vol)
+    q += " ORDER BY ts DESC"
+    rows = c.execute(q, args).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
 def add_tags(corpus_id: str, tags: dict):
     """挂树级标签：{"arc": ["营救启动"], "chars": ["陈默","溯零"]}"""
     c = _conn()
