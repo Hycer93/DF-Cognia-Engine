@@ -109,16 +109,43 @@ F20 **只影响 F10 候选分支的展示排序与 top-K 选择**；F40 BFS 路�
 
 `logs/f20/guard_latest.json`（2026-11-21 21:34）：`flipped=true, rank_shifted=true`。
 
-实测定位：
+> **A-1 溯源已结案（2026-11-21 23:20），推翻初判。** 初版本文误把"goal 卡 `9e23b6ee`
+> relation 零边"当根因——错。事实：`9e23b6ee` 从 11-15 至今在 `core_relation` 一直是 0 边，
+> 靠 **topic** 连通；`f7a20eb7↔04353a35` 直边**从未存在过**（所有备份均无）。
+> **真正根因：`f7a20eb7` 的 topic 归属被改挂。**
+>
+> ```
+> 11-20 17:42  bak_final_20261120（改挂前一刻）
+>   f7a20eb7 ∈ topic_reflection_trace（3 成员: 04353a35, b89b8a50, f7a20eb7）
+> 11-20 17:43:31  method='final-review' 改挂
+>   f7a20eb7 → topic_atomic_metacore（7→8 成员）；reflection_trace 降到 2 成员
+> ```
+> topic 一变，`f7a20eb7` 与 `04353a35` 失去 topic 交集 → F40 topic 弱边断链 →
+> explore1 六跳路径断裂 → `step_exhausted`。实测 BFS 可达集 seen 由 39 骤降至 4。
+>
+> **语义判定：改挂是正确的。** `f7a20eb7` 卡片内容="执行器契约v2定案…cgraph思考架构重构"，
+> 确实属于 `topic_atomic_metacore`（原子化元核重构簇），不属于 `topic_reflection_trace`。
+> 某次 `final-review` 人工复审把它归对了类。
+> **→ 属"数据治理正确但打破回归基线"，结论是应重定基线（待用户裁决，禁区未越界）。**
+
+原始表象表（保留作排查记录）：
 
 | 场景 | 现象 | 根因 |
 |---|---|---|
-| explore1 | PASS→FAIL（`step_exhausted`） | goal 卡 `9e23b6ee` 在 `core_relation` 中**零边**（全库搜不到）；1119 路径的 `f7a20eb7 ↔ 04353a35` 边**现已完全不存在**（任意 status 都没有），两卡 topic 也无交集 → BFS 断链 |
+| explore1 | PASS→FAIL（`step_exhausted`） | `f7a20eb7` topic 由 reflection_trace 改挂 atomic_metacore（11-20 17:43:31），与 `04353a35` 失去 topic 交集 → BFS 断链 |
 | smoke / explore2 | top-3 由 `f4198bf7` → `58707552` | `58707552` 的 D=0.419 > `f4198bf7` 的 D=0.300（后者所在簇债务更高），F20 排序**正确响应**了债务变化 |
 
-**判定**：F20 代码无缺陷；`f20_weight.py` 最近一次改动（`726a712`）只是补 `timeout=5`，不改逻辑。
-问题在图谱数据：goal 卡边丢失 + 簇债务比例变化。这是**上游数据治理问题**，需人工排查那次写库/治理动作。
-（DB 未被 git 跟踪，无法用 git 回溯；依赖 `logs/f20/nightly_*/` 历史快照佐证。）
+**判定**：F20 代码无缺陷；`f20_weight.py` 最近一次逻辑改动距今无（`726a712` 仅补 `timeout=5`）。
+问题在图谱数据：`f7a20eb7` topic 改挂 → 打散 explore1 的固定回归链。属**上游数据治理成果**，
+不是退化（改对了类，但破坏了以旧归属为前提的基线）。
+
+**A-1 排查否定的假设**（留证）：
+- ❌"批量修剪脚本"：`graph_cleanup.py`/`cluster_prune.py`/`relation_archiver.py`/`trim_isolated_edges.py`
+  四个脚本**全部不存在**
+- ❌"人删 SQL/批量 UPDATE status"：`topic_links` 的 DELETE 仅 e0 守卫（只删自建探针卡）+ 测试 mock
+- ❌"边被删"：`core_relation` 中 `9e23b6ee` 各备份恒为 0 边；`f7a20eb7↔04353a35` 直边从未存在
+- ❌"nightly 快照可做两天全量 core_relation 差分"：nightly snapshot 只存 anchor 摘要与 f20_meta，
+  **不含 core_relation 全量**；幸好 `data/memory/backups/` 与 `*.bak_final_20261120` 提供了可用 DB 备份
 
 ### D2 守卫归因盲区：分不清"数据漂移"与"权重漂移"
 
@@ -192,7 +219,7 @@ P2-4 文档不能直接当 F20 的标定依据，只能借鉴其"单因素对照
 
 | # | 决策点 | 选项 | 建议 |
 |---|---|---|---|
-| Q1 | 当前守卫红警如何处置 | A. 先查图数据退化（goal 卡 `9e23b6ee` 边丢失、`f7a20eb7↔04353a35` 边消失）再重定基线；B. 直接重定五场景基线接受现状 | **A**：中断链是数据问题，直接重定会掩盖真实退化 |
+| Q1 | 当前守卫红警如何处置 | A. 先查图数据退化（goal 卡 `9e23b6ee` 边丢失、`f7a20eb7↔04353a35` 边消失）再重定基线；B. 直接重定五场景基线接受现状 | **A-1 已结案**：根因是 `f7a20eb7` topic 改挂（治理正确），非数据退化。**建议重定 explore1 基线**（接受新归属），但需用户裁决后执行 |
 | Q2 | 守卫告警是否补数据漂移归因 | 是/否 | 是（D2），否则下次仍误判 |
 | Q3 | `δ_step` 的 0.6/0.85 是否标定 | 抽常量+扫描 / 保持现先验 | 先抽常量（零行为变更），扫描排后续批次 |
 | Q4 | F 因子对无 event_ts 卡口径 | 现"按1年前" / 改"按 ts 或中性 0.5" / 按写入时间 | "按 ts 或中性 0.5"更合理，但**属语义变更需 A/B 评估**（同 P2-7 纪律） |
@@ -254,9 +281,30 @@ A1(β)/A2(λ_debt)/A3(δ_step)/A4(半衰期)，产出 `logs/f20_ablation_<date>.
 
 ## 9. 附：本次盘点实测证据
 
+### 9.1 A-1 溯源结论（2026-11-21 23:20 结案）
+
+- **真正根因**：`f7a20eb7` 的 topic 归属在 **2026-11-20 17:43:31**、`method='final-review'`
+  由 `topic_reflection_trace` 改挂到 `topic_atomic_metacore`
+- 改挂前备份 `bak_final_20261120`（17:42）：`f7a20eb7` 与 `04353a35` 同在 `topic_reflection_trace`
+  （3 成员），F40 通；当前库：分属两簇，F40 断
+- 实测 BFS（F40 真实边口径）：锚 `2e9d4192` 可达集 seen 由 **39 骤降到 4**，goal 不可达
+- **语义正确性**：`f7a20eb7` 卡片内容（执行器契约v2/cgraph思考架构重构）确属 `topic_atomic_metacore`，
+  改挂归对了类 → 属"治理正确但打破旧基线"
+- 否定的假设：4 个修剪脚本全不存在；`topic_links` DELETE 仅 e0 守卫自清 + 测试 mock；
+  `9e23b6ee` 各备份恒 0 关系边（靠 topic 连通）；`f7a20eb7↔04353a35` 直边从未存在；
+  nightly snapshot 不含 core_relation 全量（幸好有 DB 备份可用）
+
+### 9.2 副线落地（A-2/A-3/A-5，commit `dd8fdfd`）
+
+- **A-5**：`DELTA_STEP_BASE=0.6` / `DELTA_STEP_SLOPE=0.85` 抽常量，step=0..3 手算 new==old 逐位一致
+- **A-2**：守卫新增 `_data_drift_snapshot`/`_drift_suspect`，告警区分"疑似数据漂移 vs 疑似权重异常"；
+  隔离测试：explore1 neighbor 39→4 正确标注数据漂移
+- **A-3**：`eval/audit/f20_weight_regression.py` 6 类 20 用例全绿（假 con 隔离，库漂移不误报）
+- 真实 `guard_latest.json` 未改动（仍 21:34 原始，无 data_drift 字段）——严守"不刷新基线"约束
+
+### 9.3 原始表象证据（排查留档）
+
 - `logs/f20/guard_latest.json` 2026-11-21：`flipped=true, rank_shifted=true`
 - explore1 判定链：1116/1117/1118/1119 全 PASS → 1121 FAIL（`step_exhausted`）
-- `core_relation` 中 `9e23b6ee`（goal）零边；`f7a20eb7↔04353a35` 边任意 status 均不存在
-- 实测 BFS：anchor `2e9d4192` 可达集仅 4 节点，`89cb3db1` 不可达
 - F20 打分对照：`58707552`(D=0.419) vs `f4198bf7`(D=0.300) → 排序变化为正确响应
 - 全仓 grep：F20 无生产接线，仅 `eval/experiment/` 引用
