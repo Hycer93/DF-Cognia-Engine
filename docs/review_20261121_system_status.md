@@ -206,12 +206,13 @@
 ## 四、主线队列（统一编号总表，2026-11-22 重编）
 
 > **编号规则**：#N 为统一待办编号，一经分配不复用。优先级 P0>P1>P2。已完成项保留历史号归档在表末。
-> 本次重编变更：#A 并入 #8（同为 F60 第二环）；原 §七 一致性修复编号为 #14；原 #B→#15、#C→#16；#11 复盘承接的 P2-A/B/C 登记为 #17/#18/#19（详见 `docs/review_11_attitude_20261122.md`）；记忆系统评估复盘立项 #20（P1，详见 `docs/review_20_observability_20261122.md`）。
+> 本次重编变更：#A 并入 #8（同为 F60 第二环）；原 §七 一致性修复编号为 #14；原 #B→#15、#C→#16；#11 复盘承接的 P2-A/B/C 登记为 #17/#18/#19（详见 `docs/review_11_attitude_20261122.md`）；记忆系统评估复盘立项 #20（P1，详见 `docs/review_20_observability_20261122.md`）；cgraph 可验证性评审立项 #21（P1，详见 `docs/review_21_cgraph_verifiability_20261122.md`）。
 
 ### 待办（按优先级）
 
 | 编号 | 任务 | 优先级 | 状态 | 说明 / 依赖 |
 |---|---|---|---|---|
+| **#21** | cgraph 可验证性：verify_ratio 消融 + A/B 结论沉淀 | **P1** | 📋 待立项 | 补 verify_ratio A/B/C/D 消融（关闭/随机/仅utility）；已有 `ab_result_*.jsonl` 汇总胜率/平均分/样本量；README 措辞校准；**graph.py/trajectory.py 存在（评价者未读到），不补**；详见 `docs/review_21_cgraph_verifiability_20261122.md` |
 | **#20** | 记忆系统可观测性 + 合规 | **P1** | 📋 待立项 | 补检索成功率/miss_case趋势/误归档率/hold池规模/冲突判定计数/simhash触发/热区扫描指标并入E4晨报；全链路流程图；applog脱敏；**先指标后收敛，禁无据大砍规则**；详见 `docs/review_20_observability_20261122.md` |
 | **#12** | 对话会话归组 & 历史追溯（轻量版） | **P0** | ✅ **完成** | 根治 h 通道断流（实证：1508段仅1条h,全靠E9兜底）；stdin transcript 解析落库+降级md+list_dialog+cards_from_dialog+E9断流告警；回归 27/27；详见 §六 |
 | **#11** | 回执态度元标签子通路（方案A） | **P1** | ✅ **完成** | `memory_attitude.py` 附属 JSONL + judge LLM 通路接入 attitude 解析；stub 零副作用、主表零改动；回归 22/22；详见 §五 |
