@@ -1,0 +1,81 @@
+# 系统现状评审与整改台账（2026-11-21）
+
+> 评审范围：`cgraph/`（推理）与 `memory/`（记忆）两模块。
+> 评审方式：逐文件读码 + 行号取证，不含臆测；代码无法判断的效果类结论明确标注。
+> 本文件兼作整改 issue 台账，按 P0→P1→P2 排序，完成后在对应条目标注 commit。
+
+---
+
+## 一、总体判断
+
+**骨架很真、血肉有虚。**
+
+- **真的部分**：路由刚性约束（fallback≤1、单技能≤2、四通道退出）、素材通道截断、测试覆盖（`test_skill_router.py` 40+ 用例）、`corpus_registry` 行级聚合锚、`memory_query` 两段式排序——这些都是踩过真实 bug 收敛出来的，注释里有 E8 首跑 / P39/P40 的修复痕迹。
+- **虚的部分**：两个"智能核心"当前是桩——**记忆的 judge 是长度判断（`memory_judge.py:57-140` 注释自认"规则桩"），推理的赫布是加减计数器（`hebbian.py`）**。文档措辞（"四档判定""带权思维图学习"）高于代码实质。
+
+分期策略本身合理（LLM 判定留了接口位），问题是"Week2 换基座"已拖延数周，桩实现仍在当生产用。
+
+---
+
+## 二、整改台账
+
+### 🔴 P0 — 线上单点故障 / 潜伏数据损坏
+
+#### P0-1 JSON 解析脆弱（链路崩溃根来源）
+- **证据**：`cgraph/executor.py:431-451 _parse_node_json` 与 `cgraph/router.py:88-99` 均用 `t.find("{")` / `t.rfind("}")` 抠 JSON。
+- **风险**：LLM 输出含嵌套 JSON 或字符串/注释内的花括号时，切片边界错，`json.loads` 失败 → 整条走链降级为纯文本，结构化信号（analysis/deepen）全丢。
+- **方案**：引入括号计数扫描器（正确处理字符串字面量与转义），零外部依赖（项目无 requirements.txt，`json_repair` 未安装，故不引外部包）；抽为共用工具函数，executor 与 router 共用；补回归用例（嵌套/转义/多对象/纯文本）。
+- **方案落地**：新增 `cgraph/json_utils.py`（括号计数扫描器，零依赖）；executor/router 切换；`eval/audit/json_utils_regression.py` 10/10 通过；`test_skill_router.py` 63 项全绿。
+- **状态**：✅ 完成 commit 00579b4
+
+#### P0-2 confidence_dynamics 双读不一致（数据漂移）
+- **证据**：`memory/confidence_dynamics.py:32-38 _load_memories()` 永远读 `memories.jsonl`；而 `memory_query.py` 有 `_MEMORY_SOURCE` 在 sqlite/jsonl 间切换。
+- **风险**：主库切到 sqlite 后，置信度升降级对着过期 jsonl 做动作，与主库漂移。
+- **方案**：`_load_memories()` 复用 `memory_query.load_memories()` 同源读取；新增 `eval/audit/confidence_read_source_regression.py` 一致性回归（3/3 通过）。
+- **实测漂移**：改造前 jsonl 245 条 vs sqlite active 314 条，差 69 条（即 69 条记忆的置信度动态更新从未生效）。
+- **状态**：✅ 完成 commit 4fa285b
+
+### 🟠 P1 — 准入门面桩转正
+
+#### P1-1 memory_judge 规则桩接 LLM
+- **证据**：`memory/memory_judge.py:57-140` 五问全为 if/else 长度检查 + 硬编码特征词匹配（Q1 `len(summary)<8`、Q2 `len(detail)<30`、Q4 全库 2-gram 重叠 `<6`）；注释自标"规则桩…Week2 换基座"。
+- **风险**：系统的准入闸门靠长度判断守，且 Q4 每次全库 `load_memories()` O(N) 扫描。
+- **方案**：接入 LLM 判定主路径，规则桩降级为 fallback（LLM 不可用时）；Q4 血缘检测避免全库扫描（改用索引/缓存）。
+- **状态**：待办
+
+### 🟡 P2 — 中长期技术债（不阻断当前冒烟/A/B）
+
+#### P2-1 schema 版本与迁移
+- **证据**：`memory/schema.py` 硬编码 dict 白名单；`corpus_store.py` 仅 `CREATE TABLE IF NOT EXISTS`，无 `schema_version` 表、无 migration 脚本；僵尸表 `persona_anchor` 仍在 SCHEMA 但 `add_anchor()` 已写 `core_persona_anchor`（`corpus_store.py:231-245`），`get_anchors()` 用 `LIKE '[已迁范式]%'` 过滤旧数据。
+- **方案**：新增 `schema_version` 元表 + migration 脚本；清理僵尸定义；枚举变更留迁移路径，避免历史 jsonl 旧值静默拒收。
+- **状态**：待办
+
+#### P2-2 executor 巨型函数拆分 + 移除生产 assert
+- **证据**：`executor.py:165-288 run_atomic` ~120 行混入 ref_material 切片/audit 写库/matrix 注入/terminate 补跑 4 个关注点；`commit_green_cards`（~80 行 DB 逻辑 + Jaccard 去重 + 审计双写）嵌在 executor；`engine.py:64` 用 `assert decision.is_valid` 做生产校验（`python -O` 下消失）。
+- **方案**：`commit_green_cards` 移出 executor 独立模块；`run_atomic` 按关注点拆分；`assert` 改显式异常。
+- **状态**：待办
+
+#### P2-3 hebbian 措辞如实化
+- **证据**：`hebbian.py` 实为 `weight += 0.05` / `weight *= 0.995`，初始权重来自 `graph.py:23-24` P0-P8 主观优先级，`neg` 阈值 0.3 无消融支撑，无显著性检验。
+- **方案**：文档/注释去掉"图学习"虚高描述，如实写"带衰减计数器"；显著性统计留后续迭代。
+- **状态**：待办
+
+#### P2-4 检索权重标定 + IDF/词序
+- **证据**：`memory_query.py:661-663` 打分 `sem*0.30 + kw*0.30` 硬编码，`W_*` 在 `constants.py` 标 `[先验-业务设定]` 无标定报告；keyword 为朴素 n-gram 子串 + 1-gram Jaccard，无 IDF、无词序。
+- **方案**：补权重标定对照实验文档；迭代引入 IDF 与词序特征。
+- **状态**：待办
+
+#### P2-5 SQLite 连接超时 + 去静默吞错
+- **证据**：`corpus_store.py:102 _conn()` 无 `timeout` 参数（默认可能永久阻塞）；`memory_gate.py:78-79` gate_log 写失败 `except OSError: pass`；`memory_query.py:760-761` cited_log 写失败静默容忍（此项为有意设计，保留但加日志）。
+- **方案**：所有连接补 `timeout`；无条件 `pass` 改告警日志。
+- **状态**：待办
+
+---
+
+## 三、执行顺序
+
+1. **P0-1、P0-2**（先动手，止血）
+2. P1-1（准入门面）
+3. P2-1 ~ P2-5（按迭代节奏）
+
+每条完成后在标题下追加 `✅ 完成 commit <hash>`。
