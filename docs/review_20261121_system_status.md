@@ -51,9 +51,16 @@
 ### 🟡 P2 — 中长期技术债（不阻断当前冒烟/A/B）
 
 #### P2-1 schema 版本与迁移
+- **进展**：✅ 完成（待提交）
 - **证据**：`memory/schema.py` 硬编码 dict 白名单；`corpus_store.py` 仅 `CREATE TABLE IF NOT EXISTS`，无 `schema_version` 表、无 migration 脚本；僵尸表 `persona_anchor` 仍在 SCHEMA 但 `add_anchor()` 已写 `core_persona_anchor`（`corpus_store.py:231-245`），`get_anchors()` 用 `LIKE '[已迁范式]%'` 过滤旧数据。
 - **方案**：新增 `schema_version` 元表 + migration 脚本；清理僵尸定义；枚举变更留迁移路径，避免历史 jsonl 旧值静默拒收。
-- **状态**：待办
+- **落地**：新增 `memory/schema_migrate.py`（schema_version 元表 + 迁移注册表 + dry-run/status）；
+  迁移 0001 枚举规范化清洗 38 条非法 memory_class（observation→NULL）+ 43 条浮点 confidence（→L 档），
+  明细写 `audit_schema_migrate`；迁移 0002 标记 persona_anchor 废弃并从 `corpus_store.SCHEMA` 移除定义（不 DROP 数据）。
+  新增 `schema.ASSET_CLASS_ENUM` 校验；修复脏数据写入源 `cgraph/executor.py:548-555` 的
+  commit_green_cards（observation/0.6/observation → runtime/L2/None）。
+- **回归**：`schema_migrate_regression.py` 7/7；路由器 63 项、judge 桩矩阵 7/7、置信度读源 3/3 全绿；integrity ok
+- **状态**：✅ 完成
 
 #### P2-2 executor 巨型函数拆分 + 移除生产 assert
 - **证据**：`executor.py:165-288 run_atomic` ~120 行混入 ref_material 切片/audit 写库/matrix 注入/terminate 补跑 4 个关注点；`commit_green_cards`（~80 行 DB 逻辑 + Jaccard 去重 + 审计双写）嵌在 executor；`engine.py:64` 用 `assert decision.is_valid` 做生产校验（`python -O` 下消失）。

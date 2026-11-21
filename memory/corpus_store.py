@@ -44,14 +44,9 @@ CREATE TABLE IF NOT EXISTS corpus_tags (
     PRIMARY KEY (corpus_id, tag_key, tag_value)
 );
 
-CREATE TABLE IF NOT EXISTS persona_anchor (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    phase       TEXT NOT NULL,             -- 时期: 2025-xx / 项目里程碑 / 一生分期
-    summary     TEXT NOT NULL,             -- 一句话：该阶段人格侧写了什么
-    detail      TEXT,                      -- 展开描述
-    source_ref  TEXT NOT NULL,             -- 溯源（语料id/对话日期）——人格锚必须可溯源
-    ts          TEXT NOT NULL
-);
+-- 2026-11-21 P2-1: persona_anchor 已废弃(deprecated), 冻结保留不 DROP 数据。
+-- 写入唯一真相迁至 core_persona_anchor(add_anchor 只写 core_); 旧定义移除防僵尸。
+-- 见 memory/schema_migrate.py 迁移 0002。
 
 CREATE TABLE IF NOT EXISTS iterations (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,

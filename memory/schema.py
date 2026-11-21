@@ -65,6 +65,12 @@ RELATION_TREE = {
 # 置信度五级（L0-L4，与可复现性三级正交：管理推理 vs 管存储）
 CONFIDENCE_LEVELS = {"L0", "L1", "L2", "L3", "L4"}
 
+# 资产类别（2026-11-21 P2-1 新增枚举校验）：core_memory_card.asset_class 与
+# memory_organize.add(asset_class=) 取值。历史曾混入 observation/insight/
+# high_value/capability_pact/domain_tool 等业务分类(绿卡写入源硬编码所致),
+# 已由 schema_migrate 迁移留档, 现收敛为两值。扩展须走裁决并同步此处。
+ASSET_CLASS_ENUM = {"corpus", "runtime"}
+
 # 可复现性三级判定（专利A）：决定对结构三层的占用权限（嵌套非映射，§4.7）
 REPRO_TIERS = {
     "flash":       "三级不可复现 → summary+detail+source 全量永久",
@@ -161,4 +167,8 @@ def validate_memory_tags(tags: dict) -> tuple[bool, list[str]]:
     mc = tags.get("memory_class")
     if mc is not None and mc not in MEMORY_CLASS_ENUM:
         errors.append(f"非法memory_class: {mc}（五类枚举白名单，扩展规则见 schema 注释契约）")
+    # asset_class（2026-11-21 P2-1）：缺省不校验（兼容不传的调用）；传了则须在白名单。
+    ac = tags.get("asset_class")
+    if ac is not None and ac not in ASSET_CLASS_ENUM:
+        errors.append(f"非法asset_class: {ac}（仅 corpus|runtime）")
     return (len(errors) == 0, errors)

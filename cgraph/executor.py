@@ -545,14 +545,14 @@ def commit_green_cards(result, gate, user_input: str):
                 "asset_class, repro, confidence, dfcp_tag, summary, summary_converged, "
                 "detail, source_ref, memory_class, tier, weight, status) "
                 "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (inst, ts, ts, fh, "observation", "situational", 0.6,
+                (inst, ts, ts, fh, "runtime", "situational", "L2",
                  _json.dumps({"domain": "001-003", "behavior": "Ht", "relation": "P",
-                              "memory_class": "observation"}, ensure_ascii=False),
+                              "memory_class": None}, ensure_ascii=False),
                  s[:120], "0",
                  f"绿档自动立卡(memory_gate 0f2f4458双层写入规约); "
                  f"素材步: {x['evidence_step']}; 档案动词: {x['proposed_action']}",
                  f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
-                 "observation", "active", '{"match": 0.0, "cited": 0}', "active"))
+                 None, "active", '{"match": 0.0, "cited": 0}', "active"))
             ids.append(inst[:16])
             written += 1
         con.commit()
