@@ -3,6 +3,7 @@
 > 评审范围：`cgraph/`（推理）与 `memory/`（记忆）两模块。
 > 评审方式：逐文件读码 + 行号取证，不含臆测；代码无法判断的效果类结论明确标注。
 > 本文件兼作整改 issue 台账，按 P0→P1→P2 排序，完成后在对应条目标注 commit。
+> **后续系统综合评审（2026-11-22，全批闭环后基于 148 py / 2.5万行权威扫描）见附件 `docs/review_system_20261122.md`。**
 
 ---
 
@@ -211,6 +212,14 @@
 | #10 | 门槛②③④ | ✅ **完成** | 口径冻结 `7c6e074`；S2-S4 业务 `82a4ee8`；S5 总回归 `75f8fda`；人工评审签字归档 `docs/artifacts/ablation_summary_signed_20261122.json`（reviewer uidq0280） |
 | #8 | forward_check | ⏸ **已实装第一环静态版；待补充回归；第二环深度正演待立项** | 第一环静态版实装于 `scripts/collab_pipeline.py:407`（四枚举 PASS/PASS_WITH_GAPS/FAIL/NO_CONSENSUS）；回归 `eval/audit/collab_forward_check_regression.py` 15/15 全绿；第二环"深度正演复用 minloop.verify"仅 docstring 提示未编码（见 `docs/review_8_forward_check_20261122.md`） |
 | #11 | 回执态度元标签子通路 | 📋 **待立项（方案A，下一批）** | 确认/认可类回执当前整条 discard、态度信息永久丢失。独立子通路提取「态度+目标记忆ID」写入附属表，主判定主链路零改动；机器不消费（仅审计/晨报/人审）；见 §五 |
+
+**评审候选待办（2026-11-22，源自 `docs/review_system_20261122.md`，待优先级裁决）：**
+
+| 编号 | 任务 | 状态 | 收益 / 风险 / 不处理后果 |
+|---|---|---|---|
+| #A | F60 第二环深度正演（复用 minloop.verify） | 📋 待裁决 | 补齐推理正演自证闭环 / 中（collab_pipeline+minloop）/ F60 仅字面筛查，正演名义闭环 |
+| #B | 桩—LLM 判定一致性对照回归 | 📋 待裁决 | 抓入库闸门降级行为漂移 / 低（纯 eval/audit 不改生产）/ LLM 降级时入库静默漂移 |
+| #C | topic_layer 决断（开启 or 删除） | 📋 待裁决 | 消除 556 行悬空资产 / 中 / 模块长期休眠无人确认可用 |
 
 ### #7 进展明细
 
