@@ -74,6 +74,94 @@ def _load_pending():
         return [json.loads(l) for l in f if l.strip()]
 
 
+# ---------------- #7 pending 可靠写回：原子落盘 + 跨进程锁 ----------------
+
+def _atomic_write_jsonl(path, records):
+    """A-1：原子覆盖写 JSONL。写同目录临时文件 → fsync → os.replace 原子交换。
+
+    与旧 `io.open(path,"w")` 截断写等价（内容一致），区别在于: 中途崩溃不会留下
+    半截文件——要么旧文件完整，要么新文件完整。返回写入条数。
+    """
+    d = os.path.dirname(path) or "."
+    os.makedirs(d, exist_ok=True)
+    tmp = path + ".tmp.%d" % os.getpid()
+    try:
+        with io.open(tmp, "w", encoding="utf-8", newline="\n") as f:
+            for r in records:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)          # 原子：同卷 rename 语义
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+    return len(records)
+
+
+class _PendingLock:
+    """A-2：跨进程互斥锁（lockfile + pid + 超时过期）。
+
+    review_holds 消费 pending 时抢锁，抢不到则跳过本轮并告警（不阻塞夜间主链）。
+    过期判定: 锁文件内 pid 对应进程已不存在, 或锁龄超过 stale_secs → 视为陈旧锁删除重抢。
+    """
+
+    def __init__(self, path, stale_secs=1800):
+        self.path = path
+        self.stale_secs = stale_secs
+        self.acquired = False
+
+    def _stale(self):
+        try:
+            with io.open(self.path, encoding="utf-8") as f:
+                meta = json.loads(f.read())
+            pid = meta.get("pid")
+            ts = float(meta.get("ts", 0))
+            import time
+            if time.time() - ts > self.stale_secs:
+                return True, "锁龄超时"
+            try:
+                os.kill(pid, 0)         # 存在性探测（不发送信号）
+            except OSError:
+                return True, "持锁进程已退出(pid=%s)" % pid
+            return False, ""
+        except Exception:
+            return True, "锁文件不可解析(视为陈旧)"
+
+    def __enter__(self):
+        import time
+        try:
+            # O_CREAT|O_EXCL 原子创建, 已存在则抛 FileExistsError
+            fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(json.dumps({"pid": os.getpid(), "ts": time.time()}))
+            self.acquired = True
+            return self
+        except FileExistsError:
+            stale, why = self._stale()
+            if stale:
+                try:
+                    os.remove(self.path)
+                except OSError:
+                    pass
+                return self.__enter__()   # 删陈旧锁后重试一次
+            self.acquired = False
+            return self
+        except Exception:
+            self.acquired = False
+            return self
+
+    def __exit__(self, *exc):
+        if self.acquired:
+            try:
+                os.remove(self.path)
+            except OSError:
+                pass
+        return False
+
+
 def _bloodline(c):
     """Q4 血缘本地预计算（2026-11-21 P1-1：桩与 LLM 路径共用）。
 
@@ -336,7 +424,7 @@ def judge_and_store(candidates, context=None):
     return report
 
 def review_holds(context=None):
-    """hold 转正契约（2026-11-09 用户裁决，防门槛软化）：
+    """hold 转正契约（2026-11-09 用户裁决，防门槛软化）。
 
     同一条 hold 在后续同实体链/同会话上下文再次命中 Jw 触发时调用本接口。
     重跑全套五问 + 追加第六问：'相比上次 hold，是否补充了缺失证据/消除了信息缺口？'
@@ -344,7 +432,22 @@ def review_holds(context=None):
       依然不足 → 维持 hold，reviews 追加二次评审记录
       出现反向证据 → discard（记日志）
     单纯'又触发了一次'不等于转正——每次 review 都要回答第六问，无证据不得放行。
+
+    A-2（2026-11-21 #7）：入口抢跨进程锁；抢不到说明另一进程正消费同一 pending，
+    直接告警返回（不阻塞 nightly 主链），避免双消费者互相覆盖 pending 池。
     """
+    lock_path = STORE_PENDING_JSONL + ".lock"
+    with _PendingLock(lock_path) as lk:
+        if not lk.acquired:
+            msg = "[review_holds_skip] pending 锁被占用（另一进程正在消费），本轮跳过"
+            print(msg, file=sys.stderr)
+            return {"ts": datetime.now().isoformat(), "skipped": True, "reason": "lock_busy",
+                    "reviewed": 0, "promoted": 0, "kept": 0, "dropped": 0}
+        return _review_holds_impl(context)
+
+
+def _review_holds_impl(context=None):
+    """review_holds 主体（已持锁）。业务判断逻辑与改造前逐字一致。"""
     import schema
     from memory_relations import grams
     now = datetime.now().isoformat()
@@ -395,7 +498,6 @@ def review_holds(context=None):
             reviews = reviews + [{"ts": now, "why": why}]
             survivors.append({**p, "reviews": reviews})
             report["kept"] += 1
-    with io.open(STORE_PENDING_JSONL, "w", encoding="utf-8", newline="\n") as f:
-        for p in survivors:
-            f.write(json.dumps(p, ensure_ascii=False) + "\n")
+    # A-1：原子覆盖写（原为 io.open("w") 截断写，崩溃会丢整池；改 temp+os.replace）
+    _atomic_write_jsonl(STORE_PENDING_JSONL, survivors)
     return report

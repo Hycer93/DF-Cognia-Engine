@@ -159,22 +159,7 @@ def atomic_store(
     # 双轨写(2026-11-15 #31 切换): core_memory_card 唯一真相主写;
     # memories.jsonl 保留为审计导出流(应急回切读源可用)
     try:
-        import sqlite3 as _sq
-        _db = os.path.join(MEM_DIR, "corpus_store.db")  # 库在 data/memory/ 下(不是上级!)
-        _wc = _sq.connect(_db, timeout=5)
-        _wc.execute(
-            "INSERT OR IGNORE INTO core_memory_card VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (entry["inst_id"], entry["ts"], entry["event_ts"], entry["full_hash"],
-             entry["asset_class"], entry["repro"], entry["confidence"],
-             json.dumps(entry["dfcp_tag"], ensure_ascii=False),
-             json.dumps(entry["affect_tags"], ensure_ascii=False) if entry["affect_tags"] else None,
-             entry["summary"], entry["summary_converged"], entry["detail"], entry["source_ref"],
-             json.dumps(entry["origin_ids"], ensure_ascii=False),
-             entry["entity_id"], entry["derived_from"], entry["tier"],
-             json.dumps(entry["weight"], ensure_ascii=False), entry["protected"],
-             None, "active", entry["memory_class"]))
-        _wc.commit()
-        _wc.close()
+        _write_card_to_db(entry)
     except Exception as _e:
         # 写库失败不阻断返回(jsonl 已落, 下轮增量同步补)——但落审计可查
         try:
@@ -186,6 +171,60 @@ def atomic_store(
             print(f"[dual_write_error_log_fail] {type(_el).__name__}: {_el} | "
                   f"orig_err={_e!r}", file=sys.stderr)
     return "stored", f"{inst_id[:8]} 入库（repro={repro}）"
+
+
+def _write_card_to_db(entry, max_retries=3):
+    """A-4（2026-11-21 #7）：core_memory_card 写入加固。
+
+    hold 转正等路径经 atomic_store 落到这里。相比原实现：
+      - 显式 BEGIN IMMEDIATE（立即取写锁，避免读事务升级写锁时的 SQLITE_BUSY 竞争）
+      - busy_timeout=5000（写锁被占时内部等待而非立即抛 locked）
+      - 指数退避重试（0.05s/0.1s/0.2s），3 次仍失败才上抛
+    仅加固这一条落卡路径，不做全仓事务改造（约束：A-4 范围最小）。
+    """
+    import sqlite3 as _sq
+    import time as _t
+    _db = os.path.join(MEM_DIR, "corpus_store.db")  # 库在 data/memory/ 下(不是上级!)
+    _sql = ("INSERT OR IGNORE INTO core_memory_card VALUES "
+            "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+    _args = (entry["inst_id"], entry["ts"], entry["event_ts"], entry["full_hash"],
+             entry["asset_class"], entry["repro"], entry["confidence"],
+             json.dumps(entry["dfcp_tag"], ensure_ascii=False),
+             json.dumps(entry["affect_tags"], ensure_ascii=False) if entry["affect_tags"] else None,
+             entry["summary"], entry["summary_converged"], entry["detail"], entry["source_ref"],
+             json.dumps(entry["origin_ids"], ensure_ascii=False),
+             entry["entity_id"], entry["derived_from"], entry["tier"],
+             json.dumps(entry["weight"], ensure_ascii=False), entry["protected"],
+             None, "active", entry["memory_class"])
+    last_err = None
+    for _attempt in range(max_retries):
+        _wc = None
+        try:
+            _wc = _sq.connect(_db, timeout=5, isolation_level=None)  # None=手动管事务
+            _wc.execute("PRAGMA busy_timeout=5000")
+            _wc.execute("BEGIN IMMEDIATE")
+            _wc.execute(_sql, _args)
+            _wc.commit()
+            return
+        except _sq.OperationalError as _oe:
+            last_err = _oe
+            if _wc is not None:
+                try:
+                    _wc.rollback()
+                except Exception:
+                    pass
+            # 仅对 locked/busy 退避重试；其他 OperationalError 直接上抛
+            if "locked" in str(_oe).lower() or "busy" in str(_oe).lower():
+                _t.sleep(0.05 * (2 ** _attempt))
+                continue
+            raise
+        finally:
+            if _wc is not None:
+                try:
+                    _wc.close()
+                except Exception:
+                    pass
+    raise last_err
 
 
 # ---- dfcp_tag 变更：append-only 日志（护栏②）----
@@ -205,10 +244,19 @@ def load_quarantine() -> list:
     return _load_jsonl(QUARANTINE_JSONL)
 
 
-def append_jsonl(path: str, obj: dict):
+def append_jsonl(path: str, obj: dict, fsync: bool = False):
+    """追加一行 JSONL。
+
+    A-1（2026-11-21 #7）：新增 fsync 参数（默认 False，行为等价）。
+    fsync=True 时在关闭前 flush 并 os.fsync 刷盘——仅调用方对可靠性有强要求时使用
+    （如 pending 队列落盘），普通审计日志保持默认 false 不引入额外 IO 开销。
+    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with io.open(path, "a", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+        if fsync:
+            f.flush()
+            os.fsync(f.fileno())
 
 
 def _load_jsonl(path: str) -> list:
