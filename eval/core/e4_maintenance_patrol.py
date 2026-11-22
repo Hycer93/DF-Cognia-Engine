@@ -316,8 +316,75 @@ def patrol(as_of=None):
     except Exception as e:
         report["items"]["quality_gate_error"] = str(e)
 
+    # 11. 记忆系统健康度聚合（#20 可观测性）：从既有 jsonl 聚合业务效果指标，
+    #     只读统计、不改任何规则。输出到 report["health"] 供晨报人读+趋势追踪。
+    try:
+        report["health"] = _memory_health(mems)
+    except Exception as e:
+        report["health"] = {"error": str(e)}
+
     report["ok"] = len(report["alerts"]) == 0
     return report
+
+
+def _memory_health(mems):
+    """#20 记忆健康度快照：检索/冲突/去重/归档四维，只读聚合。
+    指标口径见 docs/review_20_observability_20261122.md §四。"""
+    import glob as _glob
+    from collections import Counter
+    db_dir = os.path.join(HERE, "data", "memory")
+    mtime = lambda p: os.path.getmtime(p) if os.path.exists(p) else 0
+
+    # — 检索：gate_log 里 probe/judge 分布 + miss_case 计数 —
+    gate_rows = _load_jsonl(os.path.join(db_dir, "gate_log.jsonl"))
+    op_cnt = Counter(r.get("op", "?") for r in gate_rows)
+    deep_retrieve = sum(1 for r in gate_rows if r.get("deep_retrieve"))
+    forced = sum(1 for r in gate_rows if r.get("forced"))
+    miss_rows = _load_jsonl(os.path.join(db_dir, "gate_miss_case.jsonl"))
+    retrieve_total = len(gate_rows)
+    miss_rate = round(len(miss_rows) / retrieve_total, 3) if retrieve_total else None
+
+    # — 冲突：conflict_queue 状态分布 + 待处理积压 —
+    cq = _load_jsonl(os.path.join(db_dir, "conflict_queue.jsonl"))
+    cq_status = Counter(r.get("status", "pending") for r in cq)
+    conflict_pending_n = cq_status.get("pending", 0)
+
+    # — 去重：store_pending hold_reason 分布（judge_failure/simhash 类）—
+    sp = _load_jsonl(os.path.join(db_dir, "store_pending.jsonl"))
+    hold_reasons = Counter(r.get("hold_reason", "?") for r in sp)
+
+    # — 归档：store_pending hold 老化（hold_ts 距今天数）—
+    from datetime import datetime as _dt
+    now = _dt.now()
+    aged = []
+    for r in sp:
+        ts = r.get("hold_ts") or ""
+        try:
+            d = (now - _dt.fromisoformat(ts)).days
+            aged.append(d)
+        except Exception:
+            pass
+    max_age = max(aged) if aged else 0
+    over14 = sum(1 for d in aged if d > 14)
+
+    return {
+        "retrieve": {
+            "gate_total": retrieve_total,
+            "deep_retrieve": deep_retrieve,
+            "forced": forced,
+            "op_dist": dict(op_cnt),
+            "miss_cases": len(miss_rows),
+            "miss_rate": miss_rate,
+        },
+        "conflict": {
+            "queue_total": len(cq),
+            "status_dist": dict(cq_status),
+            "pending": conflict_pending_n,
+        },
+        "dedup": {"store_pending_total": len(sp), "hold_reason_dist": dict(hold_reasons)},
+        "archive": {"hold_aged": len(aged), "max_hold_age_days": max_age,
+                    "over14d": over14},
+    }
 
 
 def main():
@@ -330,6 +397,13 @@ def main():
     for a in r["alerts"]:
         print("  [warn]", a)
     print("计数:", json.dumps(r["items"], ensure_ascii=False))
+    if r.get("health") and not r["health"].get("error"):
+        h = r["health"]
+        print("[记忆健康度] 检索gate=%d miss=%s | 冲突q=%d(待%d) | 待归档=%d(超14d=%d) | hold最长%d天" % (
+            h["retrieve"]["gate_total"], h["retrieve"]["miss_rate"],
+            h["conflict"]["queue_total"], h["conflict"]["pending"],
+            h["dedup"]["store_pending_total"], h["archive"]["over14d"],
+            h["archive"]["max_hold_age_days"]))
     print("报告:", path)
 
 

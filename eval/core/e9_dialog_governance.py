@@ -73,6 +73,27 @@ if not os.path.exists(TRANSCRIPT):
     print(f"[e9][transcript_offline] applog路径探测失败(src={_TRANSCRIPT_SRC}): {TRANSCRIPT} —— transcript兜底通道断流, 当日仅session_dialog复跑归档; 请核查 config/paths.json 或设置 CODECHAT_APPLOG", flush=True)
 
 
+def _sanitize_text(text):
+    """#20 合规脱敏：落 raw_corpus 副本前清洗常见 PII（只作用于副本，平台原文件只读不变）。
+    规约①只读不变；此步仅处理进 DFCP 的副本正文。"""
+    import re as _re
+    if not text:
+        return text
+    s = text
+    # 手机号（中国大陆 11 位）
+    s = _re.sub(r"(?<!\d)1[3-9]\d{9}(?!\d)", "[手机号]", s)
+    # 身份证（18 位，含 X）
+    s = _re.sub(r"(?<!\d)\d{17}[\dXx](?!\d)", "[身份证]", s)
+    # 邮箱
+    s = _re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "[邮箱]", s)
+    # 银行卡（16-19 位连续数字）
+    s = _re.sub(r"(?<!\d)\d{16,19}(?!\d)", "[卡号]", s)
+    # 常见密钥/密码赋值（key=xxx / password: xxx / token=xxx）
+    s = _re.sub(r"(?i)\b(api[_-]?key|secret|token|password|passwd|pwd)\s*[:=]\s*\S{8,}",
+                r"\1=[已脱敏]", s)
+    return s
+
+
 def _scan_transcript(day):
     """从 applog.log 提取当日用户提交原文(只读)。
     格式: [YYYYMMDD HH:MM:SS.mmm|info] [codechat-ui][inputSubmit][log]  user submit: <原文>
@@ -116,7 +137,8 @@ def _transcript_backfill(day, subs, report):
             continue
         # 2026-11-16 用户裁决①: 正文与来源前缀解耦——body 存纯净正文, simhash 只作用于
         # 纯正文, 来源通道标签在 title 元字段。杜绝不同通道前缀导致的 hash 形态错位。
-        body = text
+        # #20 合规：transcript 通道落库前对副本正文脱敏（只影响副本，平台原文件只读）。
+        body = _sanitize_text(text)
         sh = gate._simhash(body)
         if any(gate._hamming(sh, old) <= 6 for old in day_sh):
             dup += 1                       # 同源/相似段: 引用去重(规约四)

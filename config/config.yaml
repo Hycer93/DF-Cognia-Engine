@@ -22,6 +22,9 @@ router:
   mandatory: ["Aa", "Eo", "Jw"]
   simple_max_chars: 40
   task_keywords: ["设计", "分析", "对比", "方案", "风险", "审查", "复盘", "架构", "决策", "溯源"]
+  # #23 分档裁剪：主路径贪心步数上限（medium 裁短降耗时，complex 保留长链）
+  medium_steps: 5
+  complex_steps: 12
 pipeline:
   # 管线执行模式: single=现状串行单链 | parallel=任务级多进程并发
   # parallel 下多任务同时跑, 总耗时≈最慢单路(每任务独立 ChainExecutor, 零共享状态)

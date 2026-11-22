@@ -45,6 +45,9 @@ router:
   # 简单任务阈值：问题字符数低于此值且无任务型关键词 → 只走保底
   simple_max_chars: 40
   task_keywords: ["设计", "分析", "对比", "方案", "风险", "审查", "复盘", "架构", "决策", "溯源"]
+  # #23 分档裁剪：主路径贪心步数上限（medium 裁短降耗时，complex 保留长链）
+  medium_steps: 5
+  complex_steps: 12
 
 logging:
   level: INFO

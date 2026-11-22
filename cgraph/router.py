@@ -38,6 +38,10 @@ class ComplexityRouter:
         # 词表仅作 LLM 不可用时的兜底（形式主义降级方案）
         self.task_keywords = cfg.get("task_keywords") or [
             "设计", "分析", "对比", "方案", "风险", "审查", "复盘", "架构", "决策", "溯源"]
+        # #23：按档位裁剪主路径步数——贪心只挑最重边，不感知档位，
+        # 导致 medium/complex 走出同长度路径。用 max_steps 强制分档。
+        self.medium_steps = cfg.get("medium_steps", 5)     # medium 主路径步数上限
+        self.complex_steps = cfg.get("complex_steps", 12)  # complex 步数上限（=原硬编码）
 
     def route(self, user_input: str) -> RouteDecision:
         complexity, candidates, reason = self._classify(user_input)
@@ -57,7 +61,9 @@ class ComplexityRouter:
         for c in candidates:            # 加深候选并入域
             if c not in domain:
                 domain.append(c)
-        path = self._greedy_path("Aa", "Jw", set(domain))
+        # #23：medium 用更短步数上限真正裁短链路，complex 保留完整长链
+        max_steps = self.medium_steps if complexity == "medium" else self.complex_steps
+        path = self._greedy_path("Aa", "Jw", set(domain), max_steps=max_steps)
         self._ensure_mandatory(path, set(domain))
         return RouteDecision(complexity, path, domain,
                              f"{complexity}任务，图贪心主路径 {len(path)} 节点")
@@ -77,8 +83,14 @@ class ComplexityRouter:
             "判断这个用户问题需要多深的分析。只输出严格 JSON，无其他文字：\n"
             '{"depth": "simple|medium|complex", "deepen_candidates": ["节点码", ...], '
             '"reason": "10字以内"}\n'
-            "深度标准：simple=闲聊/单点事实/情绪表达；medium=单一领域分析/需拆解；"
-            "complex=多利益方博弈/高风险决策/隐藏动机/多步推理。\n"
+            "深度标准（**必须先按 simple 硬判据筛一遍，命中就判 simple，不要保守上抬**）：\n"
+            "- simple：闲聊/问候/单点事实查询/情绪表达/翻译/名词解释/单句改写。"
+            "**若问题不含任何『分析/对比/论证/决策/方案/溯源』类结构诉求，一律判 simple**。\n"
+            "- medium：单一领域、需要拆解或分步说明，但只涉及一个视角。\n"
+            "- complex：多利益方博弈/高风险决策/隐藏动机/多步因果推理/需要多视角交叉。\n"
+            "判据示例：『你好』『今天天气』『X是什么』→ simple；"
+            "『帮我把这句改正式些』→ simple；"
+            "『分析这个方案的风险』→ medium/complex。\n"
             "加深候选从这些认知节点里选（最多3个，没有就空数组）："
             "Dl=质疑完美结论, Em=隐性共识, En=因果时序, Db=利益全景, "
             "Fd=风险量化, Gl=复杂难题破解, Dk=第一因溯源。\n"
@@ -101,21 +113,24 @@ class ComplexityRouter:
             return None
 
     def _classify_keywords(self, text: str) -> str:
-        """旧词表判定——仅 LLM 不可用时兜底"""
+        """旧词表判定——仅 LLM 不可用时兜底。
+        收紧：只有『极短且无任务词』才 simple，避免把短问题误降。"""
         t = text.strip()
         has_task_kw = any(k in t for k in self.task_keywords)
-        if len(t) < self.simple_max_chars and not has_task_kw:
+        # 极短（<20 字）且不含任何任务词 → simple（闲聊/问候/单点事实）
+        if len(t) < 20 and not has_task_kw:
             return "simple"
         if any(k in t for k in ("架构", "设计", "方案", "对比", "决策", "复盘", "风险")) \
                 or len(t) > 200 or t.count("?") + t.count("？") >= 2:
             return "complex"
         return "medium"
 
-    def _greedy_path(self, start: str, end: str, domain: set) -> list:
-        """域内从 start 到 end 的边权贪心路径（每步走当前最重的边，允许回溯点直接接 end）"""
+    def _greedy_path(self, start: str, end: str, domain: set, max_steps: int = 12) -> list:
+        """域内从 start 到 end 的边权贪心路径（每步走当前最重的边，允许回溯点直接接 end）
+        max_steps：主路径扩展步数上限——#23 用它按 complexity 档位真正裁剪路径长度。"""
         path = [start]
         cur = start
-        for _ in range(12):
+        for _ in range(max_steps):
             if cur == end:
                 break
             cands = [(d, w) for d, w in self.g.neighbors(cur, top_k=8) if d in domain and d not in path]

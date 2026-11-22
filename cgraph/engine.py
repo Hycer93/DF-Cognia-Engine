@@ -38,6 +38,8 @@ class Engine:
         self.hebbian = HebbianUpdater(self.graph, self.cfg["graph"].get("hebbian"))
 
         self.edge_log = os.path.join(HERE, "logs", "edge_log.jsonl")
+        # #23：分流观测日志——每轮记录 complexity/路径长度，便于验证三档真实分档
+        self.router_log = os.path.join(HERE, "logs", "router_log.jsonl")
         try:
             self.memory = MemoryStore(self.cfg)
         except Exception as e:
@@ -57,6 +59,25 @@ class Engine:
             return CodeChatLLM(model=model)
         return LLMClient(cfg_path)
 
+    def _log_route(self, user_input: str, decision):
+        """#23 分流观测：append 一行 jsonl，失败不阻断主流程。"""
+        try:
+            import json, time as _t
+            os.makedirs(os.path.dirname(self.router_log), exist_ok=True)
+            rec = {
+                "ts": _t.strftime("%Y-%m-%d %H:%M:%S"),
+                "q": user_input[:120],
+                "complexity": decision.complexity,
+                "path_len": len(decision.path),
+                "path": decision.path,
+                "domain_len": len(decision.domain_nodes),
+                "reason": decision.reason,
+            }
+            with open(self.router_log, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
     def run(self, user_input: str, utility: float = 0.0) -> dict:
         """utility: 外部效用反馈。+1=本轮回答有用 / -1=没用 / 0=未评价"""
         # 1. 路由（保底三条强制）
@@ -64,6 +85,8 @@ class Engine:
         # P2-2: 原 assert 在 python -O 下会消失, 生产校验须显式异常
         if not decision.is_valid:
             raise ValueError("路由结果缺保底节点")
+        # #23：分流观测——记录每轮档位与实际路径，验证 simple/medium/complex 真实分档
+        self._log_route(user_input, decision)
 
         # 2. 记忆上下文（可选，失败不阻断）
         context = ""
