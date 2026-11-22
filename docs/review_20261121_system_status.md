@@ -212,7 +212,7 @@
 
 | 编号 | 任务 | 优先级 | 状态 | 说明 / 依赖 |
 |---|---|---|---|---|
-| **#21** | cgraph 可验证性：verify_ratio 消融 + A/B 结论沉淀 | **P1** | 📋 待立项 | 补 verify_ratio A/B/C/D 消融（关闭/随机/仅utility）；已有 `ab_result_*.jsonl` 汇总胜率/平均分/样本量；README 措辞校准；**graph.py/trajectory.py 存在（评价者未读到），不补**；详见 `docs/review_21_cgraph_verifiability_20261122.md` |
+| **#21** | cgraph 可验证性：verify_ratio 消融 + A/B 结论沉淀 | **P1** | 🔄 **部分完成**（离线消融✓，质量盲评待做） | ✅ 已完成：离线四组消融（`eval/experiment/verify_ratio_ablation.py`）+ A/B 耗时汇总 + README 措辞校准。**核心结论：主链免疫边权学习，仅旁支温和微调，"改善"未经质量验证**；详见 `docs/review_21_verify_ratio_ablation_result_20261122.md`。⏳ 待做：`eval/audit/score.py` 真 LLM 盲评 33 样本出胜率 |
 | **#20** | 记忆系统可观测性 + 合规 | **P1** | 📋 待立项 | 补检索成功率/miss_case趋势/误归档率/hold池规模/冲突判定计数/simhash触发/热区扫描指标并入E4晨报；全链路流程图；applog脱敏；**先指标后收敛，禁无据大砍规则**；详见 `docs/review_20_observability_20261122.md` |
 | **#12** | 对话会话归组 & 历史追溯（轻量版） | **P0** | ✅ **完成** | 根治 h 通道断流（实证：1508段仅1条h,全靠E9兜底）；stdin transcript 解析落库+降级md+list_dialog+cards_from_dialog+E9断流告警；回归 27/27；详见 §六 |
 | **#11** | 回执态度元标签子通路（方案A） | **P1** | ✅ **完成** | `memory_attitude.py` 附属 JSONL + judge LLM 通路接入 attitude 解析；stub 零副作用、主表零改动；回归 22/22；详见 §五 |
