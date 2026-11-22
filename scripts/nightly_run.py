@@ -40,6 +40,11 @@ STEPS = [
     ("E1 探针触发率全链回归", [PY, "eval/core/e1_probe_trigger.py"], "logs/e1_probe_result.jsonl", 90),
     # E4 维护巡逻（只读报警）+ E5 自动整理（幂等软层操作，只追加不删除）
     ("E4 记忆库维护巡逻", [PY, "eval/core/e4_maintenance_patrol.py"], "logs/e4_maintenance.json", 60),
+    # DB→jsonl 增量回补(2026-11-22 #20 漂移修复: 11-15 读源切 SQLite 后 jsonl 降级为
+    # 审计导出流, 但缺"下轮增量同步补"步骤致 11-15~11-19 漏写 75 条 active 卡, E4 天天报漂移。
+    # 本步把 DB 中 jsonl 没有的 active 卡补导出, 兑现注释承诺、防单向漂移复发。只补不删,
+    # 幂等(无新增→0补 exit0), 紧跟 E4 后(检测→修复)。红线: 不改 DB, 只写 jsonl 导出流)
+    ("DB→jsonl增量回补", [PY, "eval/audit/backfill_jsonl_from_db.py", "--nightly"], None, 60),
     ("E5 记忆自动整理", [PY, "eval/core/e5_consolidation.py"], "logs/e5_consolidation.json", 60),
     # E6 思维图巡逻（只读报警，2026-11-09 用户确认：记忆侧有E4/E5，思维侧专项体检）
     ("E6 思维图巡逻", [PY, "eval/core/e6_mind_graph_patrol.py"], "logs/e6_mind_graph_patrol.json", 60),
