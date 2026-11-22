@@ -206,13 +206,20 @@
 ## 四、主线队列（统一编号总表，2026-11-22 重编）
 
 > **编号规则**：#N 为统一待办编号，一经分配不复用。优先级 P0>P1>P2。已完成项保留历史号归档在表末。
-> 本次重编变更：#A 并入 #8（同为 F60 第二环）；原 §七 一致性修复编号为 #14；原 #B→#15、#C→#16；#11 复盘承接的 P2-A/B/C 登记为 #17/#18/#19（详见 `docs/review_11_attitude_20261122.md`）；记忆系统评估复盘立项 #20（P1，详见 `docs/review_20_observability_20261122.md`）；cgraph 可验证性评审立项 #21（P1，详见 `docs/review_21_cgraph_verifiability_20261122.md`）。
+> 本次重编变更：#A 并入 #8（同为 F60 第二环）；原 §七 一致性修复编号为 #14；原 #B→#15、#C→#16；#11 复盘承接的 P2-A/B/C 登记为 #17/#18/#19（详见 `docs/review_11_attitude_20261122.md`）；记忆系统评估复盘立项 #20（P1，详见 `docs/review_20_observability_20261122.md`）；cgraph 可验证性评审立项 #21（P1，详见 `docs/review_21_cgraph_verifiability_20261122.md`）；cgraph 改进方案拆解 #22~#28（详见 `docs/review_21_improvement_plan_20261122.md`）。
 
 ### 待办（按优先级）
 
 | 编号 | 任务 | 优先级 | 状态 | 说明 / 依赖 |
 |---|---|---|---|---|
 | **#20** | 记忆系统可观测性 + 合规 | **P1** | 📋 待立项 | 补检索成功率/miss_case趋势/误归档率/hold池规模/冲突判定计数/simhash触发/热区扫描指标并入E4晨报；全链路流程图；applog脱敏；**先指标后收敛，禁无据大砍规则**；详见 `docs/review_20_observability_20261122.md` |
+| **#22** | 节点级意图贴合度观测（OBS-1） | **P1** | 📋 待立项 | `_walk_chain` 每节点产出后对原始 user_input 打贴合度分记入 trace；**先定位跑偏从第几节点开始**，再决定优化重点；零风险埋点（可离线批量）；详见 `docs/review_21_improvement_plan_20261122.md` §二 |
+| **#23** | Router 分流强化（Q1） | **P1** | 📋 待立项 | **已修正前提：simple 已有2节点轻链，但 classify 从没判过 simple；medium 与 complex 路径全同(14节点)**；真正要做：classify 判准 simple + medium 真正裁短；保留 MANDATORY_NODES 保底；分流结果写日志；详见改进方案 §三 Q1 |
+| **#24** | Summary 推理核对表（Q3） | **P1** | 📋 待立项 | Summary 强制输出结构化推理核对表(JSON)；irrelevant 禁入 final_answer；整表落 trajectory；`FORCE_ALL_EVIDENCE` 开关防误弃；**relevance 须独立于主链上下文判定**（防自我审查失效）；详见改进方案 §三 Q3 |
+| **#25** | 主链 Prompt 合并（P-A） | **P1** | 📋 待立项 | 多连续节点视角合并一次调用，主链13次→4-5次；节点契约保留、trajectory 仍记每节点；单节点解析失败沿用降级；**放 Q1 分流后做**（避免错误基础上高风险改造）；详见改进方案 §四 P-A |
+| **#26** | 异步归档（P-B） | **P2** | 📋 待立项 | 记忆闸门/归档移出阻塞路径；**Jw 复盘仍阻塞**（保 verify_ratio 即时供 Hebbian）；异步失败 E4 告警不静默；详见改进方案 §四 P-B |
+| **#27** | 分类任务切轻量小模型（P-C） | **P2** | 📋 待立项 | Router 复杂度判定、verify 自检切小模型；异常回退主力模型；**本次实测单题>870s 说明串行延迟主导，此项收益最大**；详见改进方案 §四 P-C |
+| **#28** | 加深分支并行（P-D） | **P2** | 📋 待立项 | 仅无依赖 deepen 分支并行；主链仍串行；每线程独立 LLMClient、只读不写图、并发上限3-5、超时不破坏主流程；simple/medium 少触发收益有限；详见改进方案 §四 P-D |
 | **#12** | 对话会话归组 & 历史追溯（轻量版） | **P0** | ✅ **完成** | 根治 h 通道断流（实证：1508段仅1条h,全靠E9兜底）；stdin transcript 解析落库+降级md+list_dialog+cards_from_dialog+E9断流告警；回归 27/27；详见 §六 |
 | **#11** | 回执态度元标签子通路（方案A） | **P1** | ✅ **完成** | `memory_attitude.py` 附属 JSONL + judge LLM 通路接入 attitude 解析；stub 零副作用、主表零改动；回归 22/22；详见 §五 |
 | **#8** | forward_check 第二环深度正演（复用 minloop.verify） | **P2** | ⏸ 第一环已实装+回归，第二环待立项 | 第一环静态版 `collab_pipeline.py:407` + 回归 15/15；第二环补齐推理正演自证闭环（原 #A 并入）；详见 `docs/review_8_forward_check_20261122.md` |
