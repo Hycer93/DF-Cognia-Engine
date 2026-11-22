@@ -59,6 +59,23 @@ medium 路径：`[Aa,Bb,Cf,Cg,Ch,Di,Eo,Jw]`（8 节点）。
 
 ## 三、验证
 
+### 3.0 真实 LLM 冒烟（2026-11-22，只验行为，不评质量）
+
+`eval/experiment/smoke_router_23.py`，4 条真实 query 只跑 `router.route()`（每条 1 次 classify LLM，单次 ~40-50s 确认后端降速）：
+
+| 用例 | 期望 | 实际 | 路径 | 结果 |
+|---|---|---|---|---|
+| 法国首都是哪里 | simple/3 | **simple/3** | Aa→Eo→Jw | ✅ |
+| 分析团队半年技术债模块 | medium/~8 | **medium/8** | Aa,Bb,Cf,Cg,Ch,Di,Eo,Jw | ✅ |
+| 评估新功能实现难度瓶颈 | medium/~8 | **medium/8** | 同上 8 节点 | ✅ |
+| 自研大模型 vs 第三方云战略决策 | complex/14 | **complex/14** | 14 节点含 Dl/En | ✅ |
+
+**冒烟 4/4 全过**。关键：①**LLM 现在真的能判出 simple**（"法国首都是哪里"→simple，此前几乎从未判出）；②medium 稳定 8 节点、complex 稳定 14 节点，三档真实分档；③`router_log.jsonl` 每轮正确记录 complexity/path_len/path/domain_len。
+
+> ⚠ 本冒烟仅验证**路由行为符合配置**，不替代正式质量回归/盲评（那需环境恢复后跑 score.py）。
+
+### 3.1 纯逻辑验证
+
 - 三档路径长度实测不同：simple 3 / medium 8 / complex 14。✅
 - 端到端 mock LLM 走通：medium 走 8 节点，`router_log` 正确记录 `path_len:8, domain_len:19`。✅
 - **回归安全**：medium 域(19节点)、complex 域(27节点)**均仍含 Dl/Eo**，Dl 审计类用例走「domain 弱触发」路径不受影响；且 simple 判严反而修复了原「长审计题误判 simple 漏触 Dl」的已知 bug。✅
