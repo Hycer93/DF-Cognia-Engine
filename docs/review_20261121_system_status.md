@@ -212,7 +212,6 @@
 
 | 编号 | 任务 | 优先级 | 状态 | 说明 / 依赖 |
 |---|---|---|---|---|
-| **#21** | cgraph 可验证性：verify_ratio 消融 + A/B 结论沉淀 | **P1** | 🔄 **部分完成**（离线消融✓，质量盲评待做） | ✅ 已完成：离线四组消融（`eval/experiment/verify_ratio_ablation.py`）+ A/B 耗时汇总 + README 措辞校准。**核心结论：主链免疫边权学习，仅旁支温和微调，"改善"未经质量验证**；详见 `docs/review_21_verify_ratio_ablation_result_20261122.md`。⏳ 待做：`eval/audit/score.py` 真 LLM 盲评 33 样本出胜率 |
 | **#20** | 记忆系统可观测性 + 合规 | **P1** | 📋 待立项 | 补检索成功率/miss_case趋势/误归档率/hold池规模/冲突判定计数/simhash触发/热区扫描指标并入E4晨报；全链路流程图；applog脱敏；**先指标后收敛，禁无据大砍规则**；详见 `docs/review_20_observability_20261122.md` |
 | **#12** | 对话会话归组 & 历史追溯（轻量版） | **P0** | ✅ **完成** | 根治 h 通道断流（实证：1508段仅1条h,全靠E9兜底）；stdin transcript 解析落库+降级md+list_dialog+cards_from_dialog+E9断流告警；回归 27/27；详见 §六 |
 | **#11** | 回执态度元标签子通路（方案A） | **P1** | ✅ **完成** | `memory_attitude.py` 附属 JSONL + judge LLM 通路接入 attitude 解析；stub 零副作用、主表零改动；回归 22/22；详见 §五 |
@@ -232,6 +231,7 @@
 | #7 | pending 队列可靠写回（原"sqlite 分片"） | ✅ **完成** | 放弃物理分片；A-1/A-2/A-4/A-5 核心 `6d5a25a`+`431ce52`；A-3 调度接入 + A-6 WAL 显式化 `6880f63` |
 | #10 | 门槛②③④ | ✅ **完成** | 口径冻结 `7c6e074`；S2-S4 业务 `82a4ee8`；S5 总回归 `75f8fda`；人工评审签字归档 `docs/artifacts/ablation_summary_signed_20261122.json`（reviewer uidq0280） |
 | #14 | 记忆一致性修复 | ✅ **完成** | demote sup DB 同步根因修复 + 存量对账；sup 29/29、补插 4/4、cards 316→320、sup非空 2→31、integrity ok；`4b97a63` |
+| #21 | cgraph 可验证性：verify_ratio 消融 + A/B 结论沉淀 | ✅ **完成** | 离线四组消融 + 真LLM盲评29样本 + README校准；**图路由质量略低于裸模型(胜率27.6% vs 58.6%,均分34 vs 35.45)，12.6x耗时未换回质量**；双证据均未支持「图路由优于裸模型」；详见 docs/review_cgraph_core_20261122.md + docs/review_21_verify_ratio_ablation_result_20261122.md |
 
 ### #7 进展明细
 
