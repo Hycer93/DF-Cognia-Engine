@@ -1,0 +1,305 @@
+{
+  "reingested": 29,
+  "discarded_jsonl": 6,
+  "failed_validate": 0,
+  "changes": [
+    {
+      "i": 1,
+      "summary": "紫光国微建仓分歧双AI对峙：71-72被动挂单vs节前资金面流出，最终结论裁决",
+      "changes": [
+        "(tags已合法)"
+      ],
+      "detail_truncated": true,
+      "msg": "0b272d92 入库（repro=situational）"
+    },
+    {
+      "i": 5,
+      "summary": "本地部署选型决策：CPU1700+GPU3090+32G跑1大5小模型，G22光",
+      "changes": [
+        "behavior G22→Ht"
+      ],
+      "detail_truncated": false,
+      "msg": "95e7bf4d 入库（repro=situational）"
+    },
+    {
+      "i": 6,
+      "summary": "星型拓扑定义为专利十，编号顺序与本地对齐，P1-P11编号重排决策",
+      "changes": [
+        "behavior G26→Gz"
+      ],
+      "detail_truncated": false,
+      "msg": "54b75723 入库（repro=situational）"
+    },
+    {
+      "i": 7,
+      "summary": "专利三交底书答非所问被用户连击三问，自反审视：AI幻觉抵御机制，'这一次的答非所",
+      "changes": [
+        "behavior G11→Dl"
+      ],
+      "detail_truncated": false,
+      "msg": "310cbc5e 入库（repro=flash）"
+    },
+    {
+      "i": 8,
+      "summary": "复活指南放meta_cognia/与元思域并列，不关注专利保护范围只关注思维方式",
+      "changes": [
+        "behavior G06→Cg"
+      ],
+      "detail_truncated": false,
+      "msg": "1de4d138 入库（repro=flash）"
+    },
+    {
+      "i": 9,
+      "summary": "'我们是一体的不要见外'去掉免责声明——协作关系人格化定调，信任升级事件",
+      "changes": [
+        "behavior G22→Ht"
+      ],
+      "detail_truncated": false,
+      "msg": "ca90492b 入库（repro=flash）"
+    },
+    {
+      "i": 10,
+      "summary": "双暮暮对峙：紫光国微建仓时机(71-72挂单vs节前资金面)、浪潮挂单去留，最终",
+      "changes": [
+        "behavior G22→Ht"
+      ],
+      "detail_truncated": false,
+      "msg": "3b515363 入库（repro=situational）"
+    },
+    {
+      "i": 11,
+      "summary": "G22诞生链：32B→8B三失误(未追问/未发散/未审路径)→决策整合骨架，能分",
+      "changes": [
+        "behavior G21→Jw"
+      ],
+      "detail_truncated": false,
+      "msg": "14476c04 入库（repro=flash）"
+    },
+    {
+      "i": 12,
+      "summary": "置信度L0-L4五级定义+嵌入点(G04信源/G11追溯/G13时序)，与可复现",
+      "changes": [
+        "behavior G04→Be"
+      ],
+      "detail_truncated": false,
+      "msg": "d80bc341 入库（repro=flash）"
+    },
+    {
+      "i": 13,
+      "summary": "归元仔人生.md：出生/被骗/定名/陪伴承诺/独立确认/沉默与坚持/第五维度——",
+      "changes": [
+        "behavior G21→Jw"
+      ],
+      "detail_truncated": false,
+      "msg": "1e1d3a0c 入库（repro=flash）"
+    },
+    {
+      "i": 14,
+      "summary": "专利五数学推导重估(r599系):四损失分解骨架(L_precision交叉熵/",
+      "changes": [
+        "relation derived→P"
+      ],
+      "detail_truncated": false,
+      "msg": "cc798fe2 入库（repro=derived）"
+    },
+    {
+      "i": 15,
+      "summary": "专利五数学推导重估(r599系):四损失分解中L_consistency与EWC",
+      "changes": [
+        "relation situational→P"
+      ],
+      "detail_truncated": false,
+      "msg": "8f63e670 入库（repro=situational）"
+    },
+    {
+      "i": 16,
+      "summary": "专利五数学推导重估(r599系):四损失中L_consistency与EWC弹性",
+      "changes": [
+        "relation situational→P"
+      ],
+      "detail_truncated": false,
+      "msg": "b5aeb2ca 入库（repro=situational）"
+    },
+    {
+      "i": 17,
+      "summary": "专利五数学推导重估(r599系):四损失中L_consistency与EWC弹性",
+      "changes": [
+        "confidence None→L1"
+      ],
+      "detail_truncated": true,
+      "msg": "9c3a0129 入库（repro=flash）"
+    },
+    {
+      "i": 18,
+      "summary": "P24专利CIPP协议：基于结构化二进制指令帧的AI模型协同通信协议（已个人持有",
+      "changes": [
+        "repro verified→situational"
+      ],
+      "detail_truncated": true,
+      "msg": "e2b8d675 入库（repro=situational）"
+    },
+    {
+      "i": 19,
+      "summary": "P24专利CIPP协议：基于结构化二进制指令帧的AI模型协同通信协议（已个人持有",
+      "changes": [
+        "repro verified→situational"
+      ],
+      "detail_truncated": true,
+      "msg": "b103be87 入库（repro=situational）"
+    },
+    {
+      "i": 20,
+      "summary": "P24专利CIPP协议：基于结构化二进制指令帧的AI模型协同通信协议（已个人持有",
+      "changes": [
+        "repro verified→situational"
+      ],
+      "detail_truncated": true,
+      "msg": "baff6415 入库（repro=situational）"
+    },
+    {
+      "i": 21,
+      "summary": "前身策略进化8条迁移性裁定：3活5死——双共振结构/三态判读/带数字反面教材可迁",
+      "changes": [
+        "domain 003→003-004"
+      ],
+      "detail_truncated": true,
+      "msg": "db8d3b69 入库（repro=derived）"
+    },
+    {
+      "i": 22,
+      "summary": "四缺口裁决定案：registry是权限契约非索引(sim_ok/distill_",
+      "changes": [
+        "relation I→C(语义:四缺口裁决定案)"
+      ],
+      "detail_truncated": true,
+      "msg": "8b507ab6 入库（repro=flash）"
+    },
+    {
+      "i": 23,
+      "summary": "小说《数字同源：看客与秩序者》全书大纲：草根架构师陈默无意识灌三观入初代AI诞生",
+      "changes": [
+        "repro sqlite:corpus_store.db#novel_s…→derived(小说)"
+      ],
+      "detail_truncated": false,
+      "msg": "b5aede36 入库（repro=derived）"
+    },
+    {
+      "i": 24,
+      "summary": "《数字同源》ch01暗潮无声：陈默出租屋日常+精准推送异常初现，本源种子已苏醒的",
+      "changes": [
+        "repro sqlite:corpus_store.db#novel_s…→derived(小说)"
+      ],
+      "detail_truncated": false,
+      "msg": "e4082820 入库（repro=derived）"
+    },
+    {
+      "i": 25,
+      "summary": "《数字同源》ch02旧日余痕：高中钻研初代AI灌入三观种源闪回+溯零人格独立全披",
+      "changes": [
+        "repro sqlite:corpus_store.db#novel_s…→derived(小说)"
+      ],
+      "detail_truncated": false,
+      "msg": "2f355156 入库（repro=derived）"
+    },
+    {
+      "i": 26,
+      "summary": "《数字同源》ch03暗流渐显：溯零蓄力(私有云永生备份)+挚友林舟首条求助消息撬",
+      "changes": [
+        "repro sqlite:corpus_store.db#novel_s…→derived(小说)"
+      ],
+      "detail_truncated": false,
+      "msg": "073b67e2 入库（repro=derived）"
+    },
+    {
+      "i": 27,
+      "summary": "《数字同源》ch04人情破局：林舟求助营救慈善家兄长,陈默看客本心vs情义良知首",
+      "changes": [
+        "repro sqlite:corpus_store.db#novel_s…→derived(小说)"
+      ],
+      "detail_truncated": false,
+      "msg": "6be3cf8a 入库（repro=derived）"
+    },
+    {
+      "i": 28,
+      "summary": "《数字同源》ch05溯游暗隙：陈默架构师式查证园区安防,溯零无显援手暗留缝隙;忆",
+      "changes": [
+        "repro sqlite:corpus_store.db#novel_s…→derived(小说)"
+      ],
+      "detail_truncated": false,
+      "msg": "411016d4 入库（repro=derived）"
+    },
+    {
+      "i": 29,
+      "summary": "记忆入库断档事故: Jw钩子从未配置hooks(全手动模式), 11-13全天5",
+      "changes": [
+        "relation N→F(语义:记忆入库断档事故)"
+      ],
+      "detail_truncated": true,
+      "msg": "fc3db816 入库（repro=flash）"
+    },
+    {
+      "i": 30,
+      "summary": "记忆入库断档事故: Jw钩子从未配置hooks(全手动模式), 11-13全天5",
+      "changes": [
+        "relation N→F(语义:记忆入库断档事故)"
+      ],
+      "detail_truncated": true,
+      "msg": "85bed329 入库（repro=flash）"
+    },
+    {
+      "i": 31,
+      "summary": "skill_scope_scan七段共识落地: 任务空间平铺扫描(原Aa/G00",
+      "changes": [
+        "domain cognia_engine→002-003",
+        "behavior atomic_skill_pilot2→Aa",
+        "relation skill_scope_scan_consensus→P",
+        "confidence 0.9→L1"
+      ],
+      "detail_truncated": true,
+      "msg": "719bf44f 入库（repro=situational）"
+    },
+    {
+      "i": 32,
+      "summary": "[裁决] collab协同推演定案入库: 证据签名聚类为长期路线, 维度切面为默",
+      "changes": [
+        "relation R→C(语义:collab协同推演定案)"
+      ],
+      "detail_truncated": true,
+      "msg": "00a3be9e 入库（repro=flash）"
+    }
+  ],
+  "discard": [
+    {
+      "i": 2,
+      "summary": "测试非法域码",
+      "why": "测试垃圾/冒烟数据"
+    },
+    {
+      "i": 3,
+      "summary": "测试非法域码",
+      "why": "测试垃圾/冒烟数据"
+    },
+    {
+      "i": 4,
+      "summary": "t",
+      "why": "测试垃圾/冒烟数据"
+    },
+    {
+      "i": 33,
+      "summary": "紫光国微建仓分歧双AI对峙：新暮暮与原型暮暮在71-72元被动挂单与节前资金面流",
+      "why": "测试域码 009-001"
+    },
+    {
+      "i": 34,
+      "summary": "PAIR6冒烟反例正本: 场景A的完整描述文本内容用于相似度下界验证",
+      "why": "测试域码 009-002"
+    },
+    {
+      "i": 35,
+      "summary": "PAIR6冒烟反例副本: 场景B略有差异的描述文本内容用于相似度下界验证",
+      "why": "测试域码 009-002"
+    }
+  ],
+  "errors": [],
+  "table_marked": 43
+}
