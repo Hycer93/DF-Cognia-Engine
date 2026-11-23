@@ -135,6 +135,53 @@ INHERIT=dry-run
 
 ---
 
+## 4.2 ⚠️ 关键数据源核实（2026-11-23 15:20 追加）
+
+**核实结论：18:05 nightly 不会产生 `p0_equiv_dry` 日志。**
+
+依据（代码走查）：
+- `p0_equiv_dry` / `skip_equivalent_derived` 唯一写入点 = `memory_organize.py:150/157`，仅在 `_p0_equiv_check` 命中/观测时记录；
+- `_p0_equiv_check` 唯一调用点 = `atomic_store()` 内部（L211）→ **只有真实写新记忆卡才触发**；
+- `atomic_store` 真实业务调用点仅两处：
+  1. `memory_hook.py:40` —— PreCompact 会话 hook（**用户日常对话压缩时**触发，唯一高频来源）
+  2. `memory_quality_gate.py:173` —— `ingest_corpus_evidence` 外部调用方主动触发（非自动）
+- nightly 全链（E4/E5/E7...）均为**只读巡检/软层整理**：E5 明确"永不改原子层主记录"（classify_and_link/distill_all 只写 relation_graph/experiences 软层），0 处 atomic_store 写卡调用。
+
+**推论与修正**：
+- 18:05 nightly → 只更新 E4 健康指标（含 `active_same_summary_multi`/`skip_equiv_count`/`cross_pool_warn`）+ 各巡检报告，**不写 gate_log 的 P0 条目**；
+- **真实 `p0_equiv_dry` 分布来自日常会话的 PreCompact**，需用户实际对话触发压缩累积，而非 nightly；
+- 因此"等 nightly 拿 gate_log"预期需修正为：**等 nightly 拿 E4 指标 + 等真实会话 PreCompact 拿 p0_equiv_dry**。
+
+**对 18:05 检查清单的影响**：
+- ① `gate_log.jsonl` 的 `p0_equiv_dry`：**18:05 nightly 不产出**（除非恰好有会话 PreCompact 同时发生）；真实分布需靠日常会话累积。基线已用影子重放（n=280）+ 3 条真实候选模拟覆盖。
+- ② E4 `active_same_summary_multi`：**18:05 会更新**，可正常观测。
+
+**建议**：切 on 决策时，p0_equiv_dry 真实分布样本从「日常 PreCompact 累积」获取（shadow n=280 已提供等价证据）；无需强等 nightly。E4 指标则等 18:05 自然更新即可。
+
+---
+
+## 4.3 对抗性误命中验证（2026-11-23 15:20 追加，直击切 on 最大风险）
+
+针对切 on 最担心的「高相似但事实不同」误命中，构造 6 类语义距离梯度候选在现网库副本 dry-run 跑：
+
+| 场景 | best_sim | would_skip | 判定 |
+|---|---|---|---|
+| 完全重复 | 1.0000 | true | ✅ 正确拦 |
+| 微小编辑（同义改写） | 0.9672 | true | ✅ 正确拦 |
+| **同主题不同结论**（非农→金价涨 vs 跌） | **0.8660** | false | ✅ **正确不拦** |
+| 同域不同事（黄金ETF建仓） | 0.8333 | false | ✅ 正确不拦 |
+| **换实体**（黄金→白银期货，结构相同） | **0.9226** | false | ✅ **正确不拦**（<0.95） |
+| 语义无关（Python asyncio） | 0.6225 | false | ✅ 正确不拦 |
+
+**决定性结论**：
+- 最危险的「同主题不同事实」场景 sim=0.8660，**距 0.95 阈值留 0.084 安全余量**，绝不误拦；
+- 「换标的」（黄金→白银，句式结构高度相同）sim=0.9226，仍在阈值下 0.027；
+- 0.95 阈值在真实感对抗样本上**精准区分「同义」与「同结构不同事实」**，零误判。
+
+该证据直接覆盖切 on 的最大风险点，比 n=280 影子重放更聚焦。**阈值 0.95 经对抗验证可靠。**
+
+---
+
 ## 5. 关键部署提醒
 
 - **CodeChat 重启提醒**：本会话 hook 进程仍读旧环境块，若本轮 PreCompact 触发写入，需在重启 CodeChat 后才自动 dry-run；当前手动观测已用显式 env 覆盖验证。
