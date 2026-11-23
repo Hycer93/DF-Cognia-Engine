@@ -71,7 +71,11 @@ def _dfcp_proximity(mine: dict, other: dict, sem: float | None = None) -> float:
         return sem if sem is not None else 0.5
     if d1.split("-")[0] == d2.split("-")[0]:
         return 0.5
-    if mine["behavior"] == other["behavior"]:   # 行为检字法：跨域同骨架仍可比较
+    if mine.get("behavior") == other.get("behavior"):   # 行为检字法：跨域同骨架仍可比较
+        # 安全访问(2026-11-23 #bugfix): 历史 15 张旧卡 dfcp_tag 缺 behavior 字段,
+        # 硬取 other["behavior"] 抛 KeyError 中断整批 classify_and_link 建边(新卡成孤岛,
+        # E4 runtime未跑四档17 / E5 unlinked 的根源)。.get() 缺失返回 None: 双方都有则照旧
+        # 比对, 任一方缺失则 None==有效值/None==None 条件不成立→跳过该分支, 不抛异常。
         return 0.3
     return 0.15
 
