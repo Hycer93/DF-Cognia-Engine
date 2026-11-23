@@ -206,7 +206,7 @@
 ## 四、主线队列（统一编号总表，2026-11-22 重编）
 
 > **编号规则**：#N 为统一待办编号，一经分配不复用。优先级 P0>P1>P2。已完成项保留历史号归档在表末。
-> 本次重编变更：#A 并入 #8（同为 F60 第二环）；原 §七 一致性修复编号为 #14；原 #B→#15、#C→#16；#11 复盘承接的 P2-A/B/C 登记为 #17/#18/#19（详见 ；**Phase2已落地(11-22)**：日级趋势daily_trend/误归档率demote_rate(29/320=0.09)/冲突级联分级cascade_dist(1=summary2=detail3=source,验证layer=2落图谱)/去重触发gate_dedup_hits+simhash_bearing；仅剩miss_case日级(无数据源)+阈值命中率审计+流程图`docs/review_11_attitude_20261122.md`）；记忆系统评估复盘立项 #20（P1，详见 `docs/review_20_observability_20261122.md`）；cgraph 可验证性评审立项 #21（P1，详见 `docs/review_21_cgraph_verifiability_20261122.md`）；cgraph 改进方案拆解 #22~#28（详见 `docs/review_21_improvement_plan_20261122.md`）；#22 观测后执行计划修订（方案A并行 #20+#23，#24机制改写，详见 `docs/cgraph_refactor_plan_20261122.md`）。
+> 本次重编变更：#A 并入 #8（同为 F60 第二环）；原 §七 一致性修复编号为 #14；原 #B→#15、#C→#16；#11 复盘承接的 P2-A/B/C 登记为 #17/#18/#19（详见 ；**Phase2已落地(11-22)**：日级趋势daily_trend/误归档率demote_rate(29/320=0.09)/冲突级联分级cascade_dist(1=summary2=detail3=source,验证layer=2落图谱)/去重触发gate_dedup_hits+simhash_bearing/阈值命中率审计(threshold_hit_audit.py,临界带仅5条阈值定得稳)/全链路流程图(memory_pipeline_flow_20261122.md);仅剩miss_case日级(无数据源,非工程欠账)`docs/review_11_attitude_20261122.md`）；记忆系统评估复盘立项 #20（P1，详见 `docs/review_20_observability_20261122.md`）；cgraph 可验证性评审立项 #21（P1，详见 `docs/review_21_cgraph_verifiability_20261122.md`）；cgraph 改进方案拆解 #22~#28（详见 `docs/review_21_improvement_plan_20261122.md`）；#22 观测后执行计划修订（方案A并行 #20+#23，#24机制改写，详见 `docs/cgraph_refactor_plan_20261122.md`）。
 
 ### 待办（按优先级）
 

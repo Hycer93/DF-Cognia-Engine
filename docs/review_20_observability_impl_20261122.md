@@ -63,6 +63,18 @@ Phase 2 的"纯数据聚合"部分全部本地可做、不吃 LLM，已实施并
 
 **未做（仍是待环境/待数据）**：miss_case 日级（无数据源 miss_case 文件尚不存在）、阈值命中率专项审计、全链路流程图。
 
+## 四·补二（Phase2 收尾 2 项，2026-11-22 封版）
+
+1. **阈值命中率审计** ✅：新增 `eval/audit/threshold_hit_audit.py`（只读）。产出档位命中分布、临界带（阈值下方 0.03 内差一点过线）、分域命中、new 档离 conflict 线 gap 分布。
+   - 实测 232 条 / 去重 226 对：equivalent 15(6.5%) / augment 4(1.7%) / conflict 11(4.7%) / new 202(87.1%)。
+   - 合并/增补档临界带仅 5 条 → 阈值落在分布空档，**定得稳，无需调**。
+   - new 档离 conflict 线差<0.10 占 173/199 → 相似度是**连续长尾非双峰**，conflict 线附近天然有灰区簇，非阈值失误。
+   - 结论：**当前阈值合理，规则收敛仍无据，不动。**
+
+2. **全链路流程图** ✅：新增 `docs/memory_pipeline_flow_20261122.md`。含写入链路（gate→judge→relations→organize→SQLite→jsonl）、检索链路（router→embedding→gate_log）、维护链路（nightly 16 步真实编排）、观测指标→数据源→E4 字段对照表、旁路通道（PreCompact/E9兜底/脱敏）。已逐项核验与代码一致（SQLite 主写=core_memory_card@green_card_writer.py，非 corpus_store；nightly 16 步与 STEPS 对齐）。
+
+**仅剩**：miss_case 日级——`gate_miss_case.jsonl` 无数据源（无检索 miss 事件），代码可埋当前显示空，属真实数据缺口非工程欠账。
+
 ## 五、回滚
 - E4：删 `_memory_health` 调用与函数即可，patrol 其余逻辑零改动。
 - E9：`body = _sanitize_text(text)` 改回 `body = text` 即恢复。
