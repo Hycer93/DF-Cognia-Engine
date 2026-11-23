@@ -135,6 +135,35 @@ need = {"session_id", "messages", "msg_count", "terminate_reason", "ref_archive_
 check("9d 快照表关键列齐全", need.issubset(cols), str(need - cols))
 c.close()
 
+# ---------- 用例10: P0接线修复锁定(--file 不再遮蔽 stdin payload) ----------
+# 根因: 旧代码 `if args.file: raw=read(file) elif: raw=stdin.read()` 配了--file就永不读
+# stdin → PreCompact 的 {session_id,transcript_path} 被丢弃 → 证据库永远收不到真实会话。
+print("\n[用例10] P0接线修复: --file 与 stdin 双读")
+import json as _json
+_R = _mh._resolve_payload_and_candidates
+_fr = _json.dumps([{"text": "cand1"}], ensure_ascii=False)
+_sr = _json.dumps({"session_id": "s1", "transcript_path": "/t.jsonl",
+                   "hook_event_name": "PreCompact"}, ensure_ascii=False)
+_p, _c, _e = _R(_fr, _sr, has_file_flag=True)
+check("10a --file+stdin: payload 来自 stdin(不被遮蔽)",
+      _p.get("session_id") == "s1", str(_p))
+check("10b --file+stdin: 候选来自 --file",
+      _c == [{"text": "cand1"}], str(_c))
+check("10c --file+stdin: 无解析错误", _e is None, str(_e))
+# payload 自带 candidates 优先
+_sr2 = _json.dumps({"session_id": "s2", "transcript_path": "/t", "hook_event_name": "Stop",
+                    "candidates": [{"text": "inline"}]}, ensure_ascii=False)
+_p2, _c2, _e2 = _R("", _sr2, has_file_flag=False)
+check("10d payload.candidates 优先于 --file",
+      _p2.get("session_id") == "s2" and _c2 == [{"text": "inline"}], str((_p2, _c2)))
+# 仅 --file 候选兼容旧行为
+_p3, _c3, _e3 = _R(_fr, "", has_file_flag=True)
+check("10e 仅--file: payload空, 候选来自file(兼容旧)",
+      _p3 == {} and _c3 == [{"text": "cand1"}], str((_p3, _c3)))
+# --file 非法 JSON 报错
+_p4, _c4, _e4 = _R("{bad", "", has_file_flag=True)
+check("10f --file非法JSON: parse_err 非空", _e4 is not None and "解析失败" in _e4, str(_e4))
+
 shutil.rmtree(os.path.dirname(tmpdb), ignore_errors=True)
 
 print(f"\n结果: {len(PASS)} PASS / {len(FAIL)} FAIL")

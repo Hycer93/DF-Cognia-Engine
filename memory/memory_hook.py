@@ -134,6 +134,50 @@ def _parse_transcript(transcript_path: str) -> str:
     return "\n\n".join(out)
 
 
+_HOOK_KEYS = ("session_id", "transcript_path", "hook_event_name")
+
+
+def _resolve_payload_and_candidates(file_raw: str, stdin_raw: str, has_file_flag: bool):
+    """#31 接线修复：把 --file 内容与 stdin 内容解析成 (payload, candidates, parse_err)。
+
+    - payload：hook 事件载荷，只认含 _HOOK_KEYS 的 dict；优先 stdin，次 --file。
+    - candidates：候选列表；来源优先级 payload.candidates > --file > 旧式 stdin(整体当列表)。
+    - parse_err：--file 显式存在但 JSON 解析失败时的错误串（供调用方非 0 退出）。
+
+    关键：配了 --file 也不能跳过 stdin——PreCompact 的 transcript_path 只在 stdin 里。
+    抽为纯函数便于 eval/audit 直接回归，不依赖 judge 管道/LLM。
+    """
+    def _parse(s):
+        try:
+            return json.loads(s) if s and s.strip() else None
+        except Exception:
+            return None
+
+    stdin_parsed = _parse(stdin_raw)
+    file_parsed = _parse(file_raw)
+
+    payload = {}
+    if isinstance(stdin_parsed, dict) and any(k in stdin_parsed for k in _HOOK_KEYS):
+        payload = stdin_parsed
+    elif isinstance(file_parsed, dict) and any(k in file_parsed for k in _HOOK_KEYS):
+        payload = file_parsed
+
+    parse_err = None
+    if payload and payload.get("candidates") is not None:
+        candidates = payload.get("candidates") or []
+    elif has_file_flag:
+        if file_parsed is None and file_raw.strip():
+            parse_err = "候选JSON解析失败(--file)"
+        candidates = file_parsed if file_parsed is not None else []
+    elif stdin_parsed is not None and not payload:
+        candidates = stdin_parsed
+    else:
+        candidates = []
+    if isinstance(candidates, dict):
+        candidates = [candidates]
+    return payload, candidates, parse_err
+
+
 def _session_dialog_from_hook(payload: dict) -> dict:
     """#12 主逻辑: 由 hook payload 落对话原文。
     优先 transcript_path 解析; 缺失/异常降级到 dialog_last_segment.md 旧通路。
@@ -276,20 +320,20 @@ def main():
         #  B) 候选记忆 judge 管道: 从 --file(或 payload/旧 stdin)读候选走四档判定。
         # stdin 分流: 若 payload 含 hook 字段(session_id/transcript_path/hook_event_name)
         #  → 是 PreCompact payload, 候选只从 --file 读; 否则旧行为(整个 stdin 当候选 list)。
-        payload = {}
-        raw = ""
+        # #31 接线修复(2026-11-23): --file(候选列表) 与 stdin(PreCompact payload) 是两个
+        # 独立来源，不能二选一。详见 _resolve_payload_and_candidates。
+        file_raw = ""
         if args.file:
-            raw = io.open(args.file, encoding="utf-8").read()
-        elif not (sys.stdin is None or sys.stdin.isatty()):
-            raw = sys.stdin.read()
-        # 先尝试把 raw 当 hook payload 解析(有 hook 字段才采纳为 payload)
-        _hook_keys = ("session_id", "transcript_path", "hook_event_name")
-        try:
-            _parsed = json.loads(raw) if raw.strip() else None
-        except Exception:
-            _parsed = None
-        if isinstance(_parsed, dict) and any(k in _parsed for k in _hook_keys):
-            payload = _parsed
+            file_raw = io.open(args.file, encoding="utf-8").read()
+        # 无论是否带 --file，都尝试读 stdin——它是 hook payload 的唯一来源
+        stdin_raw = ""
+        if not (sys.stdin is None or sys.stdin.isatty()):
+            try:
+                stdin_raw = sys.stdin.read()
+            except Exception:
+                stdin_raw = ""
+        payload, candidates, parse_err = _resolve_payload_and_candidates(
+            file_raw, stdin_raw, has_file_flag=bool(args.file))
         # ---- A) 对话原文落库(即使候选解析失败也先做, 对话追溯优先) ----
         dlg_report = None
         try:
@@ -298,19 +342,9 @@ def main():
             dlg_report = {"status": "dialog-error", "err": repr(e)}
             print(f"[memory_hook_abnormal] 对话落库异常: {e!r}", file=sys.stderr)
         # ---- B) 候选 judge 管道 ----
-        if payload:
-            candidates = payload.get("candidates") or []
-            if isinstance(candidates, dict):
-                candidates = [candidates]
-        else:
-            try:
-                candidates = (_parsed if _parsed is not None else (json.loads(raw) if raw.strip() else []))
-                if isinstance(candidates, dict):
-                    candidates = [candidates]
-            except Exception as e:
-                print(json.dumps({"error": f"候选JSON解析失败: {e}",
-                                  "dialog": dlg_report}, ensure_ascii=False))
-                sys.exit(1)
+        if parse_err:
+            print(json.dumps({"error": parse_err, "dialog": dlg_report}, ensure_ascii=False))
+            sys.exit(1)
         from memory_judge import judge_and_store
         # 2026-11-21 修复(用户裁决): judge 管道内部吞异常会返回"正常"报告,
         # 上游 CodeChat 无法感知故障 → 静默丢记忆。judge_failures>0 时显式非 0 退出。
