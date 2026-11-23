@@ -110,8 +110,10 @@ def atomic_store(
     summary, converged = _converge_summary(summary)
 
     # full_hash：精确副本拦截（纯副本不入主记录）
+    # #30 R1（2026-11-23）：查重池从 load_memories()（jsonl 全量，含 deleted/precedent）
+    # 切换为 load_active_pool()（DB status=active ∧ tier=active），已删/已降级卡不再拦截新写入。
     fh = _full_hash(summary, detail, source_ref)
-    if any(e.get("full_hash") == fh for e in load_memories()):
+    if any(e.get("full_hash") == fh for e in load_active_pool()):
         append_jsonl(REPLICA_LOG_JSONL, {
             "ts": datetime.now().isoformat(), "full_hash": fh, "summary": summary,
         })
@@ -238,6 +240,45 @@ def change_code(inst_id: str, field: str, old: str, new: str, reason: str):
 # ---- 通用 IO ----
 def load_memories() -> list:
     return _load_jsonl(MEMORIES_JSONL)
+
+
+def load_active_pool() -> list:
+    """查重专用比对池（#30 R1，2026-11-23）。
+
+    口径：DB core_memory_card 中 status='active' AND tier='active'。
+    - 替代 load_memories()（jsonl 全量，status 恒 None，含 deleted/precedent）做查重池；
+    - precedent（已降级旧版）与 deleted（已删）不参与查重——不应用旧版本拦新写入。
+
+    返回：[{inst_id, summary, full_hash, dfcp_tag(dict), detail}...]，仅比对所需字段。
+    DB 不可用/表缺失时返回 []（查重退化为无池，不抛错，绝不阻断入库主流程）。
+    """
+    import sqlite3 as _sq
+    _db = os.path.join(MEM_DIR, "corpus_store.db")
+    if not os.path.exists(_db):
+        return []
+    try:
+        con = _sq.connect(f"file:{_db}?mode=ro", uri=True, timeout=5)
+    except _sq.OperationalError:
+        return []
+    try:
+        con.row_factory = _sq.Row
+        rows = con.execute(
+            "SELECT inst_id, summary, full_hash, dfcp_tag, detail "
+            "FROM core_memory_card WHERE status='active' AND tier='active'"
+        ).fetchall()
+    except _sq.OperationalError:
+        return []
+    finally:
+        con.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["dfcp_tag"] = json.loads(d.get("dfcp_tag") or "{}")
+        except ValueError:
+            d["dfcp_tag"] = {}
+        out.append(d)
+    return out
 
 
 def load_quarantine() -> list:
