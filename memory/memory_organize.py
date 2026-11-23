@@ -360,7 +360,7 @@ def load_active_pool() -> list:
     try:
         con.row_factory = _sq.Row
         rows = con.execute(
-            "SELECT inst_id, summary, full_hash, dfcp_tag, detail "
+            "SELECT inst_id, summary, full_hash, dfcp_tag, detail, asset_class "
             "FROM core_memory_card WHERE status='active' AND tier='active'"
         ).fetchall()
     except _sq.OperationalError:

@@ -182,6 +182,45 @@ def _cascade_sem(mine: dict, other: dict, sem_summary: float) -> tuple:
     return sem, 1, layers
 
 
+# ---- #30 P2：corpus↔runtime 跨池疑似等价告警（仅 E4 可见，不阻断不降级）----
+def _cross_pool_warn(corpus_card: dict):
+    """corpus 卡写入时，跨 runtime 池做 summary 相似度扫描。
+
+    达 SUMMARY_EQUIV_THRESHOLD → 写 warn_corpus_runtime_equivalent 到 gate_log。
+    纯旁路告警：任何异常静默跳过，绝不影响 corpus 写入/返回。
+    P2 与 P0 共用阈值口径（0.95），避免第二套阈值。
+    """
+    try:
+        import memory_organize as _mo
+        if _mo.SUMMARY_EQUIV_MODE == "off":
+            return
+        from memory_organize import load_active_pool
+        sum_c = corpus_card.get("summary")
+        if not sum_c:
+            return
+        vc = _embed(sum_c)
+        best = 0.0
+        best_id = None
+        for e in load_active_pool():
+            if e.get("asset_class") != "runtime":     # 只与 runtime 池比对
+                continue
+            s = e.get("summary")
+            if not s:
+                continue
+            sim = _cosine(vc, _embed(s))
+            if sim > best:
+                best, best_id = sim, e.get("inst_id")
+        if best >= _mo.SUMMARY_EQUIV_THRESHOLD:
+            append_jsonl(os.path.join(MEM_DIR, "gate_log.jsonl"), {
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                "op": "warn_corpus_runtime_equivalent",
+                "corpus_inst": corpus_card.get("inst_id"),
+                "runtime_inst": best_id, "best_sim": round(best, 4),
+            })
+    except Exception:
+        pass   # 告警非关键路径，任何失败静默
+
+
 # ---- 四档判定 + entity_id 回填 ----
 def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
     """对新入库条目执行四档判定，写入关系图谱。返回判定报告。
@@ -197,6 +236,9 @@ def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
     if me is None:
         return {"status": "not_found"}
     if me.get("asset_class") == "corpus":
+        # #30 P2（2026-11-23）：corpus 仍硬跳过冲突比对（教材冻结底座，语义不变），
+        # 但旁路加一次跨池疑似等价告警（仅 E4 晨报可见，不阻断、不降级）。
+        _cross_pool_warn(me)
         return {"status": "skipped_protected"}   # 教材硬跳过（§4.1 整理机制不碰 corpus）
     if me.get("multi_topic"):
         return {"status": "skipped_multi_topic"} # 混主题冻结条目不参与同源/冲突比对（2026-11-08 裁决：漏拆预案）
