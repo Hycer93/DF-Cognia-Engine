@@ -29,6 +29,8 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(os.path.dirname(HERE), "data", "memory", "corpus_store.db")
 MEM_DIR = os.path.join(os.path.dirname(HERE), "data", "memory")
+
+from memory_organize import read_card_detail  # #30 R4: 统一 detail 读取(防 derived_only 泄露)
 HOLD_POOL_JSONL = os.path.join(MEM_DIR, "topic_hold_pool.jsonl")      # 规约3: 待归池
 TOPIC_LOG_JSONL = os.path.join(MEM_DIR, "topic_layer_log.jsonl")      # 全操作审计（append-only）
 
@@ -314,7 +316,7 @@ def _cue_discrimination(cue: str, sample_ids: list, topic_id: str = None) -> dic
     c = _conn()
     try:
         rows = c.execute(
-            "SELECT inst_id, summary, detail FROM core_memory_card "
+            "SELECT inst_id, summary, detail, dfcp_tag FROM core_memory_card "
             "WHERE status IS NULL OR status != 'superseded'").fetchall()
         mounted = {}
         for iid, tid in c.execute("SELECT inst_id, topic_id FROM topic_links"):
@@ -330,7 +332,9 @@ def _cue_discrimination(cue: str, sample_ids: list, topic_id: str = None) -> dic
     finally:
         c.close()
     n_in = n_other = 0
-    for iid, s, d in rows:
+    for iid, s, d_raw, dt in rows:
+        # #30 R4: cue 全文匹配属检索用途，derived_only 卡的 detail 不参与
+        d = read_card_detail({"detail": d_raw, "dfcp_tag": dt}, "search")
         if not (cue and cue in f"{s or ''} {d or ''}"):
             continue
         if iid in samples:
@@ -341,7 +345,7 @@ def _cue_discrimination(cue: str, sample_ids: list, topic_id: str = None) -> dic
     # n_dispute: hold 多锚歧义行中, 本 topic 参与争抢 且 卡文含本 cue
     n_dispute = 0
     if topic_id:
-        card_text = {iid: (f"{s or ''} {d or ''}") for iid, s, d in rows}
+        card_text = {iid: (f"{s or ''} {read_card_detail({'detail': d_raw, 'dfcp_tag': dt}, 'search') or ''}") for iid, s, d_raw, dt in rows}
         for iid, reason in hold_cards.items():
             if topic_id in (reason or "") and cue and cue in card_text.get(iid, ""):
                 n_dispute += 1

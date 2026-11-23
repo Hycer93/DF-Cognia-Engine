@@ -145,8 +145,9 @@ def run():
             target_in_pool = m["inst_id"][:8] in [p for p in pool_ids if p]
             if results and v in ("hit", "marginal_hit"):
                 top = results[0][1]
+                _det = mo.read_card_detail(top, "display")  # #30 R4: derived_only 卡不展示 detail
                 answer = f"(检索命中) {top['summary']}" + \
-                    (f" | 详情: {top['detail'][:200]}" if top.get("detail") else "")
+                    (f" | 详情: {_det[:200]}" if _det else "")
                 answered_id = top["inst_id"]
                 match_eff = results[0][2]
             elif results and v in ("marginal_ask", "uncertain"):

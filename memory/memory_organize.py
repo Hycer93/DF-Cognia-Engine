@@ -123,10 +123,13 @@ def atomic_store(
     repro = tags.get("repro") or judge_repro(detail, tags)
 
     # 三层占用（§4.7 嵌套：判定三级决定对结构三层的占用权限）
+    # #30 P1（2026-11-23）：derived 分支不再销毁 detail/source_ref——物理保留入库，
+    # 改由 dfcp_tag.derived_only 标记隔离。业务检索/推理经 read_card_detail(purpose)
+    # 过滤（不暴露派生 detail），仅查重/审计/治理可读完整 detail（保住 embedding 查重素材）。
     layers = {
         "flash":       {"summary": True, "detail": True, "source": "full"},
         "situational": {"summary": True, "detail": True, "source": "restricted_entry"},
-        "derived":     {"summary": True, "detail": False, "source": "retrieval_path"},
+        "derived":     {"summary": True, "detail": True, "source": "retrieval_path"},  # P1: detail True
     }[repro]
 
     entry = {
@@ -142,13 +145,14 @@ def atomic_store(
             "behavior": tags["behavior"],               # domain/behavior/relation=思维坐标，
             "relation": tags["relation"],               # memory_class=记忆资产角色第五维，
             "memory_class": tags.get("memory_class"),   # null 合法=普通记录（S015：非万能分类）
+            **({"derived_only": True} if repro == "derived" else {}),  # P1: 派生标记(内嵌,不改表)
         },
         "affect_tags": tags.get("affect_tags"),        # 情感树可选层，独立于 dfcp_tag
         "memory_class": tags.get("memory_class"),      # 【迁移期双读】件②后权威位在 dfcp_tag.memory_class；顶层保留供 E4/E5 旧口径过渡，迁移完成（E4 memory_class_missing=0）后清退
         "summary": summary,
         "summary_converged": converged,
-        "detail": detail if layers["detail"] else None,
-        "source_ref": source_ref if layers["source"] in ("full", "restricted_entry") else None,
+        "detail": detail,                              # P1: 物理保留(不再 if layers["detail"] else None)
+        "source_ref": source_ref if layers["source"] in ("full", "restricted_entry", "retrieval_path") else None,
         "origin_ids": origin_ids or [],
         "entity_id": None,                              # 认知关联层回填（关系层非主键）
         "derived_from": None,                           # 经验聚类层产出，原子层恒 None
@@ -279,6 +283,29 @@ def load_active_pool() -> list:
             d["dfcp_tag"] = {}
         out.append(d)
     return out
+
+
+def read_card_detail(entry: dict, purpose: str) -> str:
+    """#30 R4（2026-11-23）：统一 detail 读取入口，防 derived_only 泄露到业务层。
+
+    purpose:
+      'search' / 'reasoning' / 'display' → derived_only 卡返回 None（不暴露派生 detail）
+      'dedupe' / 'audit' / 'governance'  → 返回完整 detail（查重/审计/治理需原文）
+
+    兼容 entry 来自 DB row(dict) 或 jsonl(dict)；dfcp_tag 可为 dict 或未反序列化 JSON 串。
+    """
+    detail = entry.get("detail")
+    if detail is None:
+        return None
+    tags = entry.get("dfcp_tag") or {}
+    if isinstance(tags, str):          # 兜底：未反序列化
+        try:
+            tags = json.loads(tags)
+        except ValueError:
+            tags = {}
+    if tags.get("derived_only") and purpose in ("search", "reasoning", "display"):
+        return None
+    return detail
 
 
 def load_quarantine() -> list:
