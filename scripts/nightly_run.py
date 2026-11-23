@@ -1,5 +1,6 @@
 """
-夜间总驱动（AGI 自维护底盘主链）：串联 E2(分钟级) → E1(小时级) → E4/E5/E6 → E7 治理 → T1 归档。
+夜间总驱动（AGI 自维护底盘主链）：串联 E2(分钟级) → E4/E5/E6 → E7 治理 → T1 归档。
+（E1 探针回归已于 2026-11-23 移出主链——LLM 路由单条卡 38min 会拖垮整链，改手动触发）
 
 2026-11-15 用户裁决重构（管线分级）:
   eval/core/       常驻自维护底盘——本主链只串这些
@@ -37,7 +38,12 @@ STEPS = [
     # 2026-11-15 用户裁决: E3(一次性审计, 归 eval/audit/)与E8(影子演习, 归 eval/drill/)
     # 均摘出主链; 主链=纯本地无人值守内务闭环, 只串 eval/core/ 六脚本
     ("E2 反问门标定扫描", [PY, "eval/core/e2_gate_calibration.py"], "logs/e2_gate_calibration.json", 60),
-    ("E1 探针触发率全链回归", [PY, "eval/core/e1_probe_trigger.py"], "logs/e1_probe_result.jsonl", 90),
+    # E1 探针触发率全链回归 —— 2026-11-23 用户裁决移出自动主链:
+    # E1 每条探针=一次完整 LLM 图路由(多轮 LLM 调用), 内网 LLM 半死不活时单条卡 38min,
+    # 曾把整条 nightly 拖到跑不完(E4 等记忆步骤永远等不到)。改为手动触发:
+    #   NO_MEMORY=1 python eval/core/e1_probe_trigger.py
+    # 报告段仍展示 E1 历史结果(e1_probe_result.jsonl)供晨间参考。
+    # ("E1 探针触发率全链回归", [PY, "eval/core/e1_probe_trigger.py"], "logs/e1_probe_result.jsonl", 90),
     # E4 维护巡逻（只读报警）+ E5 自动整理（幂等软层操作，只追加不删除）
     ("E4 记忆库维护巡逻", [PY, "eval/core/e4_maintenance_patrol.py"], "logs/e4_maintenance.json", 60),
     # DB→jsonl 增量回补(2026-11-22 #20 漂移修复: 11-15 读源切 SQLite 后 jsonl 降级为
@@ -161,7 +167,7 @@ def write_report(durations):
         lines.append(f"- {name}: {mins} min")
     # E1
     per = e1_summary()
-    lines.append("\n## E1 触发率\n")
+    lines.append("\n## E1 触发率（已于 2026-11-23 移出自动链，改手动触发；此处为历史结果）\n")
     # P1-4（2026-11-12 用户裁决）：行为依赖探针标注
     # Bc 全靠节点 LLM 自发 [[DEEPEN:Bc]] 标记进链（in_planned 恒 False），
     # 属高脆弱软通路——该指标不能单独作为代码回归证据，大幅波动须换判定模型复测。
