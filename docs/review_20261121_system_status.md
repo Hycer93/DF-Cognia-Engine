@@ -222,6 +222,7 @@
 | **#28** | 加深分支并行（P-D） | **P2** | 📋 待立项 | 仅无依赖 deepen 分支并行；主链仍串行；每线程独立 LLMClient、只读不写图、并发上限3-5、超时不破坏主流程；simple/medium 少触发收益有限；详见改进方案 §四 P-D |
 | **#29** | 记忆库同事件多版本治理 | **P2** | ✅ 完成(存量消重) | 已执行(11-23): 实际9组, 8张11-16 derived空壳tier→precedent+superseded_by指向正本(组1-7→11-13带detail正本/组8→11-15corpus锚点/组9 dumpsys双观测点保留不动); jsonl+DB双侧一致; 组8锚点detail也空属独立回填; 详见 `docs/review_29_multi_version_governance_20261123.md` |
 | **#30** | 根治记忆多卡:入库链路三道闸 | **P1** | 📋 待立项(走七段) | 三重查重失效叠加:①full_hash仅逐字匹配换措辞即失效②derived卡强制清空detail/source致无法算embedding③corpus/runtime池隔离互不比对; P0 summary语义查重(阈值宁高勿低,拿8张问题卡灰度)/P1 derived不再清detail/P2跨池弱匹配告警/P3 E4指标兜底; 改atomic_store主流程,单独立项走七段评审
+| **#31** | 存量situational双active多版本治理 | **P2** | 📋 候选(待评估) | 8对situational卡summary近似双active(detail完整非空壳,与#30 derived空壳不同源); 见docs/attach_30_dup_samples_20261123.md; #30只修写链路不碰存量,此批登记候选待评估是否做存量消重 |
 | **#12** | 对话会话归组 & 历史追溯（轻量版） | **P0** | ✅ **完成** | 根治 h 通道断流（实证：1508段仅1条h,全靠E9兜底）；stdin transcript 解析落库+降级md+list_dialog+cards_from_dialog+E9断流告警；回归 27/27；详见 §六 |
 | **#11** | 回执态度元标签子通路（方案A） | **P1** | ✅ **完成** | `memory_attitude.py` 附属 JSONL + judge LLM 通路接入 attitude 解析；stub 零副作用、主表零改动；回归 22/22；详见 §五 |
 | **#8** | forward_check 第二环深度正演（复用 minloop.verify） | **P2** | ⏸ 第一环已实装+回归，第二环待立项 | 第一环静态版 `collab_pipeline.py:407` + 回归 15/15；第二环补齐推理正演自证闭环（原 #A 并入）；详见 `docs/review_8_forward_check_20261122.md` |
