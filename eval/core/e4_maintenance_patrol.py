@@ -349,9 +349,28 @@ def _memory_health(mems):
     cq_status = Counter(r.get("status", "pending") for r in cq)
     conflict_pending_n = cq_status.get("pending", 0)
 
+    # — 冲突三级级联分级（#20 Phase2）：relation_graph 里 best 对命中层分布 —
+    # layer 1=summary 即判即冲突；2=下钻 detail 后判定；3=再下钻 source_ref。
+    # 仅统计带 cascade_layer 的条目（新代码写入），旧条目自然不计。
+    rg = _load_jsonl(os.path.join(db_dir, "relation_graph.jsonl"))
+    cascade_dist = Counter(r.get("cascade_layer") for r in rg
+                           if r.get("cascade_layer") is not None)
+    cascade_total = sum(cascade_dist.values())
+
     # — 去重：store_pending hold_reason 分布（judge_failure/simhash 类）—
     sp = _load_jsonl(os.path.join(db_dir, "store_pending.jsonl"))
     hold_reasons = Counter(r.get("hold_reason", "?") for r in sp)
+
+    # — 去重触发计数（#20 Phase2）：gate_log 里 dialog_dedup op + 带 simhash 的写入 —
+    dedup_hits = op_cnt.get("dialog_dedup", 0)
+    simhash_bearing = sum(1 for r in gate_rows if r.get("simhash"))
+
+    # — 误归档率（#20 Phase2）：demote(降级 precedent) 占全库比例 —
+    # demote = 外部校准把 active 降为 precedent（superseded_by 非空），非误删；
+    # 比例偏高说明存入门槛/校准偏严，供趋势跟踪。只读。
+    _total_mem = len(mems)
+    _demoted = sum(1 for m in mems if m.get("superseded_by"))
+    demote_rate = round(_demoted / _total_mem, 4) if _total_mem else None
 
     # — 归档：store_pending hold 老化（hold_ts 距今天数）—
     from datetime import datetime as _dt
@@ -367,6 +386,26 @@ def _memory_health(mems):
     max_age = max(aged) if aged else 0
     over14 = sum(1 for d in aged if d > 14)
 
+    # — 日级趋势（#20 Phase2）：gate_log 按天聚合活动/存储/miss，供晨报看走向 —
+    # 数据量尚小（初期几天样本少），指标先搭好随积累成形；只读。
+    daily = {}
+    for r in gate_rows:
+        day = (r.get("ts") or "")[:10]
+        if not day:
+            continue
+        dd = daily.setdefault(day, {"gate": 0, "store": 0, "dedup": 0, "miss": 0})
+        dd["gate"] += 1
+        op = r.get("op", "")
+        if op in ("dialog_stored", "judge"):
+            dd["store"] += 1
+        if op == "dialog_dedup":
+            dd["dedup"] += 1
+    for r in miss_rows:
+        day = (r.get("ts") or "")[:10]
+        if day in daily:
+            daily[day]["miss"] += 1
+    daily_trend = dict(sorted(daily.items())[-7:])   # 近 7 天
+
     return {
         "retrieve": {
             "gate_total": retrieve_total,
@@ -375,15 +414,20 @@ def _memory_health(mems):
             "op_dist": dict(op_cnt),
             "miss_cases": len(miss_rows),
             "miss_rate": miss_rate,
+            "daily_trend": daily_trend,
         },
         "conflict": {
             "queue_total": len(cq),
             "status_dist": dict(cq_status),
             "pending": conflict_pending_n,
+            "cascade_dist": {str(k): v for k, v in cascade_dist.items()},
+            "cascade_total": cascade_total,
         },
-        "dedup": {"store_pending_total": len(sp), "hold_reason_dist": dict(hold_reasons)},
+        "dedup": {"store_pending_total": len(sp), "hold_reason_dist": dict(hold_reasons),
+                  "gate_dedup_hits": dedup_hits, "simhash_bearing": simhash_bearing},
         "archive": {"hold_aged": len(aged), "max_hold_age_days": max_age,
-                    "over14d": over14},
+                    "over14d": over14, "mem_total": _total_mem,
+                    "demoted": _demoted, "demote_rate": demote_rate},
     }
 
 
@@ -404,6 +448,11 @@ def main():
             h["conflict"]["queue_total"], h["conflict"]["pending"],
             h["dedup"]["store_pending_total"], h["archive"]["over14d"],
             h["archive"]["max_hold_age_days"]))
+        # #20 Phase2 新增维度：冲突级联分级 + 去重触发 + 误归档率
+        print("[Phase2] 冲突级联分布=%s | 去重触发=%d(simhash卡%d) | 降级率=%s(%d/%d)" % (
+            h["conflict"]["cascade_dist"], h["dedup"]["gate_dedup_hits"],
+            h["dedup"]["simhash_bearing"], h["archive"]["demote_rate"],
+            h["archive"]["demoted"], h["archive"]["mem_total"]))
     print("报告:", path)
 
 

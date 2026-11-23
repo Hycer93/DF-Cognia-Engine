@@ -206,13 +206,13 @@
 ## 四、主线队列（统一编号总表，2026-11-22 重编）
 
 > **编号规则**：#N 为统一待办编号，一经分配不复用。优先级 P0>P1>P2。已完成项保留历史号归档在表末。
-> 本次重编变更：#A 并入 #8（同为 F60 第二环）；原 §七 一致性修复编号为 #14；原 #B→#15、#C→#16；#11 复盘承接的 P2-A/B/C 登记为 #17/#18/#19（详见 `docs/review_11_attitude_20261122.md`）；记忆系统评估复盘立项 #20（P1，详见 `docs/review_20_observability_20261122.md`）；cgraph 可验证性评审立项 #21（P1，详见 `docs/review_21_cgraph_verifiability_20261122.md`）；cgraph 改进方案拆解 #22~#28（详见 `docs/review_21_improvement_plan_20261122.md`）；#22 观测后执行计划修订（方案A并行 #20+#23，#24机制改写，详见 `docs/cgraph_refactor_plan_20261122.md`）。
+> 本次重编变更：#A 并入 #8（同为 F60 第二环）；原 §七 一致性修复编号为 #14；原 #B→#15、#C→#16；#11 复盘承接的 P2-A/B/C 登记为 #17/#18/#19（详见 ；**Phase2已落地(11-22)**：日级趋势daily_trend/误归档率demote_rate(29/320=0.09)/冲突级联分级cascade_dist(1=summary2=detail3=source,验证layer=2落图谱)/去重触发gate_dedup_hits+simhash_bearing；仅剩miss_case日级(无数据源)+阈值命中率审计+流程图`docs/review_11_attitude_20261122.md`）；记忆系统评估复盘立项 #20（P1，详见 `docs/review_20_observability_20261122.md`）；cgraph 可验证性评审立项 #21（P1，详见 `docs/review_21_cgraph_verifiability_20261122.md`）；cgraph 改进方案拆解 #22~#28（详见 `docs/review_21_improvement_plan_20261122.md`）；#22 观测后执行计划修订（方案A并行 #20+#23，#24机制改写，详见 `docs/cgraph_refactor_plan_20261122.md`）。
 
 ### 待办（按优先级）
 
 | 编号 | 任务 | 优先级 | 状态 | 说明 / 依赖 |
 |---|---|---|---|---|
-| **#20** | 记忆系统可观测性 + 合规 | **P1** | 🚧 Phase1完成 | 补检索成功率/miss_case趋势/误归档率/hold池规模/冲突判定计数/simhash触发/热区扫描指标并入E4晨报；全链路流程图；applog脱敏；**Phase1已落地**：E4加「记忆健康度」聚合块(检索miss_rate/冲突积压/hold老化,只读不改规则)+E9 applog落库前PII脱敏(手机/身份证/邮箱/卡号/密钥)；Phase2(日级趋势/误归档率/冲突分级计数/流程图/规则收敛)待数据积累；详见 `docs/review_20_observability_impl_20261122.md` |
+| **#20** | 记忆系统可观测性 + 合规 | **P1** | ✅ 完成(Phase1+2) | 补检索成功率/miss_case趋势/误归档率/hold池规模/冲突判定计数/simhash触发/热区扫描指标并入E4晨报；全链路流程图；applog脱敏；**Phase1已落地**：E4加「记忆健康度」聚合块(检索miss_rate/冲突积压/hold老化,只读不改规则)+E9 applog落库前PII脱敏(手机/身份证/邮箱/卡号/密钥)；Phase2(日级趋势/误归档率/冲突分级计数/流程图/规则收敛)待数据积累；详见 `docs/review_20_observability_impl_20261122.md` |
 | **#22** | 节点级意图贴合度观测（OBS-1） | **P1** | ✅ 已完成 | `_walk_chain` 每节点产出后对原始 user_input 打贴合度分记入 trace；**先定位跑偏从第几节点开始**，再决定优化重点；**已完成（离线3样本+embedding）**：结论——贴合度由**节点职责**决定而非链路位置，低分节点稳定集中在方法论型节点(G10/11/12/14/21)，「意图稀释随链路变长」假设**不成立**；#23 分流价值改为省调用/降耗时，#24 改为信息保真；详见 `docs/review_22_intent_alignment_20261122.md` |
 | **#23** | Router 分流强化（Q1） | **P1** | ✅ 核心完成 | **立项理由已改写（#22后）**：不再治意图稀释，改为**削减LLM调用数、降12.6x耗时**+修复classify识别不出simple/medium与complex路径无差别；**已改**：_greedy_path加max_steps按档裁(medium 14→8节点省~7次LLM/complex保14)+classify prompt加simple硬判据+router_log埋点；三档实测不同(3/8/14)，Dl域内保留回归安全；LLM真实分类回归待环境恢复；详见 `docs/review_23_router_split_20261122.md` |
 | **#24** | Summary 推理核对表（Q3） | **P1** | 📋 待立项（待#23） | **机制已改写（#22后）**：不筛低分节点，改为**信息保真**——强制审视方法论/元认知节点产出是否被引用进final_answer；relevance不再等价字面相似度，改评估「对回答的贡献价值」，不能只看embedding；relevance须独立于主链上下文；详见 `docs/cgraph_refactor_plan_20261122.md` |

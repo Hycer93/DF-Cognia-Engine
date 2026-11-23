@@ -52,6 +52,18 @@
 - [ ] 全链路运行流程图（文档形式）：未画。
 - [ ] 规则收敛：**明确不做**，无数据前禁止删规则。
 
+## 四·补（Phase 2 已落地 4 项，2026-11-22）
+
+Phase 2 的"纯数据聚合"部分全部本地可做、不吃 LLM，已实施并验证：
+
+1. **日级趋势** ✅：E4 `health.retrieve.daily_trend` —— gate_log 按天聚合 `{gate,store,dedup,miss}`，取近 7 天。当前样本少（3 天），随积累成形。
+2. **误归档率** ✅：E4 `health.archive.demote_rate` —— `superseded_by` 非空（active→precedent 校准降级）占全库比。当前 29/320=**0.0906**。注意：这是"降级率"，非"误删率"（demote 零删除、可回溯）。
+3. **冲突三级分级计数** ✅：`memory_relations.py` 级联处把 `_cascade_layer`/`_cascade_layers` 挂到 best 候选 → 写进 `relation_graph.jsonl` 图谱条目（新字段 `cascade_layer`/`cascade_layers`）→ E4 `health.conflict.cascade_dist` 聚合。1=summary 即判、2=下钻 detail、3=再下钻 source。端到端验证：summary=1.0/detail=0.971 → `layer=2` 正确落图谱。
+4. **simhash/去重触发计数** ✅：E4 `health.dedup.gate_dedup_hits`（dialog_dedup op 计数）+ `simhash_bearing`（带 simhash 字段的写入数）。当前 1 次触发 / 3 张带 simhash。
+
+**未做（仍是待环境/待数据）**：miss_case 日级（无数据源 miss_case 文件尚不存在）、阈值命中率专项审计、全链路流程图。
+
 ## 五、回滚
 - E4：删 `_memory_health` 调用与函数即可，patrol 其余逻辑零改动。
 - E9：`body = _sanitize_text(text)` 改回 `body = text` 即恢复。
+- Phase2 分级：删 `memory_relations.py` 中 `_cascade_layer` 挂载 + graph_entry 的 `cascade_layer` 两行即可；旧图谱条目无该字段，读取侧已容错（`if ... is not None`）。

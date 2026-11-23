@@ -268,6 +268,9 @@ def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
         if sim >= th["conflict"]:
             sem_final, layer, _layers = _cascade_sem(me, other, sem_sum)
             sim = sem_final * 0.7 + _dfcp_proximity(me["dfcp_tag"], other["dfcp_tag"], sem=sem_final) * 0.3
+            # #20 Phase2：把级联命中层挂到候选上，供 best 落图谱供 E4 聚合（纯观测，不改判定）
+            other["_cascade_layer"] = layer
+            other["_cascade_layers"] = _layers
             # fragile 采信降级（四缺口裁决2026-11-11缺口2）：会话闪念类卡
             # 不参与高权重冲突判定——equivalent/augment 档一律降为 new（轻量detail
             # 语义薄, 高分多为表面撞词; fragile 只能被引用, 不能当合并/增补依据）
@@ -310,7 +313,17 @@ def classify_and_link(inst_id: str, top_k: int = 5) -> dict:
         "topk": [{"inst_id": o["inst_id"], "sim": round(s, 4)} for s, o in scored],
         "thresholds_used": th,
     }
+    # #20 Phase2 观测：记录 best 对的三级级联命中层（1=summary/2=detail/3=source）
+    # 纯观测字段，下游 E4 聚合冲突分级分布；旧条目无此字段不影响读取。
+    if best is not None and best.get("_cascade_layer") is not None:
+        graph_entry["cascade_layer"] = best["_cascade_layer"]
+        graph_entry["cascade_layers"] = best.get("_cascade_layers")
     append_jsonl(RELATION_GRAPH_JSONL, graph_entry)
+
+    # 清理本轮临时观测标记（避免污染原卡 dict，_ph_suspect_with 同理在下方 pop）
+    for _s, _o in scored:
+        _o.pop("_cascade_layer", None)
+        _o.pop("_cascade_layers", None)
 
     # 回填 entity_id 到原子层主记录（关系回填不改 inst_id/full_hash/dfcp_tag——账本刚性不破）
     _backfill_entity(inst_id, entity_id)
