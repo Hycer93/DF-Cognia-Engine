@@ -34,6 +34,19 @@ CHANGELOG_JSONL = os.path.join(MEM_DIR, "code_changelog.jsonl")   # dfcp_tag 变
 QUARANTINE_JSONL = os.path.join(MEM_DIR, "quarantine.jsonl")      # 编码非法拒收隔离队列
 REPLICA_LOG_JSONL = os.path.join(MEM_DIR, "replica_intercepts.jsonl")  # full_hash 精确副本拦截日志
 
+# ---- #30 P0 语义等价查重配置（2026-11-23）----
+# 三态开关 DF_SUMMARY_EQUIV_DEDUPE:
+#   off(默认) → 完全关闭，行为退回改造前（合入即安全）
+#   dry-run   → 只算相似度+写日志，不拒绝写入（灰度观测）
+#   on        → 真拦截
+SUMMARY_EQUIV_MODE = os.environ.get("DF_SUMMARY_EQUIV_DEDUPE", "off").strip().lower()
+if SUMMARY_EQUIV_MODE not in ("off", "dry-run", "on"):
+    SUMMARY_EQUIV_MODE = "off"   # 非法值安全降级
+SUMMARY_EQUIV_THRESHOLD = 0.95   # 起步固定阈值（段二 R3 实测），严禁低于 0.95
+# 静态断言：防误改低于 0.95 上线（段三铁律）
+assert SUMMARY_EQUIV_THRESHOLD >= 0.95, "P0 阈值严禁低于 0.95（段二 R3 实测下限）"
+SUMMARY_EQUIV_SLOW_MS = 300.0    # 单次 P0 耗时红线（超则记 p0_slow）
+
 
 def _full_hash(summary: str, detail: str, source: str) -> str:
     return hashlib.sha256((summary + "\x1f" + (detail or "") + "\x1f" + (source or "")).encode("utf-8")).hexdigest()
@@ -77,6 +90,77 @@ def judge_repro(content: str, tags: dict) -> str:
 
 
 # ---- 原子存储层：入库（三层职责之第一层）----
+
+# #30 P0 池向量矩阵缓存（进程级，按池 inst_id 集合失效）
+_pool_vec_cache = {"key": None, "matrix": None, "ids": None}
+
+
+def _log_p0(op: str, payload: dict):
+    """P0 审计日志 → gate_log.jsonl（跟随 MEM_DIR，便于测试隔离）。失败仅告警不阻断。"""
+    rec = {"ts": datetime.now().isoformat(timespec="seconds"), "op": op, **payload}
+    try:
+        p = os.path.join(MEM_DIR, "gate_log.jsonl")
+        append_jsonl(p, rec)
+    except OSError as e:
+        print(f"[p0_log_fail] {type(e).__name__}: {e} | op={op}", file=sys.stderr)
+
+
+def _get_pool_matrix(pool: list) -> tuple:
+    """返回 (matrix(N,512), ids)，带进程级缓存；池 inst_id 集合变化则重建。"""
+    import numpy as np
+    import embed_semantic as E
+    key = tuple(sorted(e["inst_id"] for e in pool))
+    if _pool_vec_cache["key"] == key:
+        return _pool_vec_cache["matrix"], _pool_vec_cache["ids"]
+    sums = [e.get("summary") or "" for e in pool]
+    E.warmup(sums)
+    mat = np.array([E.embed_cached(s) for s in sums]) if sums else np.zeros((0, 512), dtype=np.float32)
+    ids = [e["inst_id"] for e in pool]
+    _pool_vec_cache.update({"key": key, "matrix": mat, "ids": ids})
+    return mat, ids
+
+
+def _p0_equiv_check(summary: str, pool: list) -> tuple:
+    """#30 P0 语义等价查重。返回 (verdict, best_inst_id, best_sim, elapsed_ms)。
+
+    verdict: 'pass'(放行) | 'skip'(语义等价, 应拦截)
+    - off 态调用方不进入本函数（零开销）。
+    - 任意异常（embed/矩阵乘失败）→ 记 p0_unavailable，返回 pass（降级放行，绝不阻断入库）。
+    """
+    import time as _t
+    t0 = _t.perf_counter()
+    try:
+        import embed_semantic as E
+        q = E.embed_cached(summary)
+        mat, ids = _get_pool_matrix(pool)
+        if mat.shape[0] == 0:
+            return ("pass", None, 0.0, 0.0)
+        sims = mat @ q
+        idx = int(sims.argmax())
+        best = float(sims[idx])
+        bid = ids[idx]
+    except Exception as e:
+        _log_p0("p0_unavailable", {"err": repr(e)[:200], "stage": "embed/matmul"})
+        return ("pass", None, 0.0, 0.0)
+    elapsed = (_t.perf_counter() - t0) * 1000
+    if elapsed > SUMMARY_EQUIV_SLOW_MS:
+        _log_p0("p0_slow", {"elapsed_ms": round(elapsed, 2), "pool_size": len(pool)})
+    hit = best >= SUMMARY_EQUIV_THRESHOLD
+    if SUMMARY_EQUIV_MODE == "dry-run":
+        _log_p0("p0_equiv_dry", {
+            "new_summary": summary[:120], "best_inst_id": bid,
+            "best_sim": round(best, 4), "would_skip": hit,
+            "elapsed_ms": round(elapsed, 2), "mode": "dry-run"})
+        return ("pass", bid, best, elapsed)   # dry-run 一律放行
+    # on：真拦截
+    if hit:
+        _log_p0("skip_equivalent_derived", {
+            "new_summary": summary[:120], "best_inst_id": bid,
+            "best_sim": round(best, 4), "elapsed_ms": round(elapsed, 2), "mode": "on"})
+        return ("skip", bid, best, elapsed)
+    return ("pass", bid, best, elapsed)
+
+
 def atomic_store(
     summary: str,
     detail: str,
@@ -118,6 +202,15 @@ def atomic_store(
             "ts": datetime.now().isoformat(), "full_hash": fh, "summary": summary,
         })
         return "replica", f"精确副本拦截: {fh[:12]}"
+
+    # ---- #30 P0 语义等价查重（full_hash 之后，写库之前）----
+    # 三态开关：off 跳过零开销；dry-run 只记不拦；on 真拦截（复用 replica 语义，不新建卡）。
+    if SUMMARY_EQUIV_MODE != "off":
+        _pool = load_active_pool()
+        if _pool:
+            _verdict, _bid, _bsim, _el = _p0_equiv_check(summary, _pool)
+            if _verdict == "skip":
+                return "replica", f"语义等价拦截: {(_bid or '')[:8]} sim={_bsim:.3f}"
 
     inst_id = uuid.uuid4().hex
     repro = tags.get("repro") or judge_repro(detail, tags)
