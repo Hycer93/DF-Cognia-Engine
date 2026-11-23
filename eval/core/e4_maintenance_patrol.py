@@ -333,6 +333,14 @@ def _memory_health(mems):
     import glob as _glob
     from collections import Counter
     db_dir = os.path.join(HERE, "data", "memory")
+    # #30 P3 测试隔离：若 memory_organize.MEM_DIR 被重定向（回归测试），gate_log 跟随
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(HERE)), "memory"))
+        import memory_organize as _mo
+        if getattr(_mo, "MEM_DIR", None) and _mo.MEM_DIR != os.path.join(HERE, "data", "memory"):
+            db_dir = _mo.MEM_DIR
+    except Exception:
+        pass
     mtime = lambda p: os.path.getmtime(p) if os.path.exists(p) else 0
 
     # — 检索：gate_log 里 probe/judge 分布 + miss_case 计数 —
@@ -364,6 +372,42 @@ def _memory_health(mems):
     # — 去重触发计数（#20 Phase2）：gate_log 里 dialog_dedup op + 带 simhash 的写入 —
     dedup_hits = op_cnt.get("dialog_dedup", 0)
     simhash_bearing = sum(1 for r in gate_rows if r.get("simhash"))
+
+    # — #30 P3（2026-11-23）：P0/P2 运行效果观测三指标 —
+    # skip_equiv_count: P0 语义查重拦截数（op=skip_equivalent_derived / p0_equiv_dry）
+    # cross_pool_warn:  P2 跨池疑似等价告警数（op=warn_corpus_runtime_equivalent）
+    skip_equiv_count = op_cnt.get("skip_equivalent_derived", 0) + op_cnt.get("p0_equiv_dry", 0)
+    cross_pool_warn = op_cnt.get("warn_corpus_runtime_equivalent", 0)
+    # active_same_summary_multi: active 卡 summary 近似(embedding≥0.95)的多卡组数
+    # 依赖 embed_semantic，失败降级为 None（不阻断巡检）
+    active_same_summary_multi = None
+    try:
+        active_cards = [m for m in mems if (m.get("tier") or "active") == "active"
+                        and not m.get("superseded_by") and m.get("summary")]
+        if active_cards:
+            import numpy as _np
+            _mem_dir = os.path.dirname(os.path.dirname(HERE))
+            sys.path.insert(0, os.path.join(_mem_dir, "memory"))
+            import embed_semantic as _E
+            _sums = [m["summary"] for m in active_cards]
+            _E.warmup(_sums)
+            _mat = _np.array([_E.embed_cached(s) for s in _sums])
+            _n = len(_sums)
+            _group_cnt = 0
+            _seen = set()
+            for i in range(_n):
+                if i in _seen:
+                    continue
+                dup = False
+                for j in range(i + 1, _n):
+                    if float(_mat[i] @ _mat[j]) >= 0.95:
+                        _seen.add(j); dup = True
+                if dup:
+                    _group_cnt += 1
+                    _seen.add(i)
+            active_same_summary_multi = _group_cnt
+    except Exception:
+        active_same_summary_multi = None
 
     # — 误归档率（#20 Phase2）：demote(降级 precedent) 占全库比例 —
     # demote = 外部校准把 active 降为 precedent（superseded_by 非空），非误删；
@@ -422,9 +466,12 @@ def _memory_health(mems):
             "pending": conflict_pending_n,
             "cascade_dist": {str(k): v for k, v in cascade_dist.items()},
             "cascade_total": cascade_total,
+            "cross_pool_warn": cross_pool_warn,
         },
         "dedup": {"store_pending_total": len(sp), "hold_reason_dist": dict(hold_reasons),
-                  "gate_dedup_hits": dedup_hits, "simhash_bearing": simhash_bearing},
+                  "gate_dedup_hits": dedup_hits, "simhash_bearing": simhash_bearing,
+                  "skip_equiv_count": skip_equiv_count,
+                  "active_same_summary_multi": active_same_summary_multi},
         "archive": {"hold_aged": len(aged), "max_hold_age_days": max_age,
                     "over14d": over14, "mem_total": _total_mem,
                     "demoted": _demoted, "demote_rate": demote_rate},
