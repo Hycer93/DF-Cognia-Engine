@@ -23,7 +23,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS raw_corpus (
-    id          TEXT PRIMARY KEY,          -- 树地址: novel_szt.v3.ch05 / origin_corpus3 整体
+    id          TEXT NOT NULL,             -- 树地址: novel_szt.v3.ch05 / origin_corpus3 整体
     kind        TEXT NOT NULL,             -- novel_chapter / origin_corpus / persona_source ...
     tree_vol    TEXT,                      -- 卷键: v1 种源 / v3 秩序降临 / null=无卷
     tree_ch     TEXT,                      -- 章键: ch05（含节时用 ch05.s2 但仍属章级文件）
@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS raw_corpus (
     superseded_by TEXT,                    -- 指向新版 id（同 id 高 version）
     content_hash TEXT NOT NULL,            -- sha256[:16] 版本锚
     source_ref  TEXT,                      -- 来源说明（对话交底/文件迁移等）
-    ts          TEXT NOT NULL
+    ts          TEXT NOT NULL,
+    PRIMARY KEY (id, version)              -- 2026-11-23 复合主键: 同 id 多版本共存, upsert_corpus 升版可变
 );
 
 CREATE TABLE IF NOT EXISTS corpus_tags (

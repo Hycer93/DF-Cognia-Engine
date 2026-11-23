@@ -246,6 +246,22 @@ CREATE TABLE IF NOT EXISTS core_watchlist (
   enqueued_ts TEXT NOT NULL,
   verdict TEXT, verdict_ts TEXT, resolved_by TEXT
 );
+-- 专利/文档原文的待采纳修订暂存（讨论产出→待合入正文，人闸终审后才 upsert_corpus 升版）。
+-- 只做"血缘+提案"，绝不改 raw_corpus 正文；采纳时由人确认后由 corpus_revision.adopt_revision 落版。
+CREATE TABLE IF NOT EXISTS core_revision_pending (
+  rpid TEXT PRIMARY KEY,
+  target_id TEXT NOT NULL,          -- 指向 raw_corpus.id（待修订的原文）
+  target_version INTEGER,           -- 提案针对的基线版本（采纳时校验未漂移）
+  source_type TEXT NOT NULL,        -- memory_card / manual / dialog
+  source_id TEXT,                   -- 记忆卡 inst_id / 其他来源标识
+  change_note TEXT NOT NULL,        -- 修订要义（采纳时并入 iterations.why）
+  proposed_body TEXT,               -- 可选：提案全文；为空则采纳时需人工提供
+  status TEXT NOT NULL DEFAULT 'pending',  -- pending / adopted / rejected
+  enqueued_ts TEXT NOT NULL,
+  verdict TEXT, verdict_ts TEXT, resolved_by TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_revision_pending_target
+  ON core_revision_pending(target_id, status);
 
 -- ============ audit_* 审计事件 ============
 

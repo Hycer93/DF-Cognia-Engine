@@ -863,11 +863,14 @@ def fetch_by_ref(source_ref: str) -> dict | None:
     if row is not None:
         return row
     # get_corpus 只查 status='current'；命不中再查一次不限状态，区分"地址错"与"已作废"
+    # 复合主键(id,version)后可能有多条 superseded，取 version 最高者(最近一次作废)避免语义漂移
     import sqlite3
     from corpus_store import _conn
     c = _conn()
-    old = c.execute("SELECT id, status, superseded_by FROM raw_corpus WHERE id=? AND status!='current'",
-                    (node,)).fetchone()
+    old = c.execute(
+        "SELECT id, status, superseded_by FROM raw_corpus "
+        "WHERE id=? AND status!='current' ORDER BY version DESC LIMIT 1",
+        (node,)).fetchone()
     c.close()
     if old:
         return {"blocked": "superseded", "id": old[0], "superseded_by": old[2]}
