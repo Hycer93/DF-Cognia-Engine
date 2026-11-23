@@ -64,4 +64,25 @@ print("\n③ 切 on 决策辅助")
 print("  门槛: ① dry命中抽检全真同义(无高相似不同事实) ② active_multi不异常增长 ③ 无慢调用激增")
 print("  切on: setx DF_SUMMARY_EQUIV_DEDUPE on")
 print("  回退: setx DF_SUMMARY_EQUIV_DEDUPE dry-run  (秒级, 无需改码)")
+
+# ---- ④ 样本量门槛判定(2026-11-23 用户裁定: skip_equiv≥8 才评估切 on) ----
+# 关键约束: 该指标来自真实业务对话进 judge 管道时的语义等价命中,
+# 重复跑调度/脚本回放存量记忆不会增长它——只有真实新会话产生等价写入才计入。
+print("\n④ 样本量门槛判定 (skip_equiv_count ≥ 8 才可评估切 on)")
+_EQUIV_GATE = 8
+_sec = None
+try:
+    _e4 = json.load(open(os.path.join(LOGS, "e4_maintenance.json"), encoding="utf-8"))
+    _sec = _e4.get("health", {}).get("dedup", {}).get("skip_equiv_count")
+except Exception:
+    _sec = None
+if _sec is None:
+    print("  ⚠ 无法读取 skip_equiv_count, 跳过门槛判定")
+elif _sec >= _EQUIV_GATE:
+    print(f"  ✅ skip_equiv_count={_sec} ≥ {_EQUIV_GATE} → 已达切 on 评估门槛")
+    print("     下一步: 先完成全部 E4 人工复核(隔离区/watchlist/event_ts/冲突积压/runtime), 再评估切 on")
+else:
+    print(f"  ⏳ skip_equiv_count={_sec} < {_EQUIV_GATE} → 继续累积真实会话样本, 尚未到达切 on 评估条件")
+    print(f"     还差 {_EQUIV_GATE - _sec} 例; 唯一增长途径=真实新对话进 PreCompact hook 产生语义等价写入")
+
 print("\n" + "=" * 60)
