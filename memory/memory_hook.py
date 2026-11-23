@@ -167,14 +167,31 @@ def _session_dialog_from_hook(payload: dict) -> dict:
     r = memory_gate.store_dialog(body, session, source_tag=source_tag)
     r["channel"] = channel
     r["transcript_err"] = err
-    # ---- #31 原始证据库：PreCompact 聚合（碎片→快照+逐条表, 打通证据链） ----
+    # ---- #31 原始证据库：原始会话聚合（碎片→快照+逐条表, 打通证据链） ----
     # 优先直接吃 transcript 原始 JSONL（不扁平化）; 落库失败不影响主链路（已存 raw_corpus）。
-    r["evidence"] = _evidence_ingest_and_aggregate(session, tpath, r.get("id"))
+    r["evidence"] = _evidence_ingest_and_aggregate(session, tpath, r.get("id"),
+                                                   hook_event=payload.get("hook_event_name"))
     return r
 
 
-def _evidence_ingest_and_aggregate(session: str, transcript_path: str, ref_id: str) -> dict:
-    """#31: 尝试把本轮原始对话存入证据库（快照+逐条）。全异常吞掉只报告, 绝不阻断主流程。"""
+# hook 事件 → 证据库 terminate_reason 映射（#31 预留 SessionEnd/Stop 对接点）
+# 平台当前只有 PreCompact; 未来接入 Stop/SessionEnd 时按事件名自动归类, 无需改聚合逻辑。
+_HOOK_EVENT_TO_REASON = {
+    "PreCompact": "precompact_normal",
+    "Stop": "session_stop",
+    "SessionEnd": "session_end",
+    "SessionStart": "session_start",
+}
+
+
+def _evidence_ingest_and_aggregate(session: str, transcript_path: str, ref_id: str,
+                                   hook_event: str = None) -> dict:
+    """#31: 尝试把本轮原始对话存入证据库（快照+逐条）。全异常吞掉只报告, 绝不阻断主流程。
+
+    hook_event: 事件名（PreCompact/Stop/SessionEnd...）, 映射到 terminate_reason;
+                缺省(旧通路/无 payload)按 precompact_normal 处理, 保持向后兼容。
+    """
+    terminate_reason = _HOOK_EVENT_TO_REASON.get(hook_event, "precompact_normal")
     try:
         import dialog_evidence_store as des
         des.init_tables()
@@ -183,8 +200,8 @@ def _evidence_ingest_and_aggregate(session: str, transcript_path: str, ref_id: s
         else:
             ing = {"status": "no-transcript"}
         agg = des.aggregate_session(session, ref_archive_fragment=ref_id,
-                                    terminate_reason="precompact_normal")
-        return {"ingest": ing, "aggregate": agg}
+                                    terminate_reason=terminate_reason)
+        return {"ingest": ing, "aggregate": agg, "terminate_reason": terminate_reason}
     except Exception as e:  # noqa: BLE001
         return {"status": "evidence-error", "err": repr(e)[:200]}
 

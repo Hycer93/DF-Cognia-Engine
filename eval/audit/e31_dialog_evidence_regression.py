@@ -113,18 +113,26 @@ print("\n[用例7] 空session安全")
 empty = des.aggregate_session("no-such-session")
 check("7a 空session返回empty不抛异常", empty["status"] == "empty", str(empty))
 
-# ---------- 用例8: 运行时隔离（表存在但业务不读） ----------
-print("\n[用例8] 表结构校验")
+# ---------- 用例8: hook事件→terminate_reason 映射（预留 SessionEnd/Stop 对接点） ----------
+print("\n[用例8] hook事件映射(预留SessionEnd/Stop)")
+import memory_hook as _mh
+_evmap = _mh._HOOK_EVENT_TO_REASON
+check("8e SessionEnd→session_end", _evmap.get("SessionEnd") == "session_end", str(_evmap))
+check("8f Stop→session_stop", _evmap.get("Stop") == "session_stop", str(_evmap))
+check("8g PreCompact→precompact_normal", _evmap.get("PreCompact") == "precompact_normal", str(_evmap))
+
+# ---------- 用例9: 运行时隔离（表存在但业务不读） ----------
+print("\n[用例9] 表结构校验")
 c = sqlite3.connect(tmpdb)
 tabs = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-check("8a core_raw_dialog_session 存在", "core_raw_dialog_session" in tabs, "")
-check("8b _tmp_dialog_fragment 存在", "_tmp_dialog_fragment" in tabs, "")
-check("8c core_dialogue_log 存在(已有表复用)",
+check("9a core_raw_dialog_session 存在", "core_raw_dialog_session" in tabs, "")
+check("9b _tmp_dialog_fragment 存在", "_tmp_dialog_fragment" in tabs, "")
+check("9c core_dialogue_log 存在(已有表复用)",
       "core_dialogue_log" in tabs or True, "(隔离库未建, 主库复用)")
 # 快照表列完整性
 cols = {r[1] for r in c.execute("PRAGMA table_info(core_raw_dialog_session)")}
 need = {"session_id", "messages", "msg_count", "terminate_reason", "ref_archive_fragment", "archived_offload"}
-check("8d 快照表关键列齐全", need.issubset(cols), str(need - cols))
+check("9d 快照表关键列齐全", need.issubset(cols), str(need - cols))
 c.close()
 
 shutil.rmtree(os.path.dirname(tmpdb), ignore_errors=True)

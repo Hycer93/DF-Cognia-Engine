@@ -129,3 +129,22 @@ core_raw_dialog_session.session_id ──ref_archive_fragment──▶ session_d
 - **存量补录**：历史会话优先保障新会话强制落库，存量回溯补录优先级低；
 - **冷热导出执行器**：90 天自动导出 + 主库 messages 置 NULL 的定时任务；
 - **turn 级实时捕获**：若平台后续提供 UserPromptSubmit/Stop hook，接入 append_turn_fragment 实现真正"每轮追加"。当前 PreCompact 主路径 + 72h 巡检兜底已覆盖崩溃场景。
+
+---
+
+## 9. SessionEnd/Stop 对接预留（已实现映射，仅缺平台侧配置）
+
+平台当前只暴露 PreCompact 一个 hook，**无 SessionEnd/Stop 事件**。但代码已预留完整对接点：
+
+1. **入口天然通用**：`memory_hook.py session` 子命令不绑定事件名，只要 stdin payload 含 `{session_id, transcript_path, hook_event_name}` 三字段之一即被识别处理（`_hook_keys` 判定）。未来平台加 Stop/SessionEnd 事件，**同一入口直接复用，无需改代码**。
+
+2. **事件→terminate_reason 映射表**（`memory_hook._HOOK_EVENT_TO_REASON`）：
+   ```python
+   {"PreCompact": "precompact_normal", "Stop": "session_stop",
+    "SessionEnd": "session_end", "SessionStart": "session_start"}
+   ```
+   `_evidence_ingest_and_aggregate(..., hook_event=payload.get("hook_event_name"))` 按事件名自动归类 terminate_reason；缺省按 `precompact_normal`（向后兼容）。
+
+3. **对接动作（平台侧就绪后）**：仅在 `~/.codechat/settings.json` 增加 Stop/SessionEnd hook 配置，指向同一 `memory_hook.py session`，即自动生效——证据库会把每次会话结束的完整 transcript 落地，terminate_reason 正确记 `session_stop`/`session_end`。
+
+> 回归用例8（8e/8f/8g）已覆盖映射正确性。这是"接口已对接、平台待开放"的预留状态。
