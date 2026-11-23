@@ -168,6 +168,39 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_dialogue USING fts5(
   content, content='core_dialogue_log', content_rowid='rowid'
 );
 
+-- ⑤-A 原始会话证据快照（权威真相源；整会话 messages 存 transcript 原始 JSON 数组）
+-- 运行时记忆流水线【禁止读取】本表——仅排错/离线仿真/评测抽取用，见 docs/design_dialog_evidence_store.md
+CREATE TABLE IF NOT EXISTS core_raw_dialog_session (
+  session_id           TEXT PRIMARY KEY,
+  start_ts             TEXT,
+  end_ts               TEXT,
+  model_version        TEXT,
+  meta                 TEXT,                 -- JSON: 环境/入参/上下文标签
+  messages             TEXT,                 -- JSON 数组: transcript 原始对象, 原样保留(tool/ts/block 不裁剪)
+  msg_count            INTEGER DEFAULT 0,
+  terminate_reason     TEXT,                 -- precompact_normal | timer_orphan_collect | process_crash
+  ref_archive_fragment TEXT,                 -- → session_dialog_archive_fragment.id / raw_corpus(session_dialog) id
+  archived_offload     TEXT,                 -- 冷热分离: >90d 正文导出外部 jsonl 路径, messages 置 NULL 时填
+  created_at           TEXT NOT NULL,
+  updated_at           TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_rawdlg_end ON core_raw_dialog_session(end_ts);
+CREATE INDEX IF NOT EXISTS idx_rawdlg_reason ON core_raw_dialog_session(terminate_reason);
+
+-- ⑤-B 会话碎片临时表（内部临时, 兜底/巡检载体; 下划线=内部）
+-- PreCompact 聚合前先落地碎片; 进程崩溃兜底; consumed=1 保留作增量去重锚
+CREATE TABLE IF NOT EXISTS _tmp_dialog_fragment (
+  frag_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id  TEXT NOT NULL,
+  seq         INTEGER,                        -- 消息在会话内序号
+  msg_hash    TEXT,                           -- 单条消息 hash(增量去重)
+  msg_raw     TEXT NOT NULL,                  -- 单条消息原始 JSON(全保留)
+  captured_ts TEXT NOT NULL,
+  consumed    INTEGER DEFAULT 0               -- 0=待聚合 1=已聚合(留作去重锚)
+);
+CREATE INDEX IF NOT EXISTS idx_tmpfrag_sess ON _tmp_dialog_fragment(session_id, consumed);
+CREATE INDEX IF NOT EXISTS idx_tmpfrag_cap ON _tmp_dialog_fragment(captured_ts);
+
 -- ============ 治理队列组（core_*，+生命周期字段 3.8） ============
 
 CREATE TABLE IF NOT EXISTS core_hold_pool (

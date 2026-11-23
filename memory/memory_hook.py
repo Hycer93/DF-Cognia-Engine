@@ -167,7 +167,26 @@ def _session_dialog_from_hook(payload: dict) -> dict:
     r = memory_gate.store_dialog(body, session, source_tag=source_tag)
     r["channel"] = channel
     r["transcript_err"] = err
+    # ---- #31 原始证据库：PreCompact 聚合（碎片→快照+逐条表, 打通证据链） ----
+    # 优先直接吃 transcript 原始 JSONL（不扁平化）; 落库失败不影响主链路（已存 raw_corpus）。
+    r["evidence"] = _evidence_ingest_and_aggregate(session, tpath, r.get("id"))
     return r
+
+
+def _evidence_ingest_and_aggregate(session: str, transcript_path: str, ref_id: str) -> dict:
+    """#31: 尝试把本轮原始对话存入证据库（快照+逐条）。全异常吞掉只报告, 绝不阻断主流程。"""
+    try:
+        import dialog_evidence_store as des
+        des.init_tables()
+        if transcript_path:
+            ing = des.ingest_transcript(session, transcript_path)
+        else:
+            ing = {"status": "no-transcript"}
+        agg = des.aggregate_session(session, ref_archive_fragment=ref_id,
+                                    terminate_reason="precompact_normal")
+        return {"ingest": ing, "aggregate": agg}
+    except Exception as e:  # noqa: BLE001
+        return {"status": "evidence-error", "err": repr(e)[:200]}
 
 
 def main():

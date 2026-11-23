@@ -276,6 +276,20 @@ def main():
     except Exception as e:  # noqa: BLE001
         report["h_channel"] = {"error": repr(e)}
 
+    # #31 悬空碎片巡检兜底: 收拢 >72h 未被 PreCompact 聚合的碎片, 聚合进证据库
+    try:
+        import dialog_evidence_store as _des
+        _des.init_tables()
+        col = _des.collect_orphan_sessions(max_age_hours=72)
+        report["evidence_orphan"] = {"orphan_sessions": col["orphan_sessions"],
+                                     "collected": sum(1 for r in col["results"]
+                                                      if r.get("status") in ("inserted", "updated"))}
+        if col["orphan_sessions"] > 0:
+            print("[e9][evidence_orphan] %d 个 session 碎片超72h未聚合, 已兜底聚合 %d 个"
+                  % (col["orphan_sessions"], report["evidence_orphan"]["collected"]))
+    except Exception as e:  # noqa: BLE001
+        report["evidence_orphan"] = {"error": repr(e)}
+
     with io.open(OUT, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
     t = report.get("transcript", {})
