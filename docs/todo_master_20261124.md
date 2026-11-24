@@ -69,8 +69,8 @@
 | **#37** | event_ts 空值回填。**2026-11-24 已执行 20 张**（`exec_37_event_ts_20261124.md`，`backfill_37_event_ts.py --tiers strong,summary --apply`）：仅写日期即本卡事件日的项（strong session/会话 19 + summary 正文 1）。**关键甄别**：旧报告 A1=22/A2=3 机械正则未辨语义，剔除 9 张误判——op 4（quarantine-restore/watchlist-promote 操作日，证据：0b272d92 source=11-23 但兄弟卡 7ee56837 ts=11-08）、date 3（专项扫描回填 11-13 标注日）、refdate 2（aa1d785b75 引用专利①/ ddd691156d 引用 G22）；填入=伪造业务时间污染时序+E4，故留空。**校验**：event_ts 空值 **91→71**，20/20 落地，仅改 event_ts，DB==jsonl(323)，回归 69 PASS。备份 `.bak_37_20261124_135259`。**剩余 71 张**：op/date/refdate 9 张待人工研判（不自动处理）；**B 批 62 张无线索永久挂起**（留空优于伪造）| 🟡 20 张完成，71 张留空 | `audit_memory_chain:§5` + dryrun_37_a1a2 + exec_37 |
 | **#38** | P0 语义查重继续攒样本（目标 clean_skip_equiv ≥8~10 再评估切 on，当前 clean=1） | ⏳ dry-run 进行中 | `audit_memory_chain:70-71` |
 | **#39** | 组8 corpus 锚点 detail 回填（降级后 anchor detail 也空，独立证据回填） | 🔲 挂起 | `review_29:25-26` |
-| **#40** | 其它写入入口 jsonl 同步巡检（#33 只修 gate 路径） | 🔲 待办 | `green_card_gate_concurrency_fix:92` |
-| **#41** | 记忆更新只写 DB 不同步 jsonl（memory_organize 更新路径不回写） | 🔲 待办 | `disposal_20261124:141` |
+| **#40** | 其它写入入口 jsonl 同步巡检。**2026-11-24 已完成**（`dryrun_40_write_entry_scan.md`）：扫描 8 处触及 core_memory_card 的写入位置，3 条业务主路径已双向同步（atomic_store/demote/green_card_writer）；缺口=schema_migrate UPDATE 不同步、nightly 兜底只补新增不修字段漂移 | ✅ 完成 | `dryrun_40_write_entry_scan` |
+| **#41** | memory_organize 更新路径 jsonl 回写缺陷。**2026-11-24 模拟方案验证完成，暂不落地生产代码**（`dryrun_41_unified_update_sim.md`，模拟脚本 `eval/audit/sim_41_*`，commit 已归档）：update_card_fields 统一封装 + backfill --full-sync + demote 等价性 全部 tmp 隔离用例通过；当前生产 DB-jsonl 漂移=0，属预防性加固非线上故障。**防护约束**：①新增 core_memory_card UPDATE 逻辑优先复用 demote()/atomic_store()，禁止裸 UPDATE；②所有 eval/audit 回填脚本 --apply 结束必须执行 `backfill_jsonl_from_db.py --full-sync` 全量对齐。**触发落地条件**：新增大量主表 UPDATE 业务逻辑 或 真实出现 DB-jsonl 漂移故障，二者任一发生再拿出整套方案落地 | ⏸ 暂缓，方案归档冻结 | #40 巡检发现 |
 
 ## F. 已暂缓（有触发条件，现在不动）
 
