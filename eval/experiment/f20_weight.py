@@ -110,8 +110,16 @@ def factor_fresh(con, iid, now=None, with_source=False):
 
 
 def factor_edge(etype):
-    """R(edge): 边类型乘子"""
-    return EDGE_W["rel"] if (etype or "").startswith("rel") else EDGE_W["topic"]
+    """R(edge): 边类型乘子。relation 显式硬边=1.0, topic 弱边=0.5。
+
+    兼容两种 rel 编码: F10 分支产裸 'new'/'conflict'/'augment'/'equivalent' 等,
+    F30 内部产 'rel:new'/'rel:back' 前缀式。原判据只认 'rel' 前缀, 导致 F10 阶段的
+    relation 硬边被误判成 topic 弱边(R 0.5), 系统性降权一半——这是编码不一致 bug。
+    修正判据: 以 'topic' 开头或空/None → 弱边; 其余(rel: 前缀 或 裸 relation 词) → 硬边。"""
+    e = etype or ""
+    if e.startswith("topic") or not e:
+        return EDGE_W["topic"]
+    return EDGE_W["rel"]
 
 
 def factor_density(con, iid):

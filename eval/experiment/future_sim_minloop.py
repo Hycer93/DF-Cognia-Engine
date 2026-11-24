@@ -158,7 +158,12 @@ def f10_diverge(snapshot):
                              "to_summary": (s[0] if s else "")[:50]})
     con.close()
     # 裁剪: 低权丢弃 + 去重 + 取 K 条最高权
-    branches = [b for b in branches if b["weight"] >= CONFIG["branch_prune_w"]]
+    # 豁免: relation 显式硬边(new/conflict/augment/equivalent 等)永不因低权被裁——
+    #   conflict 边 δ=-0.8 → (1-0.8)^β 在 baseline 下恒 0.20 < prune_w=0.3, 若一并裁掉
+    #   会让"矛盾/反向分支"这一明确定义的发散方向数学上永远出不来(结构性缺陷)。
+    #   硬边是强语义信号, 其价值不由 δ 权重门槛决定; 只有 topic 弱边受 prune_w 约束。
+    branches = [b for b in branches
+                if b["rel"] != "topic_sibling" or b["weight"] >= CONFIG["branch_prune_w"]]
     seen, uniq = set(), []
     for b in sorted(branches, key=lambda x: -x["weight"]):
         k = (b["from"], b["to"], b["rel"])
