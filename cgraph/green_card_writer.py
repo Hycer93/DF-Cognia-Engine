@@ -12,6 +12,7 @@ DB 路径同源硬约束（原 R17 回归锚，2026-11-18 round5 自举审计）
 """
 import hashlib
 import json
+import re
 import sqlite3
 import time
 import uuid as _uuid
@@ -22,10 +23,74 @@ from cgraph.atomic_skill import AUDIT_DB as db
 
 
 def _jaccard(a: str, b: str) -> float:
-    """bigram 重叠度: LLM 措辞漂移的语义级幂等兜底"""
+    """bigram 重叠度: LLM 措辞漂移的语义级幂等兜底
+
+    2026-11-24 保留 0.6 阈值不变：实测对短文本(几十字)措辞漂移样本
+    (未部署→未预置等)全部有效拦截；换 embedding≥0.95 反而漏拦(掉到0.93-0.95)。
+    """
     wa = {a[i:i + 2] for i in range(len(a) - 1)}
     wb = {b[i:i + 2] for i in range(len(b) - 1)}
     return len(wa & wb) / len(wa | wb) if (wa | wb) else 0.0
+
+
+def _extract_node(text: str):
+    """从 detail/summary 提取 evidence node 标识(如 node_Ch)。取不到返回 None。
+
+    用于同-session+同-node 硬去重(第二层兜底, 2026-11-24)。
+    """
+    if not text:
+        return None
+    m = re.search(r"node_[A-Za-z0-9]+", text)
+    return m.group(0) if m else None
+
+
+def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs):
+    """2026-11-24 任务②：DB INSERT 成功后同步追加 memories.jsonl。
+
+    修复"记忆更新只写 DB 不同步 jsonl"的管线缺陷。jsonl 是审计导出快照
+    (非真相源)，但仍需与 DB 保持一致, 避免后续巡检对账漂移。
+    7 项 jsonl 独有审计字段(code_changelog/provenance/verified_via/
+    superseded_reason/corpus_snapshot_date/superseded_at/unclassified_cycles)
+    新建 green 卡均无值, 按现有 green 卡样例置默认(无 provenance/changelog→不写或空)。
+    单条失败不阻断整体(尽力而为), 记录到 errs。
+    """
+    try:
+        from memory import memory_organize as _mo
+    except Exception as e:  # import 失败不阻断主流程(DB 已落库)
+        errs.append(f"jsonl_import_fail:{type(e).__name__}")
+        return
+    for inst, summary, fh, x in committed:
+        entry = {
+            "inst_id": inst,
+            "ts": ts,
+            "event_ts": ts,
+            "full_hash": fh,
+            "asset_class": "runtime",
+            "repro": "situational",
+            "confidence": "L2",
+            "dfcp_tag": {"domain": "001-003", "behavior": "Ht",
+                         "relation": "P", "memory_class": None},
+            "memory_class": None,
+            "affect_tags": None,
+            "summary": summary[:120],
+            "summary_converged": "0",
+            "detail": (f"绿档自动立卡(memory_gate 0f2f4458双层写入规约); "
+                       f"素材步: {x['evidence_step']}; 档案动词: {x['proposed_action']}"),
+            "source_ref": f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
+            "origin_ids": None,
+            "entity_id": None,
+            "derived_from": None,
+            "tier": "active",
+            "weight": {"match": 0.0, "cited": 0},
+            "protected": False,
+            "status": "active",
+            "superseded_by": None,
+            "unclassified_cycles": 0,
+        }
+        try:
+            _mo.append_jsonl(_mo.MEMORIES_JSONL, entry)
+        except Exception as e:
+            errs.append(f"jsonl_write_fail:{type(e).__name__}")
 
 
 def commit_green_cards(result, gate, user_input: str):
@@ -39,20 +104,35 @@ def commit_green_cards(result, gate, user_input: str):
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
     day = time.strftime("%Y-%m-%d")
     written, ids, errs = 0, [], []
+    committed = []  # 本事务内成功插入的 (inst_id, summary, full_hash, card)(供 jsonl 同步)
 
     try:
-        con = sqlite3.connect(db, timeout=5)
+        con = sqlite3.connect(db, timeout=10)
+        # 显式事务完全接管：关闭 python sqlite3 的隐式 BEGIN，避免
+        # "BEGIN IMMEDIATE" 与外层隐式事务冲突("事务内开事务")。
+        con.isolation_level = None
+        # 2026-11-24 并发根治：查询-插入整块包裹 BEGIN IMMEDIATE 排他事务。
+        # 根因：collab_pipeline 用 multiprocessing.Pool(spawn) 多进程并行 run_atomic，
+        # 各进程独立 memory_gate，旧代码"先查后插"无事务 → 互相看不见对方未提交的写入
+        # → 各算各的、同时插入副本。IMMEDIATE 立即取写锁，后到者排队、其查询能看到
+        # 前者已提交的最新卡，从根源杜绝并发重复。
+        con.execute("BEGIN IMMEDIATE")
         # 语义级幂等补强(段七红线5编排侧实现): full_hash 只防完全同文,
         # 真实 LLM 两次盘点同资产措辞漂移→bigram-Jaccard>0.6 视为同资产跳过。
+        # 2026-11-24 加固：在 Jaccard 之外叠加"同-session+同-node"硬去重(第二层兜底)。
         # 对称口径: existing summary 剥 "[类型] "前缀与 "(evidence:...)"后缀后再比
         existing = []
+        existing_nodes = set()  # (day, node) 组合已立卡集合
         for r in con.execute(
-                "SELECT summary FROM core_memory_card WHERE source_ref LIKE 'memory_gate%' "
+                "SELECT summary, detail FROM core_memory_card WHERE source_ref LIKE 'memory_gate%' "
                 "AND ts LIKE ?", (day + "%",)).fetchall():
             e = r[0]
             e = e.split("] ", 1)[-1] if e.startswith("[") else e
             e = e.split("(evidence:", 1)[0]
             existing.append(e.strip())
+            nd = _extract_node(r[0]) or _extract_node(r[1])
+            if nd:
+                existing_nodes.add((day, nd))
         for x in cards:
             s = f"[{x['asset_type']}] {x['gist']}(evidence: {x['evidence_step']})"
             fh = hashlib.sha256((s + "\x1f" + user_input).encode()).hexdigest()
@@ -62,6 +142,11 @@ def commit_green_cards(result, gate, user_input: str):
                 continue
             if any(_jaccard(x["gist"], e) > 0.6 for e in existing):
                 errs.append(f"semidup:{x['gist'][:20]}")
+                continue
+            # 第二层兜底：同-session+同-node 硬去重(2026-11-24)
+            nd = _extract_node(x.get("evidence_step", "")) or _extract_node(s)
+            if nd and (day, nd) in existing_nodes:
+                errs.append(f"nodedup:{x['gist'][:20]}")
                 continue
             inst = _uuid.uuid4().hex
             con.execute(
@@ -78,11 +163,25 @@ def commit_green_cards(result, gate, user_input: str):
                  f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
                  None, "active", '{"match": 0.0, "cited": 0}', "active"))
             ids.append(inst[:16])
+            nd2 = _extract_node(x.get("evidence_step", "")) or _extract_node(s)
+            if nd2:
+                existing_nodes.add((day, nd2))  # 本事务内也加入, 防同批多卡同node
+            committed.append((inst, s, fh, x))
             written += 1
         con.commit()
         con.close()
     except Exception as e:
         errs.append(f"db_error:{type(e).__name__}")
+        committed = []  # 回滚后 DB 未落库, 禁止向 jsonl 同步幻影记录
+        try:
+            con.rollback()
+            con.close()
+        except Exception:
+            pass
+    # 2026-11-24 任务②：DB 写入成功后同步追加 memories.jsonl（保留 7 审计字段）。
+    # jsonl 是审计快照非真相源，但仍需与 DB 保持一致, 避免后续漂移。
+    if committed:
+        _sync_committed_to_jsonl(committed, ts, day, user_input, errs)
     # 段六b案: 成败一律落独立审计行
     try:
         con = sqlite3.connect(db, timeout=5)
