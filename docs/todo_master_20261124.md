@@ -8,6 +8,21 @@
 
 ---
 
+## 编号计数器（发号登记区）
+
+> **发号规则**：新增待办先在此登记取号，再写入对应分组。一经分配不复用。
+
+- **已用最大号**：#42（含 E 区新发号 #34~#41 + 冲突重编 #42）
+- **下一个可用号**：#43
+- **断号说明**：
+  - #32 未使用（保留不复用，历史重编遗留）
+  - #1~#4 / #6 / #9 早期立项重编时废弃（无存活条目）
+  - #A/#B/#C 已并入 #8/#15/#16（不复用）
+  - **#31 编号冲突重编**：git 历史曾用 #31 指"对话证据库链"（已完成），违反不复用规则；2026-11-24 将该完成套重编为 **#42**，#31 权威归还"存量situational双active治理"（未做，B区）
+- **F 系编号**：F00/F10/F20/F30/F40/F50/F60 为技能链路序号，非待办号，独立体系
+
+---
+
 ## A. P1 核心缺口（有实际价值、未做）
 
 | 编号 | 事项 | 状态 | 出处 |
@@ -45,17 +60,16 @@
 
 ## E. 日常治理细活（低优先级，按周清）
 
-| 事项 | 状态 | 出处 |
-|---|---|---|
-| memory_class 分类回填收尾（26条 ok 后仍剩 pending 候选待 LLM 裁定 + 冲突待人工裁决） | 🟡 部分完成 | `audit_memory_chain:29-33` |
-| 隔离区近 7 天新增 4 条校验拦截复核（其他3/枚举非法1） | 🔲 待人工复核（优先） | `audit_memory_chain:§5` |
-| watchlist 3 条人工裁决转正/关闭（留决策记录） | 🔲 待办 | `audit_memory_chain:§5` |
-| event_ts 空值 39 条分批回填 | 🔲 最低优先级 | `audit_memory_chain:§5` |
-| P0 语义查重继续攒样本（目标 clean_skip_equiv ≥8~10 再评估切 on，当前 clean=1） | ⏳ dry-run 进行中 | `audit_memory_chain:70-71` |
-| 组8 corpus 锚点 detail 回填（降级后 anchor detail 也空，独立证据回填） | 🔲 挂起 | `review_29:25-26` |
-| 其它写入入口 jsonl 同步巡检（#33 只修 gate 路径） | 🔲 待办 | `green_card_gate_concurrency_fix:92` |
-| 记忆更新只写 DB 不同步 jsonl（memory_organize 更新路径不回写） | 🔲 待办 | `disposal_20261124:141` |
-| memory_hook.add() 缺 origin 参数通道（脚本回放需可打 script-reingest 标，否则污染 clean 口径） | 🔲 待办（见备注区） | 本次审计发现 |
+| 编号 | 事项 | 状态 | 出处 |
+|---|---|---|---|
+| **#34** | memory_class 分类回填收尾（26条 ok 后仍剩 pending 候选待 LLM 裁定 + 冲突待人工裁决） | 🟡 部分完成 | `audit_memory_chain:29-33` |
+| **#35** | 隔离区近 7 天新增 4 条校验拦截复核（其他3/枚举非法1） | 🔲 待人工复核（优先） | `audit_memory_chain:§5` |
+| **#36** | watchlist 3 条人工裁决转正/关闭（留决策记录） | 🔲 待办 | `audit_memory_chain:§5` |
+| **#37** | event_ts 空值 39 条分批回填 | 🔲 最低优先级 | `audit_memory_chain:§5` |
+| **#38** | P0 语义查重继续攒样本（目标 clean_skip_equiv ≥8~10 再评估切 on，当前 clean=1） | ⏳ dry-run 进行中 | `audit_memory_chain:70-71` |
+| **#39** | 组8 corpus 锚点 detail 回填（降级后 anchor detail 也空，独立证据回填） | 🔲 挂起 | `review_29:25-26` |
+| **#40** | 其它写入入口 jsonl 同步巡检（#33 只修 gate 路径） | 🔲 待办 | `green_card_gate_concurrency_fix:92` |
+| **#41** | 记忆更新只写 DB 不同步 jsonl（memory_organize 更新路径不回写） | 🔲 待办 | `disposal_20261124:141` |
 
 ## F. 已暂缓（有触发条件，现在不动）
 
@@ -72,7 +86,7 @@
 | 编号 | 事项 | 完成标记 |
 |---|---|---|
 | **#33** | memory_gate 并发去重 + jsonl 同步（BEGIN IMMEDIATE + session-node 兜底） | ✅ `4ee46c1`，dry-run 6进程无重复，43回归PASS |
-| **#31(P0)** | memory_hook `--file` 遮蔽 stdin P0 接线修复 | ✅ `10f16d1` |
+| **#42** | 对话原始证据库链（快照+逐条双写+碎片兜底 / SessionEnd-Stop对接 / `--file`遮蔽stdin接线修复）。**⚠️历史误用编号#31，2026-11-24重编为#42**（#31 权威归"存量situational双active治理"，见B区） | ✅ `783dd27`+`ffdc438`+`10f16d1` |
 | **#29** | 同事件多版本存量消重（8张derived空壳降precedent） | ✅ `e42c5b5` |
 | **#14** | 记忆一致性修复（demote sup DB 同步根因 + 存量对账） | ✅ `4b97a63` |
 | **#21** | cgraph 可验证性：verify_ratio 消融 + A/B 结论 | ✅ 完成（图路由略低于裸模型） |
@@ -80,7 +94,7 @@
 | **#11(态度)** | 回执态度元标签子通路（memory_attitude.py） | ✅ 完成 |
 | **#12** | 对话追溯轻量版 — 根治 h 通道断流 | ✅ `6b4606b` |
 | **#10(门槛)** | F40 门槛②③④ 消融收敛/边覆盖率/失败溯源降级 | ✅ 完成（人工评审签字归档） |
-| **#10/#11(口径)** | P0 dry-run origin 打标 + raw/clean 双统计 | ✅ **代码已实现**（`_p0_equiv_check` origin + `e4` clean过滤 + 回归10a~11c PASS，见备注区待收尾） |
+| **#10/#11(口径)** | P0 dry-run origin 打标 + raw/clean 双统计 + add 入口 origin 通道 | ✅ **已完成**（`_p0_equiv_check` origin + `e4` clean过滤 + `memory_hook.add` origin 参数 + CLI `--origin`，回归10a~11c PASS，`96ab723`） |
 | **#7** | pending 队列可靠写回 | ✅ `6d5a25a`+`431ce52`+`6880f63` |
 | **#5** | F20 权重层 | ✅ 已结案 |
 
@@ -108,4 +122,4 @@
 - ✅ audit30 输出 raw/clean 双指标 + 门槛判定
 - ✅ E4 `e4_maintenance_patrol.py:382-387` clean 过滤已实现（旧日志无 origin 保守计 business）
 - ✅ 真实 gate_log：p0_equiv_dry 31 条 = 30 script-reingest + 1 business
-- ⚠️ **待收尾缺口**：`memory_hook.add()` 无 origin 参数通道，脚本回放走 add() 会被默认打 business 污染 clean。需给 add() 增加 origin 参数并透传给 atomic_store。
+- ⚠️ ~~**待收尾缺口**：`memory_hook.add()` 无 origin 参数通道~~ → ✅ **已修复(96ab723)**：add() 新增 `origin="business"` 参数并透传 atomic_store，CLI `add --origin` 可选 business|script-reingest。
