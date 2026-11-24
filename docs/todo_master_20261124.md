@@ -38,7 +38,7 @@
 | **F30** | F系推演层正向演化（F00锚定→K条分支发散→推进到T） | ⏸ **未编码**，F系 F20✅/F40✅ 中间断档 | `docs/formula_future_sim_v2_1.md` |
 | **#8 / F60** | forward_check 第二环深度正演（第一环 n-gram 字面已实装，第二环待立项，名义闭环实质只验字面） | ⏸ 待立项 | 台账:228 |
 | **#43** | 候选重复卡专项。**2026-11-24 甄别完成**（`dryrun_43_dup_candidate_20261124.md`）：台账记"18 对"为 #31 估算失真；summary 口径 sim≥0.84 实际 **5 对 + 1 对边界(0.804)**。**6 对全部已由 #29 于 2026-11-23 完成 tier=precedent 降级、superseded_by 已赋值**，仅 status 仍 active（属 status-tier 混叠态）；#43 **不再重复执行降级**，混叠统一交 **#46** 存量回填。个案 `9b48551b`(runtime) asset_class 异常需单独修正为 corpus（并入 #46）。detail 口径 96 对全模板占位符噪音，不动 | 🟡 甄别完成，处置移交 #46 | 本次甄别 |
-| **#46** | demote() 语义对齐：①改 `memory_organize.demote()`，调用时同步更新 `status='superseded'` + `tier='precedent'`（根治 37 张混叠态成因）；②存量回填 **37 张** `status=active & tier=precedent & superseded_by NOT NULL` 混叠卡（status→superseded）；③个案 `9b48551b` asset_class `runtime→corpus` 修正（runtime 绕过 superseded_by 过滤会泄漏）。零物理删除；回填后同步 memories.jsonl；新增回归用例防复现混叠态。执行前 dry-run 校验全量清单 | 🔲 待办 | 本次 #43 预演发现 |
+| **#46** | demote() 语义对齐 + 37 张混叠态回填。**2026-11-24 已执行完成**（`exec_46_demote_status_realign_20261124.md`）：①`demote()` L529 + `_sync_demote_to_db` L482 同步写 `status='superseded'`；②新增回归 `e46_demote_status_regression.py`（10 用例防复现）；③37 张 `status=active&tier=precedent&superseded_by非空` 回填 status→superseded；④个案 `9b48551b` asset runtime→corpus（其余 26 张专利卡 asset 不动）；⑤jsonl 同步 37+1 行。校验混叠态=0，全套回归 53 PASS/0 FAIL，DB==jsonl。备份 `*.bak_46_20261124_130210` | ✅ 完成 | 本次 #43 预演发现 |
 | **#16** | topic_layer 决断（开启 or 删除）：556 行默认关闭悬空资产 | 📋 待裁决 | 台账:230 |
 | **#13** | 记忆卡版本链 + diff | ⏸ 暂缓但**前置已解除可评估** | 台账:231 |
 | **#15** | 桩—LLM 判定一致性对照回归 | 📋 待裁决 | 台账:229 |

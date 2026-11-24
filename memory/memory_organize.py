@@ -27,9 +27,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import schema
 import constants as C
 
-# ---- 存储布局（本地 jsonl = source of truth，索引/图谱均为可重建投影）----
+# ---- 存储布局（★ 2026-11-24 定案：DB core_memory_card = 唯一真相；jsonl 仅审计存档）----
+# ⚠ 数据源优先级（重要）：
+#   - 业务计算/统计/巡检 一律优先读 DB（core_memory_card）——jsonl 不保证与 DB 同步。
+#   - memories.jsonl = 审计导出快照，仅供存档/人工查阅，**不得作为统计数据源**。
+#   - 原因：更新路径（status/superseded_by/detail 同步等）只写 DB 不回写 jsonl，
+#     jsonl 滞后会导致 E4 等基于 jsonl 的统计失真（2026-11-24 已修一次全量漂移）。
 MEM_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "memory")
-MEMORIES_JSONL = os.path.join(MEM_DIR, "memories.jsonl")          # 原子存储层主记录（唯一刚性账本）
+MEMORIES_JSONL = os.path.join(MEM_DIR, "memories.jsonl")          # 审计导出快照（非真相源，禁作统计源）
 CHANGELOG_JSONL = os.path.join(MEM_DIR, "code_changelog.jsonl")   # dfcp_tag 变更 append-only 日志
 QUARANTINE_JSONL = os.path.join(MEM_DIR, "quarantine.jsonl")      # 编码非法拒收隔离队列
 REPLICA_LOG_JSONL = os.path.join(MEM_DIR, "replica_intercepts.jsonl")  # full_hash 精确副本拦截日志
@@ -120,12 +125,15 @@ def _get_pool_matrix(pool: list) -> tuple:
     return mat, ids
 
 
-def _p0_equiv_check(summary: str, pool: list) -> tuple:
+def _p0_equiv_check(summary: str, pool: list, origin: str = "business") -> tuple:
     """#30 P0 语义等价查重。返回 (verdict, best_inst_id, best_sim, elapsed_ms)。
 
     verdict: 'pass'(放行) | 'skip'(语义等价, 应拦截)
     - off 态调用方不进入本函数（零开销）。
     - 任意异常（embed/矩阵乘失败）→ 记 p0_unavailable，返回 pass（降级放行，绝不阻断入库）。
+    - origin（#10 2026-11-24）：来源标记，'business'=真实会话流入 h-channel；
+      'script-reingest'=脚本对存量卡重新入库/回放。写入 p0_equiv_dry 供统计过滤，
+      避免 re-ingest 虚增 clean_skip_equiv_count。
     """
     import time as _t
     t0 = _t.perf_counter()
@@ -149,14 +157,15 @@ def _p0_equiv_check(summary: str, pool: list) -> tuple:
     if SUMMARY_EQUIV_MODE == "dry-run":
         _log_p0("p0_equiv_dry", {
             "new_summary": summary[:120], "best_inst_id": bid,
-            "best_sim": round(best, 4), "would_skip": hit,
+            "best_sim": round(best, 4), "would_skip": hit, "origin": origin,
             "elapsed_ms": round(elapsed, 2), "mode": "dry-run"})
         return ("pass", bid, best, elapsed)   # dry-run 一律放行
     # on：真拦截
     if hit:
         _log_p0("skip_equivalent_derived", {
             "new_summary": summary[:120], "best_inst_id": bid,
-            "best_sim": round(best, 4), "elapsed_ms": round(elapsed, 2), "mode": "on"})
+            "best_sim": round(best, 4), "origin": origin,
+            "elapsed_ms": round(elapsed, 2), "mode": "on"})
         return ("skip", bid, best, elapsed)
     return ("pass", bid, best, elapsed)
 
@@ -169,6 +178,7 @@ def atomic_store(
     asset_class: str = "runtime",       # corpus | runtime 护栏字段
     origin_ids: list = None,
     event_ts: str = None,               # 事件真实发生时间（2026-11-09 时间概念工程）
+    origin: str = "business",           # #10：P0 来源标记 business | script-reingest
 ) -> tuple:
     """返回 (status, message)。status: stored | replica | quarantined。
 
@@ -208,7 +218,7 @@ def atomic_store(
     if SUMMARY_EQUIV_MODE != "off":
         _pool = load_active_pool()
         if _pool:
-            _verdict, _bid, _bsim, _el = _p0_equiv_check(summary, _pool)
+            _verdict, _bid, _bsim, _el = _p0_equiv_check(summary, _pool, origin=origin)
             if _verdict == "skip":
                 return "replica", f"语义等价拦截: {(_bid or '')[:8]} sim={_bsim:.3f}"
 
@@ -470,7 +480,7 @@ def _sync_demote_to_db(applied, superseded_by, reason):
             wc.execute("PRAGMA busy_timeout=5000")
             wc.execute("BEGIN IMMEDIATE")
             wc.execute(
-                "UPDATE core_memory_card SET tier='precedent', superseded_by=? "
+                "UPDATE core_memory_card SET tier='precedent', status='superseded', superseded_by=? "
                 "WHERE inst_id=?", (superseded_by, iid))
             wc.commit()
             synced += 1
@@ -517,6 +527,7 @@ def demote(inst_ids, superseded_by, reason, calibration_source=None):
         cur = m.get("superseded_by")
         if not cur:
             m["tier"] = "precedent"
+            m["status"] = "superseded"   # #46 语义对齐：tier 与 status 同步，防 status=active+tier=precedent 混叠
             m["superseded_by"] = superseded_by
             m["superseded_reason"] = reason
             m["superseded_at"] = datetime.now().isoformat(timespec="seconds")
