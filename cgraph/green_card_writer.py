@@ -44,6 +44,27 @@ def _extract_node(text: str):
     return m.group(0) if m else None
 
 
+def _green_detail(x: dict) -> str:
+    """#44（2026-11-24）：绿档卡 detail 生成——不再硬编码占位模板。
+
+    历史写法是固定前缀串"绿档自动立卡(...)"，被 detail 口径查重当作模板噪音
+    （96 对全撞车）。改为：以 proposed_action 实义内容为主，拼 evidence_step/node，
+    保留可追溯信息但不再是可复制的模板前缀。
+    """
+    action = (x.get("proposed_action") or "").strip()
+    step = (x.get("evidence_step") or "").strip()
+    gist = (x.get("gist") or "").strip()
+    parts = []
+    if action:
+        parts.append(action)
+    if gist:
+        parts.append(f"要点: {gist}")
+    if step:
+        parts.append(f"证据步: {step}")
+    body = "；".join(parts) if parts else step or gist or "绿档立卡(无实义内容)"
+    return body[:400]
+
+
 def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs):
     """2026-11-24 任务②：DB INSERT 成功后同步追加 memories.jsonl。
 
@@ -74,8 +95,7 @@ def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs
             "affect_tags": None,
             "summary": summary[:120],
             "summary_converged": "0",
-            "detail": (f"绿档自动立卡(memory_gate 0f2f4458双层写入规约); "
-                       f"素材步: {x['evidence_step']}; 档案动词: {x['proposed_action']}"),
+            "detail": _green_detail(x),
             "source_ref": f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
             "origin_ids": None,
             "entity_id": None,
@@ -158,8 +178,7 @@ def commit_green_cards(result, gate, user_input: str):
                  json.dumps({"domain": "001-003", "behavior": "Ht", "relation": "P",
                              "memory_class": None}, ensure_ascii=False),
                  s[:120], "0",
-                 f"绿档自动立卡(memory_gate 0f2f4458双层写入规约); "
-                 f"素材步: {x['evidence_step']}; 档案动词: {x['proposed_action']}",
+                 _green_detail(x),
                  f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
                  None, "active", '{"match": 0.0, "cited": 0}', "active"))
             ids.append(inst[:16])

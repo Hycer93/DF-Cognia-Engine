@@ -18,6 +18,7 @@
 import json
 import io
 import os
+import re
 import uuid
 import hashlib
 from datetime import datetime, timedelta
@@ -110,6 +111,35 @@ def _log_p0(op: str, payload: dict):
         print(f"[p0_log_fail] {type(e).__name__}: {e} | op={op}", file=sys.stderr)
 
 
+# #44（2026-11-24）：detail 质量检测（只警告不拒收，不阻断入库）
+# 历史污染源：空 detail / 纯 ASCII 单字占位(d1/content) / 纯数字 / 绿档模板前缀。
+# 黑名单模式识别，不用字数硬门槛（避免误伤"双暮暮对峙完整现场，含挂单去留分析"等合法短详情）。
+_DETAIL_GREEN_TEMPLATE = "绿档自动立卡"
+
+
+def _detail_quality_issue(detail) -> str:
+    """返回 detail 质量问题标签（''=无明显问题）。仅检测，不修改、不阻断。
+
+    判定（按优先级）：
+      - empty: 空 / None / 纯空白
+      - green_template: 绿档自动立卡模板占位符（#44 源头污染）
+      - ascii_placeholder: 纯 ASCII 且长度<10（如 d1/content/content2）
+      - numeric_only: 纯数字
+    合法短详情（中文、含实义）不判问题。
+    """
+    if not detail or not str(detail).strip():
+        return "empty"
+    d = str(detail).strip()
+    if _DETAIL_GREEN_TEMPLATE in d:
+        return "green_template"
+    if d.isdigit():
+        return "numeric_only"
+    # 纯 ASCII（无中文字符）且短 → 疑似占位符
+    if d.isascii() and len(d) < 10:
+        return "ascii_placeholder"
+    return ""
+
+
 def _get_pool_matrix(pool: list) -> tuple:
     """返回 (matrix(N,512), ids)，带进程级缓存；池 inst_id 集合变化则重建。"""
     import numpy as np
@@ -199,6 +229,14 @@ def atomic_store(
             "reason": errors, "detail_preview": (detail or "")[:200],
         })
         return "quarantined", "; ".join(errors)
+
+    # #44 detail 质量护栏（护栏②）：只警告不拒收——质量问题记 gate_log，仍照常入库
+    _dq = _detail_quality_issue(detail)
+    if _dq:
+        _log_p0("warn_detail_quality", {
+            "issue": _dq, "detail_preview": (detail or "")[:80],
+            "summary_preview": summary[:60], "origin": origin,
+        })
 
     # 摘要收敛（契约：压缩保主干，非截断砍尾）
     summary, converged = _converge_summary(summary)
