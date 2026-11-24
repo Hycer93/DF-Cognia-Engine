@@ -14,8 +14,11 @@
 - ✅ `core_memory_card` 迁完并用上（195 处引用，绝对主力）
 - ❌ `core_raw_corpus`/`core_topic_links`/`core_topic_abstraction`/`core_corpus_tags`/`audit_iteration` 只建空壳，**代码零引用**，数据还比旧表少（迁移半途停）
 - ✅ 旧的**无前缀表**（`raw_corpus`/`topic_links`/`topic_abstraction`/`corpus_tags`/`iterations`）**才是当前活的**——17~18 个文件在读它们
+- ⚠️ **C 类（`core_experience` + 4 张 audit 流水）不是死资产**：迁移后读侧没接线，数据仍在写 jsonl。`core_experience` 更是**经验层根资产**（见 §1 C 类），别误删
 
-**致命坑**：看到 `core_xxx` 别以为它就新就活。实际 `core_raw_corpus` 是死的，`raw_corpus` 才是活的。**判断唯一依据 = 代码引用数 + 最新写入时间，不是表名。**
+**两个致命坑**：
+1. **`core_` 前缀 ≠ 新/活**。`core_raw_corpus` 是死壳，`raw_corpus` 才是活的。
+2. **零引用 ≠ 可删**。`core_experience` 零引用但内容是经验资产；判断要**先看数据性质再看引用数**。**定性依据 = 引用数 + 写入时间 + 数据语义三者合看，单看任何一项都会误判。**
 
 ---
 
@@ -64,20 +67,35 @@
 
 > ⚠️ `audit_topic_log`(5813)/`audit_pool`(3815) **是活的**，别和 `audit_iteration` 混——同 audit_ 前缀不等于同类命运，逐个看引用数。
 
-### C 类 · 迁移死资产（有数据、代码零引用，数据源在 jsonl）
+### C 类 · 迁移断线层（有数据、代码零引用，但**不等于死资产**）
 
-从 jsonl 迁进表，但代码仍读 jsonl，**表本身零引用**。数据是真历史，只是没人通过表访问。jsonl 源都还在。
+**重要修正（2026-11-24 用户质疑后复核）**：这一类**不是**"死资产"。它们是 `v3_schema.py` 三前缀设计里迁进来的**根资产 + 审计流水**，内容真实、仍在演进，只是**迁移后没接线**——写入侧全落 jsonl，表的读取侧没接上。**绝不能当垃圾删。**
 
-| 死表 | 行数 | 真正的真相源 | 最后写入 | 代码出现位置 |
-|---|---|---|---|---|
-| `audit_code_change` | 1732 | `code_changelog.jsonl` (352KB) | 2026-11-16 | 仅 `v3_schema.py`(建表) + `migration_report_v3.md`(迁移记录) |
-| `audit_distill` | 251 | `distill_log.jsonl` (65KB) | 2026-11-16 | 仅 `v3_schema.py` + 迁移报告 |
-| `audit_judge` | 172 | `judge_log.jsonl` (233KB) | 2026-11-15 | 仅 `v3_schema.py` + 迁移报告 |
-| `audit_confidence` | 7 | `confidence_dynamics.jsonl` (3KB) | 2026-11-11 | 仅 `v3_schema.py` + 迁移报告 |
-| `core_experience` | 18 | `experiences.jsonl` (26KB) | 2026-11-16 | 仅 `v3_schema.py` + 迁移报告 |
+**分两种性质：**
 
-> **"代码出现位置"= 建表定义 + 迁移日志，无任何 SELECT/INSERT/UPDATE**。业务代码一律读 jsonl，不读表。
-> 处置：标注**只读归档**；**别再写入**（写了无程序读）。清理前确认 jsonl 完整再 DROP。
+**C-1 · `core_experience`（根资产，最重要，绝不能删）**
+- `v3_schema.py` 注释：「② 经验层（17条迁入）」——是**正式资产层**，与认知卡同级
+- 内容真是**经验学习**：`[经验]非农超预期金价不涨反跌复盘`、`[经验]Topic锚层六规约定案`、`[经验]新机制上线前伪演示基线法`、专利 P4~P9 方法论复盘
+- 字段：`xid/summary/detail/polarity/referenced_by/tier/status`（`polarity`=正/负经验，负经验禁固化；`tier='merged'`=已归并稳定，**停止更新是正常的**，经验库不需天天变）
+- **断线点**：`memory_hook.py` 走 `memory_distill.load_experiences()` 读 **jsonl**（`experiences.jsonl`，只是 `exp_id/cluster_key/behavior/dfcp_tag` 的**另一套结构**，与表不同源），表被绕过。18 行是 2026-11-08~16 迁移快照 + 后续 jsonl 增量没回灌表
+- **处置：保留，标注"经验层根资产，读侧未接线"。若要做经验学习闭环，应把 jsonl→core_experience 回灌打通，而非删表**
+
+**C-2 · `audit_judge/distill/confidence/code_change`（审计流水，可归档）**
+- 字段是 `meta/op/change` JSON 流水，记录判定/蒸馏/置信度变更/字段变更**事件**
+- 写入侧全在 jsonl（且 jsonl **仍活跃**：`code_changelog.jsonl` 今天 18:12、`distill_log.jsonl` 昨天更新），表未同步
+- 处置：**只读归档**，查历史可读表或 jsonl；别在表上开发新功能（无程序读表）。清理前确认 jsonl 完整
+
+| 表 | 行数 | 性质 | 活跃数据源 | 表最后写入 | 代码位置 |
+|---|---|---|---|---|---|
+| `core_experience` | 18 | **经验层根资产** | `experiences.jsonl`(另一结构,昨日更新) | 2026-11-16 | 仅 `v3_schema.py`+迁移报告(读侧断线) |
+| `audit_code_change` | 1732 | 审计流水 | `code_changelog.jsonl`(今日18:12更新) | 2026-11-16 | 仅 `v3_schema.py`+迁移报告 |
+| `audit_distill` | 251 | 审计流水 | `distill_log.jsonl`(昨日更新) | 2026-11-16 | 仅 `v3_schema.py`+迁移报告 |
+| `audit_judge` | 172 | 审计流水 | `judge_log.jsonl`(昨日更新) | 2026-11-15 | 仅 `v3_schema.py`+迁移报告 |
+| `audit_confidence` | 7 | 审计流水 | `confidence_dynamics.jsonl` | 2026-11-11 | 仅 `v3_schema.py`+迁移报告 |
+
+> **"代码位置=仅建表+迁移报告"= 表零读写，但底层功能活着（写 jsonl）**。这是"迁移做了一半"的典型：
+> 数据迁移脚本跑了、表建了，但业务代码仍指向 jsonl，表成了只进不出的快照。
+> **正确处置是"接线"或"归档"，不是"删除"**——尤其 `core_experience` 是根资产。
 
 ---
 
