@@ -25,20 +25,22 @@ import topic_layer             # Topic锚层挂载(规约3; 开关默认关)
 
 def add(domain, behavior, relation, confidence, summary, detail, source,
         asset_class="runtime", repro=None, auto_link=True, auto_distill=True,
-        event_ts=None, memory_class=None):
+        event_ts=None, memory_class=None, origin="business"):
     """单条入库 + 管道联动。返回报告 dict。
     event_ts：事件真实发生时间（ISO 格式）。会话入库时主AI传会话当天，
     语料回填时传语料日期；缺省 None=时间未知（不伪造）。
     memory_class：记忆分类五类（件①）——strategy_evolve/skill_refine/scar_case/
     relation_milestone/key_pact。缺省 None 合法（E4 统计无分类存量），但 judge 钩子
-    （件②）入库时必填——LLM 自觉调用本入口也应尽量带上，这是"评估固化形式"的落点。"""
+    （件②）入库时必填——LLM 自觉调用本入口也应尽量带上，这是"评估固化形式"的落点。
+    origin（#10 2026-11-24）：P0 来源标记 'business'|'script-reingest'。真实会话默认
+    business；脚本对存量卡回放/重导入须显式传 'script-reingest'，避免污染 clean 口径。"""
     tags = {"domain": domain, "behavior": behavior, "relation": relation, "confidence": confidence}
     if memory_class is not None:
         tags["memory_class"] = memory_class
     if repro:
         tags["repro"] = repro
     st, msg = atomic_store(summary, detail, source, tags, asset_class=asset_class,
-                           event_ts=event_ts)
+                           event_ts=event_ts, origin=origin)
     report = {"store": {"status": st, "msg": msg}}
     if st != "stored":
         return report
@@ -266,6 +268,9 @@ def main():
     p_add.add_argument("--repro", default=None)
     p_add.add_argument("--event-ts", default=None,
                        help="事件真实发生时间 ISO 格式（2026-11-09 时间概念工程），缺省=时间未知")
+    p_add.add_argument("--origin", default="business",
+                       choices=["business", "script-reingest"],
+                       help="#10 P0来源标记: business=真实会话(默认); script-reingest=脚本回放存量卡")
 
     p_q = sub.add_parser("query")
     p_q.add_argument("text")
@@ -286,7 +291,8 @@ def main():
         r = add(args.domain, args.behavior, args.relation,
                 args.confidence, args.summary, args.detail, args.source,
                 asset_class=args.asset_class, repro=args.repro,
-                event_ts=getattr(args, "event_ts", None))
+                event_ts=getattr(args, "event_ts", None),
+                origin=getattr(args, "origin", "business"))
         print(json.dumps(r, ensure_ascii=False, indent=1))
     elif args.cmd == "query":
         from memory_query import ask
