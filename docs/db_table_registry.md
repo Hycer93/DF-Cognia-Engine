@@ -23,31 +23,32 @@
 
 ### A 类 · 活表（照常用，36 张）
 
-代码读写、当前仍在更新（最新写入 = 2026-11-24）。按职能分组：
+代码读写、当前仍在更新（最新写入 = 2026-11-24）。**核心表的「谁用 / 干什么」**（引用数来自 2026-11-24 扫描）：
 
-| 职能 | 表 | 说明 |
-|---|---|---|
-| **认知主存储** | `core_memory_card` (325) | 认知原子卡，195 处引用，绝对核心 |
-| | `raw_corpus` (1690) | 原文语料。**注意无 core_ 前缀**（core_raw_corpus 是死壳） |
-| | `core_relation` (183) | 卡↔卡关系边 |
-| | `topic_links` (197) / `topic_abstraction` (12) | 主题簇（无前缀=活） |
-| | `corpus_tags` (159) | 语料标签（无前缀=活） |
-| **别名/实体** | `core_term_alias` (8) | 别名链 alias→canonical（#49 阶段2 启用读取 `memory/entity_resolve.py`） |
-| | `core_entity_timeline` (7) | 实体锚（一义一锚，同体不同阶段用 summary 记演化） |
-| **范式** | `core_skill_paradigm` (7) / `core_thinking_paradigm` (13) | 技能/思维范式库 |
-| | `audit_paradigm_evidence` (2) | 范式证据账 |
-| **治理队列** | `core_hold_pool` / `core_conflict_queue` / `core_alias_pending` / `core_governor_pending` / `core_quarantine` / `core_class_backfill_pending` | 待审队列（`verdict IS NULL` 为待处理） |
-| | `core_watchlist` (3) | 仅夜间报告 COUNT，无业务读写——**准活** |
-| **对话** | `core_dialogue_log` (12) / `core_raw_dialog_session` (3) / `session_dialog_archive_fragment` (259) / `dialog_seq` (1) / `_tmp_dialog_fragment` (12) | 对话流水 |
-| | `core_raw_dialog_session` | 对话原始会话 |
-| **审计/流水** | `trace_cited` (45472) / `trace_call` / `trace_embedding` / `audit_topic_log` (5813) / `audit_pool` (3815) / `audit_schema_migrate` (82) / `audit_maintenance` (23) | 埋点/审计事件（trace_* 30天窗口归档） |
-| **待处理/版本** | `core_revision_pending` (1) / `core_persona_evolution` (0) | 修订/人格演化 |
-| **系统** | `schema_version` (2) / `iterations` (3364) / `persona_anchor` (10) / `core_persona_anchor` (10) | 见下方特殊说明 |
-| **FTS 索引** | `fts_memory_card*` / `fts_dialogue*` | 全文检索影子表（随主表重建，勿手改） |
-
-**特殊说明**：
-- `iterations` (3364)：活，12 处引用。**`audit_iteration`(2863) 是它的死镜像**，别用。
-- `persona_anchor` vs `core_persona_anchor`：**都在用**（11 / 9 处引用），不是死的。`schema_version` 记录 2026-11-21 曾"冻结保留 core_persona_anchor，定义从 SCHEMA 移除但不 DROP"——两表并存属历史遗留，当前两表仍被读，**改动前必查谁在读**。
+| 表 | 行数 | 主要使用代码 | 具体用途 |
+|---|---|---|---|
+| `core_memory_card` | 325 | `memory/memory_organize.py`(写)、`memory/memory_query.py`(读)、`topic_layer.py`、`future_sim_minloop.py`(F30/F40图)、`e30_p0_regression.py`(验)、54 文件 | **唯一真相认知主存储**。写入加固(INSERT OR IGNORE)、查询投影、demote 降级(UPDATE tier/status)、图推演节点。jsonl 仅审计存档 |
+| `raw_corpus` | 1690 | `memory/corpus_store.py`(14处,增删改查主责)、`memory_gate.py`(准入)、`future_sim_minloop.py`(#50 raw边) | 原文语料通用表(小说正文/前身语料/长文本)。版本链 status=current/superseded、tree_vol/tree_ch 树位、body 正文 |
+| `core_relation` | 183 | `f20_weight.py`(6)、`future_sim_minloop.py`(6)、`shadow_regress.py` | **卡↔卡关系边**。F20 加权按 me_inst/other_inst 双向度数算关联激活度；F30/F40 图遍历的边来源 |
+| `topic_links` | 197 | `topic_layer.py`(13,主责)、`future_sim_minloop.py`(15)、`topic_layer_regression.py`(22) | 卡→主题簇挂载边(inst_id→topic_id+method)。挂载校验：先验 inst_id 存在才挂(core_memory_card 校验) |
+| `topic_abstraction` | 12 | `topic_layer.py`(15,主责)、`memory_query.py`(主题检索) | 主题簇抽象(cue_anchors 锚词/mount_count/access_count)。挂载计数、访问计数、归档(status=archived) |
+| `corpus_tags` | 159 | `memory/corpus_store.py`(5) | 树级标签字典(卷-章位置键+arc/chars 多入口)。与 raw_corpus JOIN 检索 |
+| `core_term_alias` | 8 | `memory/entity_resolve.py`(4,#49阶段2) | 别名链 alias→canonical。`resolve_alias()` 归并+多义告警 |
+| `core_entity_timeline` | 7 | `memory/entity_resolve.py`(2)、`test_memory_vs_human.py` | 实体锚(entity+event+event_ts+summary)。`resolve_entity()` 按名/摘要查锚，一义一锚 |
+| `core_skill_paradigm` / `core_thinking_paradigm` | 7 / 13 | `memory/paradigm_review.py`(TABLES)、`render_persona.py`、`e7_nightly_governance.py` | 技能/思维范式库。范式评审、人格渲染、夜间治理 |
+| `audit_paradigm_evidence` | 2 | 范式证据链路 | 范式证据账(evidence_count/pass) |
+| `core_hold_pool` | 16 | `topic_layer.py`(4,hold池)、`e7_nightly_governance.py`、`governance_reconcile.py` | 主题挂载 hold 池(topic_id=null 待夜间裁决)。夜间治理消费 |
+| `core_quarantine` | 43 | `fix_quarantine_20261123.py`(捞回)、`governance_reconcile.py` | 隔离区(问题卡)。捞回三步流程 |
+| `core_conflict_queue` / `core_alias_pending` / `core_governor_pending` / `core_class_backfill_pending` | 149/89/17/151 | `scripts/nightly_run.py`(队列统计)、`governance_reconcile.py` | 待审队列(verdict IS NULL 待处理)。冲突/别名/治理/分类回填 |
+| `core_dialogue_log` / `core_raw_dialog_session` / `session_dialog_archive_fragment` / `dialog_seq` / `_tmp_dialog_fragment` | 12/3/259/1/12 | `e9_dialog_governance.py`、`patrol_dialog_fragments.py` | 对话流水/原始会话/碎片归档/序号 |
+| `trace_cited` / `trace_call` / `trace_embedding` | 45472/-/- | 埋点、夜间报告 MAX(ts) | 流水埋点，30天窗口+月度归档(`trace_archive/`) |
+| `audit_topic_log` / `audit_pool` / `audit_schema_migrate` / `audit_maintenance` | 5813/3815/82/23 | 审计事件 | 主题日志/池/迁移记录/维护记录 |
+| `core_revision_pending` / `core_persona_evolution` | 1/0 | 修订/人格演化 | 修订待核/人格演化(空) |
+| `schema_version` | 2 | 迁移记录 | 迁移版本+结果 JSON |
+| `iterations` | 3364 | 12 处 | 迭代记录。**`audit_iteration`(2863) 是死镜像，别用** |
+| `persona_anchor` / `core_persona_anchor` | 10/10 | 都在用(11/9 处) | 人格锚点。两表并存属历史遗留，改动前必查谁在读 |
+| `core_watchlist` | 3 | `scripts/nightly_run.py`(仅 COUNT) | **准活**：仅夜间报告统计待审数，无业务读写 |
+| `fts_memory_card*` / `fts_dialogue*` | - | 全文检索 | FTS 影子表，随主表重建，**勿手改** |
 
 ### B 类 · 镜像死壳（建表未用，数据不同步）
 
@@ -67,15 +68,16 @@
 
 从 jsonl 迁进表，但代码仍读 jsonl，**表本身零引用**。数据是真历史，只是没人通过表访问。jsonl 源都还在。
 
-| 死表 | 行数 | 真正的真相源 | 最后写入 |
-|---|---|---|---|
-| `audit_code_change` | 1732 | `code_changelog.jsonl` (352KB) | 2026-11-16 |
-| `audit_distill` | 251 | `distill_log.jsonl` (65KB) | 2026-11-16 |
-| `audit_judge` | 172 | `judge_log.jsonl` (233KB) | 2026-11-15 |
-| `audit_confidence` | 7 | `confidence_dynamics.jsonl` (3KB) | 2026-11-11 |
-| `core_experience` | 18 | `experiences.jsonl` (26KB) | 2026-11-16 |
+| 死表 | 行数 | 真正的真相源 | 最后写入 | 代码出现位置 |
+|---|---|---|---|---|
+| `audit_code_change` | 1732 | `code_changelog.jsonl` (352KB) | 2026-11-16 | 仅 `v3_schema.py`(建表) + `migration_report_v3.md`(迁移记录) |
+| `audit_distill` | 251 | `distill_log.jsonl` (65KB) | 2026-11-16 | 仅 `v3_schema.py` + 迁移报告 |
+| `audit_judge` | 172 | `judge_log.jsonl` (233KB) | 2026-11-15 | 仅 `v3_schema.py` + 迁移报告 |
+| `audit_confidence` | 7 | `confidence_dynamics.jsonl` (3KB) | 2026-11-11 | 仅 `v3_schema.py` + 迁移报告 |
+| `core_experience` | 18 | `experiences.jsonl` (26KB) | 2026-11-16 | 仅 `v3_schema.py` + 迁移报告 |
 
-> 处置：标注**只读归档**，查历史用表或 jsonl 都行；**别再写入**（写了也无人读）。若要清理，先确认 jsonl 完整再 DROP。
+> **"代码出现位置"= 建表定义 + 迁移日志，无任何 SELECT/INSERT/UPDATE**。业务代码一律读 jsonl，不读表。
+> 处置：标注**只读归档**；**别再写入**（写了无程序读）。清理前确认 jsonl 完整再 DROP。
 
 ---
 
