@@ -20,6 +20,7 @@ future_sim_minloop.py — F系公式最小闭环冒烟 (F00→F10→F40+正演�
 import io
 import json
 import os
+import re
 import sqlite3
 import sys
 from datetime import datetime
@@ -55,6 +56,22 @@ CONFIG = {
     # F30 正向演化(design_F30_fwd_evolution.md 2026-11-24): 叠加层, 默认开; 回滚=置 False
     "enable_f30": True,          # F20 排序后调用 F30 推进 top-K 分支到终态
     "f30_enable_llm_epilog": False,  # LLM 终态叙述开关(默认关, 关闭结构化结果完整)
+
+    # ---- 阶段1: raw 叶子边(摘要↔原文 垂直打通, 2026-11-24 用户裁决) ----
+    # 边界(写死此注释, 防能力错觉):
+    #   ✅ 只解决【摘要层 core_memory_card ↔ 原文层 raw_corpus】这一层垂直打通;
+    #   ❌ 不解决跨簇连接(topic A ↔ topic B 的 relation 稀疏仍是空缺, 归阶段2);
+    #   ❌ 不解决自动组装答案(问题拆分/路由/拼装, 归阶段3 路线C)。
+    # 设计约束: raw 节点是叶子——_edges_from 一进来直接返回 [] 不再扩散(防噪声乱飞)。
+    #   匹配固定用"标题 2-gram Jaccard"(坑: 专利全文术语高度雷同, 全文级匹配会误连成一片,
+    #   原型实测过, 必须标题级 + 阈值 0.4)。阈值/种类/条数全可配。
+    "raw_bridge_enabled": True,           # 总开关(回滚=置 False, F40 立即回到纯摘要图)
+    "raw_bridge_jaccard": 0.4,            # 标题 2-gram Jaccard 阈值(可配置)
+    "raw_bridge_kinds": ["patent_doc"],   # 参与桥接的 raw_corpus.kind(阶段1 只接专利原文)
+    "raw_bridge_topn": 2,                 # 每卡最多桥接 top-N 篇原文(防噪声)
+    "raw_edge_w": 0.5,                    # raw 边在 F20 打分中的 R 权重(与 topic 持平;
+                                          # 需 ≥ prune_w/topic_edge_w 量级才能进 F30 viable,
+                                          # 又不抢 relation 主线; 实测标定)
 }
 
 
@@ -175,6 +192,117 @@ def f10_diverge(snapshot):
 
 # ---------- F40 逆向回溯 ----------
 
+def is_raw_node(iid):
+    """raw 节点判定(零查库快判): raw_corpus.id 形如 'patent.xxx'/'novel_szt.ch01'/
+    'dialog.xxx' 均含 '.'; 摘要卡 inst_id 是 32 位十六进制(无 '.'）。故含点即 raw 叶子候选。"""
+    return bool(iid) and "." in iid
+
+
+def _clean_title(t):
+    """标题清洗: 剥掉专利前缀/编号/括号注记, 只留技术名词——提升 Jaccard 信噪比。
+    原型实测: P24 不清洗 0.73 → 清洗后 0.97; P28 不清洗 0.40(压线) → 清洗后 0.68。
+    只去"格式噪音"(Pxx专利：/(6月口径42号)/《》), 不动技术词, 避免误伤。"""
+    if not t:
+        return ""
+    import re
+    t = re.sub(r"^P\d+\s*[专利]*\s*[：:\-]?\s*", "", t)   # 去 "P24专利：" 前缀
+    t = re.sub(r"[（(][^）)]*[）)]", "", t)                # 去括号注记
+    t = t.replace("专利", "").replace("《", "").replace("》", "")
+    return t.strip()
+
+
+def _raw_title_index(con):
+    """构建 raw_corpus 标题 2-gram 索引(阶段1 内存索引, 库小 49 篇即可)。
+    返回 [(raw_id, raw_title, token_set)]。仅取 CONFIG.raw_bridge_kinds 指定种类。
+    标题统一走 _clean_title 清洗后取 token。"""
+    kinds = CONFIG.get("raw_bridge_kinds") or []
+    if not kinds:
+        return []
+    qmarks = ",".join("?" * len(kinds))
+    rows = con.execute(
+        f"SELECT id, title FROM raw_corpus WHERE kind IN ({qmarks})", kinds).fetchall()
+    from cgraph.ref_retrieval import _tokens
+    idx = []
+    for r in rows:
+        rid = r[0]
+        rt = r[1] or ""
+        if not rt:
+            continue
+        toks = _tokens(_clean_title(rt))
+        if toks:
+            idx.append((rid, rt, toks))
+    return idx
+
+
+def _raw_bridge(con, card_text, idx):
+    """摘要卡文本 → 原文节点: 标题级 2-gram Jaccard, 阈值 CONFIG.raw_bridge_jaccard。
+    ⚠ 只用标题级(card summary 清洗后 vs 原文 title 清洗后), 绝不用全文——专利全文
+       术语高度雷同, 全文匹配会把所有专利连成一团(原型已验证的坑)。
+    返回 [(raw_id, jaccard)] 按相似度降序取 topn。"""
+    if not CONFIG.get("raw_bridge_enabled") or not card_text or not idx:
+        return []
+    from cgraph.ref_retrieval import _tokens
+    thr = CONFIG.get("raw_bridge_jaccard", 0.4)
+    topn = CONFIG.get("raw_bridge_topn", 2)
+    ct = _tokens(_clean_title(card_text))
+    if not ct:
+        return []
+    scored = []
+    for rid, _rt, rt_tok in idx:
+        if not rt_tok:
+            continue
+        ov = len(ct & rt_tok)
+        if ov == 0:
+            continue
+        jac = ov / len(ct | rt_tok)
+        if jac >= thr:
+            scored.append((rid, round(jac, 4)))
+    scored.sort(key=lambda x: -x[1])
+    return scored[:topn]
+
+
+def _raw_exists(con, iid):
+    """raw 节点是否真实存在于 raw_corpus(叶子边落点校验)。"""
+    return con.execute("SELECT 1 FROM raw_corpus WHERE id=? LIMIT 1", (iid,)).fetchone() is not None
+
+
+def _raw_card_exists(con, iid):
+    """该 id 是否是 core_memory_card 摘要卡(用于区分 raw 叶子 vs 摘要节点)。"""
+    return con.execute("SELECT 1 FROM core_memory_card WHERE inst_id=? LIMIT 1", (iid,)).fetchone() is not None
+
+
+# 原文里常见署名段的正则(阶段1 只接专利, 抽署名/申请人)
+_RAW_SIGN_RE = {
+    "发明人": re.compile(r"发明人[\s:*：]*([\u4e00-\u9fff]{2,4})"),
+    "申请人": re.compile(r"申请人[\s:*：]*([^\s|，,。]{2,30})"),
+}
+
+
+def raw_drill(con, card_id, with_body_chars=0):
+    """取一张摘要卡桥接的原文(阶段1 公共出口)——"查专利详情/找发明人"直接用这个,
+    不用调用方自己写匹配逻辑。返回 [{raw_id, title, jaccard, 发明人?, 申请人?, body?}]。
+    with_body_chars>0 时附带原文正文前 N 字(供方案细节查看)。只读。
+    边界: 只管【摘要→原文】垂直下钻, 不做跨簇/组装(见模块头阶段说明)。"""
+    r = con.execute("SELECT summary FROM core_memory_card WHERE inst_id=?", (card_id,)).fetchone()
+    if not r:
+        return []
+    idx = _raw_title_index(con)
+    bridges = _raw_bridge(con, r[0], idx)
+    out = []
+    for rid, jac in bridges:
+        row = con.execute("SELECT title, body FROM raw_corpus WHERE id=?", (rid,)).fetchone()
+        title, body = (row[0] or "") if row else "", (row[1] or "") if row else ""
+        item = {"raw_id": rid, "title": title, "jaccard": jac}
+        for label, rx in _RAW_SIGN_RE.items():
+            m = rx.search(body)
+            if m:
+                item[label] = m.group(1).strip()
+        if with_body_chars > 0:
+            item["body"] = body[:with_body_chars]
+        out.append(item)
+    return out
+
+
 def _edges_from(con, iid, in_topic_jump=False):
     """iid 的库内真实转移边(双向: 出边+入边)。返回 [(other, rel, prio, w)]
     边优先级: relation显式演化/关联边=1.0 > topic_links弱时序=0.5
@@ -187,6 +315,10 @@ def _edges_from(con, iid, in_topic_jump=False):
        下一跳起恢复裁剪, 防止 12800 边级大簇全互联拖垮 BFS。
     """
     out = []
+    # ★ raw 叶子铁律(阶段1 用户裁决): raw 节点是叶子, 进来直接返回 [] 不再扩散——
+    #   防止"顺着原文再往外游走"产生噪声乱飞。这条与业务逻辑无关, 是结构约束。
+    if is_raw_node(iid):
+        return out
     # relation 显式边: 强可信, 永不过滤(含高敏簇成员——由簇过滤在 BFS 层单独拦)
     for other, rel in con.execute(
             "SELECT other_inst, relation FROM core_relation WHERE status='active' AND me_inst=?", (iid,)):
@@ -208,6 +340,16 @@ def _edges_from(con, iid, in_topic_jump=False):
         for other in same:
             if other != iid:
                 out.append((other, "topic:weak_ts", CONFIG["topic_edge_w"], "topic"))
+    # ★ raw 叶子边(阶段1): 摘要卡 → 原文节点, 标题 2-gram Jaccard 建边。
+    #   与 relation/topic 边并列, 但 raw 节点本身不再扩散(上面 is_raw_node 已拦)。
+    #   注意: 仅在总开关开时建索引并桥接; 关闭时不产生任何 raw 边(F40 回到纯摘要图)。
+    if CONFIG.get("raw_bridge_enabled"):
+        r = con.execute("SELECT summary FROM core_memory_card WHERE inst_id=?", (iid,)).fetchone()
+        card_text = (r[0] if r else None)
+        if card_text:
+            idx = _raw_title_index(con)
+            for rid, jac in _raw_bridge(con, card_text, idx):
+                out.append((rid, "raw:doc", CONFIG["raw_edge_w"], jac))
     return out
 
 
@@ -253,6 +395,11 @@ def f40_backward(goal_prefix, anchor_ids):
         # in_topic_jump: 上一跳是 topic 弱边入簇 -> 本节点允许一次簇内 topic 出边(入簇首跳)
         in_jump = (_e or "").startswith("topic:")
         for other, etype, w, _raw in _edges_from(con, cur, in_topic_jump=in_jump):
+            # ★ raw 边在 F40 反向搜索中跳过(阶段1): F40 锚只可能是摘要卡, 原文节点
+            #   不可能是锚, 反向走 raw 边只会产生无后效的死路节点徒增分支。
+            #   下钻原文是 F30 正向的能力; F40 保持"摘要层最短路径"语义不变。
+            if etype.startswith("raw"):
+                continue
             if other in parent:
                 continue
             # 高敏簇成员: 即使经 relation 边到达也拒绝(推演默认隔离, 用户终审裁决)
@@ -287,6 +434,16 @@ def verify(path, branches, truth_seq):
     fwd = list(reversed(path))
     unreachable = []
     for a, b in zip(fwd, fwd[1:]):
+        # raw 叶子边(阶段1): 摘要卡→原文。原文边不走 core_relation/topic_links,
+        # 用标题 Jaccard 桥校验(与建边同口径), 不参与"摘要图可达性"判定。
+        if is_raw_node(b):
+            idx = _raw_title_index(con)
+            ra = con.execute("SELECT summary FROM core_memory_card WHERE inst_id=?", (a,)).fetchone()
+            ok = bool(_raw_bridge(con, (ra[0] if ra else None), idx)) and any(
+                rid == b for rid, _j in _raw_bridge(con, (ra[0] if ra else None), idx))
+            if not ok:
+                unreachable.append((_short(a), _short(b)))
+            continue
         ok = con.execute(
             "SELECT COUNT(*) FROM core_relation WHERE (me_inst=? AND other_inst=?) "
             "OR (me_inst=? AND other_inst=?)", (a, b, b, a)).fetchone()[0] > 0

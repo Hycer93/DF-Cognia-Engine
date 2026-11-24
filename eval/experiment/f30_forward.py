@@ -58,6 +58,14 @@ def _default_score_fn(con, branch, step, profile):
 
 
 def _default_card_fn(con, iid):
+    # raw 叶子节点(阶段1): 不在 core_memory_card, 从 raw_corpus 取标题作 summary 展示
+    from future_sim_minloop import is_raw_node
+    if is_raw_node(iid):
+        r = con.execute("SELECT id, title FROM raw_corpus WHERE id=?", (iid,)).fetchone()
+        if not r:
+            return None
+        return {"inst_id": r[0], "summary": (r[1] or "")[:80],
+                "memory_class": None, "confidence": None, "is_raw": True}
     r = con.execute(
         "SELECT inst_id, summary, confidence, dfcp_tag FROM core_memory_card WHERE inst_id=?",
         (iid,)).fetchone()
@@ -74,8 +82,12 @@ def _default_card_fn(con, iid):
 
 
 def _default_exists_fn(con, iid):
-    """卡是否真实存在于 core_memory_card。DB 可能存在悬空边(边指向已不存在的卡),
-    红线要求所有跳转落已有实体——推进前必须校验。"""
+    """跳转落点是否真实存在。摘要卡查 core_memory_card; raw 叶子节点查 raw_corpus
+    (阶段1: raw 叶子边目标不在摘要表, 但合法存在于原文表)。"""
+    from future_sim_minloop import is_raw_node
+    if is_raw_node(iid):
+        return con.execute(
+            "SELECT 1 FROM raw_corpus WHERE id=? LIMIT 1", (iid,)).fetchone() is not None
     return con.execute(
         "SELECT 1 FROM core_memory_card WHERE inst_id=? LIMIT 1", (iid,)).fetchone() is not None
 
@@ -187,6 +199,12 @@ class FwdEvolver:
             self.path.append(best)
             self.visited.add(best["to"])
             self.cur, self.step, self.prev_etype = best["to"], self.step + 1, best["rel"]
+            # ★ raw 叶子(阶段1): 落到原文节点即停——raw 是叶子, 不继续扩散,
+            #   语义为"已下钻到原文终态"→ frozen/raw_leaf(区别于 step_limit/local_max)。
+            from future_sim_minloop import is_raw_node
+            if is_raw_node(self.cur):
+                self.state, self.stop_reason = "frozen", "raw_leaf"
+                return
             if self.t_card and self.cur == self.t_card:
                 self.state, self.stop_reason = "reached_T", "reached_T"
                 return

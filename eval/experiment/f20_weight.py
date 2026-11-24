@@ -39,7 +39,9 @@ BETA_PROFILES = {
 BASELINE_PROFILE = "baseline"          # 纪律①: 回归锚点档位
 
 CONF_TIER = {"L0": 1.0, "L1": 0.7, "L2": 0.4}
-EDGE_W = {"rel": 1.0, "topic": 0.5}
+# 边权表: rel 显式硬边 1.0 > topic 弱边 0.5 > raw 原文叶子边 0.5(阶段1, 与 topic 持平;
+# raw 节点是叶子, 权重只决定"是否值得下钻", 不参与继续扩散)。
+EDGE_W = {"rel": 1.0, "topic": 0.5, "raw": 0.5}
 # 步衰减参数(原为 score_branch 内魔法数, A-5 抽常量: 仅命名, 值不变)
 # 待标定: 设计文档 §6 A3 只做过长链存活观察, 未做参数扫描; 后续标定从此处入手。
 DELTA_STEP_BASE = 0.6                  # 首跳(step=1)基础衰减量
@@ -110,14 +112,21 @@ def factor_fresh(con, iid, now=None, with_source=False):
 
 
 def factor_edge(etype):
-    """R(edge): 边类型乘子。relation 显式硬边=1.0, topic 弱边=0.5。
+    """R(edge): 边类型乘子。relation 显式硬边=1.0, topic 弱边=0.5, raw 原文叶子边=0.5。
 
-    兼容两种 rel 编码: F10 分支产裸 'new'/'conflict'/'augment'/'equivalent' 等,
-    F30 内部产 'rel:new'/'rel:back' 前缀式。原判据只认 'rel' 前缀, 导致 F10 阶段的
-    relation 硬边被误判成 topic 弱边(R 0.5), 系统性降权一半——这是编码不一致 bug。
-    修正判据: 以 'topic' 开头或空/None → 弱边; 其余(rel: 前缀 或 裸 relation 词) → 硬边。"""
+    兼容多种 rel 编码: F10 分支产裸 'new'/'conflict'/'augment'/'equivalent' 等,
+    F30 内部产 'rel:new'/'rel:back' 前缀式, raw 桥产 'raw:doc'。原判据只认 'rel' 前缀,
+    导致 F10 阶段的 relation 硬边被误判成 topic 弱边(R 0.5)——这是编码不一致 bug。
+    修正判据:
+      - 以 'topic' 开头或空/None → topic 弱边 0.5
+      - 以 'raw' 开头 → raw 叶子边 0.5(阶段1: 与 topic 同权, 只决定是否下钻原文)
+      - 其余(rel: 前缀 或 裸 relation 词) → relation 硬边 1.0"""
     e = etype or ""
-    if e.startswith("topic") or not e:
+    if not e:
+        return EDGE_W["topic"]
+    if e.startswith("raw"):
+        return EDGE_W["raw"]
+    if e.startswith("topic"):
         return EDGE_W["topic"]
     return EDGE_W["rel"]
 
