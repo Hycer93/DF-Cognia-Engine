@@ -38,7 +38,7 @@ def case_beta_monotonic():
     print("[1] β 档位单调性")
     orig = (F.factor_conf, F.factor_fresh, F.factor_edge, F.factor_density)
     F.factor_conf = lambda con, iid: 1.0
-    F.factor_fresh = lambda con, iid, now=None: 1.0
+    F.factor_fresh = lambda con, iid, now=None, with_source=False: ((1.0, "event_ts") if with_source else 1.0)
     F.factor_edge = lambda etype: 1.0
     F.factor_density = lambda con, iid: 1.0
     try:
@@ -85,11 +85,15 @@ def case_density_floor():
 
 
 def case_fresh_continuity():
-    """用例3: F 因子时间连续性。时间差仅几秒 → 新鲜度分值无跳变(连续 age, 非 .days 截断)。
+    """用例3: F 因子时间连续性 + 来源口径(2026-11-24 #37 修复)。
 
-    假 con 返回两个相差 5 秒的 ts, 断言 F 差异极小(不应出现整整一天的档位跳变)。
+    3a: 两个相差 5 秒的 event_ts → F 差异极小(连续 age, 非 .days 整档跳变)。
+    3b: event_ts 缺失时不回退 ts —— 即便 ts 是"今天"(批量导入), 也给中性 FRESH_NEUTRAL,
+        不复用 ts(旧 bug: ts 当事件时间会让考古卡 F≈1.0)。
+    3c: 无卡记录也给中性值(不用旧的 0.5/1年前, 避免误杀)。
+    3d: with_source=True 时来源标记正确(event_ts / neutral)。
     """
-    print("[3] F 因子连续性(秒级无跳变)")
+    print("[3] F 因子连续性 + 来源口径")
     from datetime import datetime, timedelta
 
     class _FakeRow(dict):
@@ -97,12 +101,13 @@ def case_fresh_continuity():
 
     class _FakeCon:
         row_factory = None      # _ensure_rows 会检查并设置; 设 None 使其进入转换分支
-        def __init__(self, ts):
+        def __init__(self, event_ts, ts=None):
+            self._event_ts = event_ts
             self._ts = ts
         def execute(self, *a, **k):
             return self
         def fetchone(self):
-            return _FakeRow({"event_ts": self._ts, "ts": self._ts})
+            return _FakeRow({"event_ts": self._event_ts, "ts": self._ts})
 
     now = datetime.now()
     ts1 = (now - timedelta(days=10, seconds=0)).isoformat()
@@ -110,8 +115,16 @@ def case_fresh_continuity():
     f1 = F.factor_fresh(_FakeCon(ts1), "x", now)
     f2 = F.factor_fresh(_FakeCon(ts2), "x", now)
     # 5 秒差在半衰期 90d 下, F 差异应极小(< 1e-4), 绝不能出现跨天整档跳变(~0.008)
-    _check("5秒时间差 F 变化极小(<1e-4)", abs(f1 - f2) < 1e-4, f"f1={f1:.6f} f2={f2:.6f}")
-    # 对照: 无 ts 卡按 1 年前处理, F 应远小于近期卡(设计口径)
+    _check("3a: 5秒时间差 F 变化极小(<1e-4)", abs(f1 - f2) < 1e-4, f"f1={f1:.6f} f2={f2:.6f}")
+
+    # 3b: event_ts 缺失但 ts=今天(模拟批量导入) → 必须给中性值, 不能拿 ts 当事件时间
+    today_ts = now.isoformat()
+    f_nots = F.factor_fresh(_FakeCon(None, today_ts), "x", now)
+    _check("3b: event_ts缺失不回退ts→中性0.7(不误判为新)",
+           abs(f_nots - F.FRESH_NEUTRAL) < 1e-9,
+           f"f={f_nots:.6f} 应={F.FRESH_NEUTRAL}(ts={today_ts[:10]} 若回退旧bug会≈1.0)")
+
+    # 3c: 无卡记录 → 中性值
     class _NullCon:
         row_factory = None
         def execute(self, *a, **k):
@@ -119,7 +132,16 @@ def case_fresh_continuity():
         def fetchone(self):
             return None
     fnull = F.factor_fresh(_NullCon(), "x", now)
-    _check("无卡记录 F=0.5(设计兜底)", abs(fnull - 0.5) < 1e-9, str(fnull))
+    _check("3c: 无卡记录 F=FRESH_NEUTRAL(中性, 非旧0.5)",
+           abs(fnull - F.FRESH_NEUTRAL) < 1e-9, str(fnull))
+
+    # 3d: 来源标记
+    f_ok, src_ok = F.factor_fresh(_FakeCon(today_ts), "x", now, with_source=True)
+    f_no, src_no = F.factor_fresh(_FakeCon(None, today_ts), "x", now, with_source=True)
+    _check("3d: with_source 来源标记(event_ts/neutral)",
+           src_ok == "event_ts" and src_no == "neutral",
+           f"ok={src_ok} no={src_no}")
+    _check("3e: FRESH_NEUTRAL 常量=0.7", abs(F.FRESH_NEUTRAL - 0.7) < 1e-12, str(F.FRESH_NEUTRAL))
 
 
 def case_constants_immutable():
@@ -201,7 +223,7 @@ def case_formula_shape():
     print("[6] 公式形状(恒正/有界)")
     orig = (F.factor_conf, F.factor_fresh, F.factor_edge, F.factor_density)
     F.factor_conf = lambda con, iid: 1.0
-    F.factor_fresh = lambda con, iid, now=None: 1.0
+    F.factor_fresh = lambda con, iid, now=None, with_source=False: ((1.0, "event_ts") if with_source else 1.0)
     F.factor_edge = lambda etype: 1.0
     F.factor_density = lambda con, iid: F.D_FLOOR
     try:

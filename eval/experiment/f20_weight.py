@@ -71,23 +71,42 @@ def factor_conf(con, iid):
     return CONF_TIER.get(r["confidence"] if r else None, 0.7)
 
 
-def factor_fresh(con, iid, now=None):
+# 新鲜度回退中性值（2026-11-24 #30/F20 修复）：event_ts 缺失时**不回退 ts**
+# ——ts 是入库时间非事件时间（#37 实证：批量导入会让 2015 年事件卡 ts≈2026），
+# 回退 ts 会把陈旧考古卡误判为最新（F≈1.0），与设计"压制考古卡"相反。
+# 无可靠事件时间时给中性值 0.7（等价 L1 置信），既不奖励也不误杀。
+FRESH_NEUTRAL = 0.7
+
+
+def factor_fresh(con, iid, now=None, with_source=False):
     """F(fresh): 独立新鲜度乘子, 半衰期指数衰减(90d 半衰 → 0.5^age/90)。
-    无 event_ts/ts 的老卡按保守 1 年前处理(陈旧考古卡缓慢滑降)。"""
+
+    来源口径（2026-11-24 修复 #37 上下游 ts 污染）:
+      - event_ts 存在且可解析 → 用它算真实 age（真正的事件新鲜度）
+      - event_ts 缺失/不可解析 → **不**回退 ts（ts=入库时间不可信），给中性 FRESH_NEUTRAL=0.7
+      - 卡记录完全不存在 → 也给中性值（不再用 0.5/1年前，避免误杀）
+    with_source=True 时返回 (f, source)，source ∈ {"event_ts", "neutral"}，供审计区分分数来源。
+    """
     con = _ensure_rows(con)
     now = now or datetime.now()
     r = con.execute("SELECT event_ts, ts FROM core_memory_card WHERE inst_id=?", (iid,)).fetchone()
+
+    def _ret(f, src):
+        return (f, src) if with_source else f
+
     if not r:
-        return 0.5
-    s = r["event_ts"] or r["ts"]
+        return _ret(FRESH_NEUTRAL, "neutral")
+    s = r["event_ts"]                       # ⚠ 只认 event_ts，不回退 ts
+    if not s:
+        return _ret(FRESH_NEUTRAL, "neutral")
     try:
         t = datetime.fromisoformat((s or "")[:19])
     except ValueError:
-        t = now - timedelta(days=365)
+        return _ret(FRESH_NEUTRAL, "neutral")
     # 连续 age(秒级/86400): 不用 .days 整数截断——同日 ts 相差数分钟的卡
     # 会在跨午夜后跳 1 天档, 造成同权并列簇内位次抖动(2026-11-16 守卫实测)
     age = max(0.0, (now - t).total_seconds() / 86400.0)
-    return 0.5 ** (age / FRESH_HALFLIFE_DAYS)
+    return _ret(0.5 ** (age / FRESH_HALFLIFE_DAYS), "event_ts")
 
 
 def factor_edge(etype):
@@ -132,13 +151,14 @@ def score_branch(con, branch, step, profile="baseline", now=None):
     delta_step = DELTA_STEP_BASE if step > 0 else 0.0    # 步衰减: 直接邻居不衰减, 每步远一层打折
     delta_step *= (DELTA_STEP_SLOPE ** max(0, step - 1)) # 步数斜率(A3 消融对象): 递减式衰减
     c = factor_conf(con, branch["to"])
-    f = factor_fresh(con, branch["to"], now)
+    f, f_src = factor_fresh(con, branch["to"], now, with_source=True)
     r = factor_edge(branch.get("rel"))
     d = factor_density(con, branch["to"])
     w = (1 + delta_step) ** beta * c * f * r * d
     factors = {"beta_profile": profile, "beta": beta,
                "delta_step": round(delta_step, 4), "C_conf": round(c, 4),
-               "F_fresh": round(f, 4), "R_edge": r, "D_density": round(d, 4),
+               "F_fresh": round(f, 4), "F_fresh_source": f_src,
+               "R_edge": r, "D_density": round(d, 4),
                "step": step}
     return round(w, 6), factors
 
