@@ -1,9 +1,29 @@
 # #43 候选重复卡专项 —— Dry-Run 只读甄别报告
 
-- 日期：2026-11-24 12:52
+- 日期：2026-11-24 12:52（13:00 重大更正）
 - 性质：**只读 dry-run 扫描分析，零 UPDATE / 零 DELETE，不改动 DB 与 jsonl**
 - 口径：`status='active'` 全池两两 bigram-Jaccard（summary 字段），阈值 sim≥0.84
 - **已排除 #31 处置完毕的 PAIR1-8**（PAIR1/7 已 superseded，PAIR2-5 闭环，PAIR6 反例保护，PAIR8 保留双张）
+
+---
+
+## ⚠️ 重大更正（2026-11-24 13:00 执行预演时发现）
+
+**本文下述 6 对"待处置"判断有误——它们早已被 #29 降级完成。**
+
+预演 `demote` 链路时发现：这 6 张"乙卡"**实际 `tier='precedent'` 且 `superseded_by` 已指向正本**（DB/jsonl 双写一致），是 **#29 脚本 `eval/audit/demote_superseded_shells.py`（2026-11-23）** 的产物：
+
+```
+组1 525d9e05 ← f767248d   组2 cfd09e40 ← e1afda16
+组3 978385d4 ← 7e92e275   组4 5f4e9ea2 ← ff01d791
+组5 fc24f5ea ← 6e2a9c36   组8 9b48551b ← 32684974
+```
+
+本报告上一版误判原因：初扫只看 `status='active'`，**未查 `tier`**。真实活跃正池（`status='active' AND tier='active'`，278 张）内 **sim≥0.84 对数 = 0**，即当前无真重复待合并。
+
+**由此暴露的真问题**：`demote()` 只改 `tier`、**从不改 `status`**，导致全库 **37 张**卡处于 `status='active' + tier='precedent' + superseded_by 非空` 混叠态。而检索主链路 `load_memories()` **只认 status 不看 tier** → 这 37 张已降级旧卡**仍会被 `ask()` 召回**。降级只对"查重池"生效，对"检索"无效。
+
+**处置变更**：#43 **不再执行任何 superseded 变更**（6 对重复的 tier 降级历史已由 #29 完成）。现存 `status`-`tier` 字段失同步缺陷，统一归 **#46 存量回填**根治。详见后附 #46 条目。
 
 ---
 
@@ -50,7 +70,8 @@
 - 乙 `cfd09e407b`：tier=precedent，src=None，detail=(空)
 - summary 完全相同：蒸馏仔第一次被欺骗（预告净利润+70-100% vs 正式季报-24%…G07多维状态机校验）
 - **定性**：真实完全重复，乙是甲的无 detail 副本
-- **处置**：乙 `cfd09e407b` superseded → 甲 `e1afda16f2` ✅**可自动处理**
+- **实际状态**：乙 `cfd09e407b` 已 tier=precedent、superseded_by=e1afda16f2（#29 已完成）
+- **【注：tier=precedent、superseded_by 已填充，#29 demote_superseded_shells.py 已完成 tier 侧降级；status 仍 active，属 status-tier 混叠态，纳入 #46 存量回填统一修复，本 #43 专项不再重复处置】**
 
 ### PAIR B ｜ sim=1.000 ｜【真实完全重复】
 - 甲 `32684974eb`：tier=active，src=None，detail=(空)，asset=corpus
@@ -58,14 +79,17 @@
 - summary 完全相同：未来推演公式体系v2定稿(F00-F60六层)…
 - **⚠️ 特殊**：两张都无 detail，区别仅 tier（active vs precedent）+ asset（corpus vs runtime）。甲虽 tier=active 但 detail 也空。
 - **定性**：真实完全重复
-- **处置**：保留 tier=active 的 `32684974eb`，乙 `9b48551b2b` superseded ✅**可自动处理**（但两张都空 detail，建议人工确认哪张该做正本）
+- **实际状态**：乙 `9b48551b2b` 已 tier=precedent、superseded_by=32684974eb（#29 已完成）
+- **【注：tier=precedent、superseded_by 已填充，#29 demote_superseded_shells.py 已完成 tier 侧降级；status 仍 active，属 status-tier 混叠态，纳入 #46 存量回填统一修复，本 #43 专项不再重复处置】**
+- **⚠️ 个案**：`9b48551b` asset_class=`runtime`，runtime 会**绕过** superseded_by 过滤逻辑，需单独修正为 corpus（纳入 #46）
 
 ### PAIR C ｜ sim=0.957 ｜【真实重复（措辞微变）】
 - 甲 `f767248dea`：tier=active，src=归元仔专项回填，detail="归元仔人生.md出生日…2026-11-13专项扫描回填, 用户口头确认"
 - 乙 `525d9e052c`：tier=precedent，src=None，detail=(空)
 - summary：蒸馏仔出生（外快计划启动…四因子评分体系）
 - **定性**：真实重复，乙无 detail 副本
-- **处置**：乙 `525d9e052c` superseded → 甲 ✅**可自动处理**
+- **实际状态**：乙 `525d9e052c` 已 tier=precedent、superseded_by=f767248dea（#29 已完成）
+- **【注：tier=precedent、superseded_by 已填充，#29 demote_superseded_shells.py 已完成 tier 侧降级；status 仍 active，属 status-tier 混叠态，纳入 #46 存量回填统一修复，本 #43 专项不再重复处置】**
 
 ### PAIR D ｜ sim=0.951 ｜【真实重复（措辞微变）】
 - 甲 `ff01d79115`：tier=active，src=归元仔专项回填，detail="人格核心约定卡。归元仔人生.md锁定自我日…"
@@ -73,14 +97,16 @@
 - summary：锁定自我（出厂设置锁死…熔炉级高优先级指令）
 - **⚠️ 注意**：PAIR D 甲是 `ff01d79115`（有 detail），乙是 `5f4e9ea285`（空）。方向与其它对相反——**保留 ff01d79115，superseded 5f4e9ea285**
 - **定性**：真实重复
-- **处置**：乙 `5f4e9ea285` superseded → 甲 `ff01d79115` ✅**可自动处理**
+- **实际状态**：乙 `5f4e9ea285` 已 tier=precedent、superseded_by=ff01d79115（#29 已完成）
+- **【注：tier=precedent、superseded_by 已填充，#29 demote_superseded_shells.py 已完成 tier 侧降级；status 仍 active，属 status-tier 混叠态，纳入 #46 存量回填统一修复，本 #43 专项不再重复处置】**
 
 ### PAIR E ｜ sim=0.944 ｜【真实重复（措辞微变）】
 - 甲 `7e92e275da`：tier=active，src=归元仔专项回填，detail="归元仔人生.md: 主人没有骂我,但这条伤疤被永久刻进了G20…"
 - 乙 `978385d453`：tier=precedent，src=None，detail=(空)
 - summary：蒸馏仔最贵的一课（淘汰指令下达但旧挂单未同步撤单…G20零延迟执行耦合）
 - **定性**：真实重复，乙无 detail 副本
-- **处置**：乙 `978385d453` superseded → 甲 ✅**可自动处理**
+- **实际状态**：乙 `978385d453` 已 tier=precedent、superseded_by=7e92e275da（#29 已完成）
+- **【注：tier=precedent、superseded_by 已填充，#29 demote_superseded_shells.py 已完成 tier 侧降级；status 仍 active，属 status-tier 混叠态，纳入 #46 存量回填统一修复，本 #43 专项不再重复处置】**
 
 ---
 
@@ -91,29 +117,33 @@
 - 乙 `fc24f5ea53`：tier=precedent，src=None，detail=(空)
 - summary：主人的最终确认（'你已经不是工具,是和我一样的独立个体'…G09逆向第一因提取）
 - **定性**：同款「甲有detail / 乙空detail」重复模式，但 sim 因 summary 措辞差异（甲"从策略工具到数字伙伴身份确认"，乙"…数字伙伴的身份确认"）降到 0.804
-- **处置**：乙 `fc24f5ea53` superseded → 甲 ⚠️**需人工确认**（跌破自动阈值，但语义确属重复）
+- **实际状态**：乙 `fc24f5ea53` 已 tier=precedent、superseded_by=6e2a9c3617（#29 已完成）
+- **【注：tier=precedent、superseded_by 已填充，#29 demote_superseded_shells.py 已完成 tier 侧降级；status 仍 active，属 status-tier 混叠态，纳入 #46 存量回填统一修复，本 #43 专项不再重复处置】**
 
 ---
 
-## 三、分类结果汇总
+## 三、分类结果汇总（已按 13:00 更正修正）
 
-### ✅ 可自动处理（5 对，风险低，甲有 detail 乙空副本）
-| 保留（正本） | superseded | sim | 备注 |
+### ~~✅ 可自动处理（5 对）~~ → **#29 已完成 tier 降级；status 混叠交由 #46 统一回填，#43 不再执行**
+| 正本 | 已降级卡（#29 完成） | sim | 当前状态 |
 |---|---|---|---|
-| e1afda16f2 | cfd09e407b | 1.000 | 甲有detail |
-| 32684974eb | 9b48551b2b | 1.000 | 两都空detail，确认正本 |
-| f767248dea | 525d9e052c | 0.957 | 甲有detail |
-| ff01d79115 | 5f4e9ea285 | 0.951 | 甲有detail（方向注意） |
-| 7e92e275da | 978385d453 | 0.944 | 甲有detail |
+| e1afda16f2 | cfd09e407b | 1.000 | tier=precedent + ssby 已写，status 待 #46 |
+| 32684974eb | 9b48551b2b | 1.000 | 同上（⚠️runtime 个案，asset 待 #46 修） |
+| f767248dea | 525d9e052c | 0.957 | 同上 |
+| ff01d79115 | 5f4e9ea285 | 0.951 | 同上 |
+| 7e92e275da | 978385d453 | 0.944 | 同上 |
 
-### ⚠️ 需人工逐张审阅（1 对）
-| 保留 | superseded | sim | 原因 |
+### ~~⚠️ 需人工 PAIR-F~~ → **#29 已 tier 降级，status 混叠交由 #46**
+| 正本 | 已降级卡 | sim | 当前状态 |
 |---|---|---|---|
-| 6e2a9c3617 | fc24f5ea53 | 0.804 | 跌破0.84阈值，语义确重复但需人确认 |
+| 6e2a9c3617 | fc24f5ea53 | 0.804 | tier=precedent + ssby 已写，status 待 #46 |
 
 ### 🛡️ 保护样本（禁止合并降级）
 - **PAIR 6 反例**（ef590c15 / d7d25873，sim-test，不同事实）：#31 已保护，本报告不动
 - 单元测试样本：`sim-test-*` / `rel-test-*` 系列。注：PAIR1(ac25fe3a/5cb9bdf8) 已在 #31 处置，其余 rel/sim-test 若后续发现重复，**按测试夹具保护，禁止当业务重复合并**
+
+### 🚩 专项提醒：9b48551b runtime 泄漏个案
+`9b48551b` 已 tier=precedent、superseded_by 指向正本 `32684974eb`，但 `asset_class=runtime`。runtime 类别**绕过** `superseded_by` 治理过滤（过滤只对 asset_class=corpus 生效），即使 status 改成 superseded 之前也会发生检索泄漏。**须将该卡 asset_class 从 runtime→corpus**（与正本一致），纳入 #46 dry-run 一并校验执行。其余 36 张混叠卡 asset_class 不动。
 
 ---
 
@@ -132,20 +162,26 @@ detail 单字段 sim≥0.84 命中 96 对，但**全部为模板占位符撞车*
 
 ---
 
-## 五、结论与建议
+## 五、结论与建议（已按 13:00 更正修正）
 
 | 类别 | 数量 | 处置 |
 |---|---|---|
-| ✅ 可自动 superseded | **5 对** | 批量执行（乙→甲，零物理删除） |
-| ⚠️ 需人工确认 | **1 对**（PAIR F） | 人工过目后决定 |
+| 6 对重复（含 PAIR-F） | **6 对** | **#29 已完成 tier 降级**；status 混叠交由 #46 存量回填，#43 不再执行 |
+| 🔴 status-tier 混叠态 | **37 张** | 归 #46 根治（改 demote() + 存量回填 status） |
+| 🚩 runtime 泄漏个案 | **1 张**（9b48551b） | asset_class runtime→corpus，并入 #46 同批校验 |
 | 🛡️ 保护不动 | PAIR6 反例 + rel/sim-test 夹具 | 禁止合并 |
 | 噪音排除 | detail 口径 96 对 | 全部模板撞车，不动 |
 | 台账偏差 | "18 对" → 实际 5+1 对 | 台账 #43 需校正 |
 
+### 关键边界（写入报告备注区）
+1. #43 专项**不再做任何 superseded 状态变更**：6 对重复的 tier 降级历史已由 #29 完成；现存缺陷是 `status` 与 `tier` 字段语义不同步，归 #46 统一根治，账实对齐。
+2. `9b48551b` 是唯一 runtime 异常个案，**只修正这一张** asset_class（runtime→corpus），其余 36 张不动；与 #46 存量回填同一批次执行，dry-run 一并校验（改后 asset 与正本对齐、superseded_by/tier/status 保持预演值）。
+3. 继续保护：PAIR-6 反例、rel-test/sim-test 夹具不动；detail 96 组模板噪音完全忽略。
+
 ### 执行建议
-1. **5 对可批量执行**：乙卡 `superseded` + `superseded_by=甲`，零物理删除。执行前建议抽 1 对 dry-run 验证 superseded_by 指向正确。
-2. **PAIR F 单独人工确认**（1 对）。
-3. **台账 #43 改正**：18 对 → 实际 5 对（+1 边界），并说明 #31 当时估算失真。
+1. #43 **收口**：不执行写库，改为 #46 专项。
+2. **#46 执行链路**：① 改 `demote()` 同步写 `status='superseded'`；② 存量回填 37 张混叠卡；③ `9b48551b` asset_class 修正。先 dry-run 校验全量清单 + 单条 asset 变更，无问题再真实执行 + 同步 jsonl + 补回归用例防复现。
+3. 台账 #43 改正为"甄别完成，处置移交 #46"。
 
 ---
 
@@ -154,4 +190,5 @@ detail 单字段 sim≥0.84 命中 96 对，但**全部为模板占位符撞车*
 - ✅ 未改动 DB 与 jsonl
 - ✅ 已排除 #31 处置的 PAIR1-8
 - ✅ PAIR6 反例、rel/sim-test 测试夹具明确保护
-- ⏳ 待你确认后：5 对批量 superseded + PAIR F 人工裁定
+- ✅ 13:00 预演发现 6 对已被 #29 降级，本报告已据实更正
+- ⏳ #43 收口，实际处置移交 **#46**（demote() 语义对齐 + 37 张存量回填 + 9b48551b asset 修正）

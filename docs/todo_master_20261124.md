@@ -12,8 +12,8 @@
 
 > **发号规则**：新增待办先在此登记取号，再写入对应分组。一经分配不复用。
 
-- **已用最大号**：#45（含 #43 新重复专项/#44 detail护栏/#45 watchlist余2条）
-- **下一个可用号**：#46
+- **已用最大号**：#46（含 #43 新重复专项/#44 detail护栏/#45 watchlist余2条/#46 demote语义对齐）
+- **下一个可用号**：#47
 - **断号说明**：
   - #32 未使用（保留不复用，历史重编遗留）
   - #1~#4 / #6 / #9 早期立项重编时废弃（无存活条目）
@@ -37,7 +37,8 @@
 |---|---|---|---|
 | **F30** | F系推演层正向演化（F00锚定→K条分支发散→推进到T） | ⏸ **未编码**，F系 F20✅/F40✅ 中间断档 | `docs/formula_future_sim_v2_1.md` |
 | **#8 / F60** | forward_check 第二环深度正演（第一环 n-gram 字面已实装，第二环待立项，名义闭环实质只验字面） | ⏸ 待立项 | 台账:228 |
-| **#43** | 候选重复卡专项。**2026-11-24 甄别完成**（`dryrun_43_dup_candidate_20261124.md`）：台账记"18 对"实为 #31 估算失真，real 重扫 summary 口径 sim≥0.84 **实际仅 5 对**（+1 对边界 0.804）。5 对属"甲有detail active / 乙空detail precedent"同款重复，可批量 superseded；PAIR F(6e2a9c36/fc24f5ea53) 需人工确认。detail 口径 96 对全为模板占位符撞车(噪音)。专利族/紫光三副本实测 sim 仅 0.26~0.45 非重复 | 🟡 甄别完成，5对待批量+1对人工 | 本次甄别 |
+| **#43** | 候选重复卡专项。**2026-11-24 甄别完成**（`dryrun_43_dup_candidate_20261124.md`）：台账记"18 对"为 #31 估算失真；summary 口径 sim≥0.84 实际 **5 对 + 1 对边界(0.804)**。**6 对全部已由 #29 于 2026-11-23 完成 tier=precedent 降级、superseded_by 已赋值**，仅 status 仍 active（属 status-tier 混叠态）；#43 **不再重复执行降级**，混叠统一交 **#46** 存量回填。个案 `9b48551b`(runtime) asset_class 异常需单独修正为 corpus（并入 #46）。detail 口径 96 对全模板占位符噪音，不动 | 🟡 甄别完成，处置移交 #46 | 本次甄别 |
+| **#46** | demote() 语义对齐：①改 `memory_organize.demote()`，调用时同步更新 `status='superseded'` + `tier='precedent'`（根治 37 张混叠态成因）；②存量回填 **37 张** `status=active & tier=precedent & superseded_by NOT NULL` 混叠卡（status→superseded）；③个案 `9b48551b` asset_class `runtime→corpus` 修正（runtime 绕过 superseded_by 过滤会泄漏）。零物理删除；回填后同步 memories.jsonl；新增回归用例防复现混叠态。执行前 dry-run 校验全量清单 | 🔲 待办 | 本次 #43 预演发现 |
 | **#16** | topic_layer 决断（开启 or 删除）：556 行默认关闭悬空资产 | 📋 待裁决 | 台账:230 |
 | **#13** | 记忆卡版本链 + diff | ⏸ 暂缓但**前置已解除可评估** | 台账:231 |
 | **#15** | 桩—LLM 判定一致性对照回归 | 📋 待裁决 | 台账:229 |
