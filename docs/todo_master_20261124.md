@@ -27,7 +27,7 @@
 
 | 编号 | 事项 | 状态 | 出处 |
 |---|---|---|---|
-| **#30** | 根治入库三道闸（全貌）：P0 summary 语义查重 / P1 derived 不再清 detail / P2 跨池弱匹配告警 / P3 E4 指标兜底 | 📋 待立项走七段。**#33 已落地路径 B（green_card_writer），路径 A（atomic_store 主流程）未做** | 台账:224 |
+| **#30** | 根治入库三道闸（全貌）。**2026-11-24 已切 on 收尾**（`exec_30_switch_on_20261124.md`）：此前台账「待立项」严重过时——实际 P0/P1/P2/P3 四道闸 git commit-1~6 全部落地（`0edbf79/5b9ae9a/ec297df/a9d4514/a255b68/79d1e40`），段一~段六评审 + 段七第一阶段 dry-run 已完成。四道闸：P0 语义查重(`_p0_equiv_check`) / P1 derived 保留 detail / P2 跨池告警(`_cross_pool_warn`) / P3 E4 三指标。切 on 依据：影子重放 n=280 中 8/280 真同义零假阳 + 6 类对抗梯度全过 + dry-run 26/32 would_skip。`setx DF_SUMMARY_EQUIV_DEDUPE on` 已生效（注册表=on，新进程 MODE=on，阈值 0.95），on 实弹 3/3 正确（真重复拦/无关不拦/同主题不同事实不拦），回退秒级（`setx ... dry-run/off`）。回归全过。备份 `.bak_30on_20261124_142258` | ✅ 完成(切 on 上线) | 台账:224 + exec_30_switch_on |
 | **#24** | Summary 推理核对表 Q3：改"信息保真"审视（方法论/元认知产出是否被引用进 final_answer） | 📋 待立项（待 #23） | 台账:218 |
 | **#25** | 主链 Prompt 合并 P-A：13 次调用→4-5 次 | 📋 待立项（放 Q1 分流后做） | 台账:219 |
 
