@@ -27,7 +27,7 @@
 
 | 编号 | 事项 | 状态 | 出处 |
 |---|---|---|---|
-| **#30** | 根治入库三道闸（全貌）。**2026-11-24 已切 on 收尾**（`exec_30_switch_on_20261124.md`）：此前台账「待立项」严重过时——实际 P0/P1/P2/P3 四道闸 git commit-1~6 全部落地（`0edbf79/5b9ae9a/ec297df/a9d4514/a255b68/79d1e40`），段一~段六评审 + 段七第一阶段 dry-run 已完成。四道闸：P0 语义查重(`_p0_equiv_check`) / P1 derived 保留 detail / P2 跨池告警(`_cross_pool_warn`) / P3 E4 三指标。切 on 依据：影子重放 n=280 中 8/280 真同义零假阳 + 6 类对抗梯度全过 + dry-run 26/32 would_skip。`setx DF_SUMMARY_EQUIV_DEDUPE on` 已生效（注册表=on，新进程 MODE=on，阈值 0.95），on 实弹 3/3 正确（真重复拦/无关不拦/同主题不同事实不拦），回退秒级（`setx ... dry-run/off`）。回归全过。备份 `.bak_30on_20261124_142258` | ✅ 完成(切 on 上线) | 台账:224 + exec_30_switch_on |
+| **#30** | 根治入库三道闸（全貌）。**2026-11-24 编码全部完成；两道安全观测护栏已就位；维持 dry-run 预热观测，暂不切 on**。四道闸 P0 语义查重(`_p0_equiv_check`) / P1 derived 保留 detail / P2 跨池告警(`_cross_pool_warn`) / P3 E4 三指标，git commit-1~6 全落地（`0edbf79/5b9ae9a/ec297df/a9d4514/a255b68/79d1e40`）+ 段一~段六评审 + 段七第一阶段 dry-run 完成。**门槛改口径**（`26fc60b`）：语义阈值 0.95 不动（sim 双峰空带），clean_skip_equiv≥8 降为运营参考、非硬门槛，技术门槛改多证据综合。**两道护栏**（`9720375`）：①拦截全量留痕 `equiv_intercepts.jsonl`（dry-run/on 均写完整 summary/detail/source_ref，误拦可捞出重入库）；②E4 nightly 增量告警（前20条明细+sim 提示人工复核，超20退化计数，水位 `equiv_intercepts_seen.json`）。回归全套 80 PASS/0 FAIL。**当前开关 `DF_SUMMARY_EQUIV_DEDUPE=dry-run`（不切 on）**——待真实业务样本累积后执行段七综合评估再判定切 on。观测口径：①`equiv_intercepts.jsonl` 真命中样例 ②`audit30_phase7_check.py` 新口径报告。**情况A**（真实命中全真同义零误命中）→ 走段七评估再议切on；**情况B**（出现分布外高相似误命中）→ 维持 dry-run，样本纳入对抗集。文档 `rollout_30_phase7_stage1_20261123.md` §3.5 | 🟡 编码完成+护栏就位，dry-run 预热观测中，待段七评估 | 台账:224 + exec_30_switch_on + rollout §3.5 |
 | **#24** | Summary 推理核对表 Q3：改"信息保真"审视（方法论/元认知产出是否被引用进 final_answer） | 📋 待立项（待 #23） | 台账:218 |
 | **#25** | 主链 Prompt 合并 P-A：13 次调用→4-5 次 | 📋 待立项（放 Q1 分流后做） | 台账:219 |
 
