@@ -52,6 +52,9 @@ CONFIG = {
     "anchor_query": "记忆入库断档事故",          # F00 锚定检索(链头 10764d3b)
     "goal_prefix": "a65a500c",                   # 目标G(F系实现待办, 链尾)
     "truth_topic": "topic_memory_ops",          # 真值链所在簇
+    # F30 正向演化(design_F30_fwd_evolution.md 2026-11-24): 叠加层, 默认开; 回滚=置 False
+    "enable_f30": True,          # F20 排序后调用 F30 推进 top-K 分支到终态
+    "f30_enable_llm_epilog": False,  # LLM 终态叙述开关(默认关, 关闭结构化结果完整)
 }
 
 
@@ -364,6 +367,20 @@ def main():
     _scored.sort(key=lambda x: (-x["weight"], x["to"] or ""))
     branches = _scored[:CONFIG["K"]]
     all_branches = _scored
+    # F30 正向演化(叠加层; CONFIG.enable_f30=False 回滚): F20 排序后的 top-K 分支
+    # 各自独立推进到终态 S_T^(k)。纯确定性图推进, LLM 只做可选终态叙述(默认关)。
+    f30_result = None
+    if CONFIG.get("enable_f30", True):
+        import f30_forward as f30
+        _con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=5)
+        _con.row_factory = sqlite3.Row
+        try:
+            f30_result = f30.f30_forward(
+                branches, profile=_profile, max_steps=CONFIG["max_steps"],
+                prune_w=CONFIG["branch_prune_w"], con=_con,
+                enable_llm_epilog=CONFIG.get("f30_enable_llm_epilog", False))
+        finally:
+            _con.close()
     # F40
     path, note = f40_backward(CONFIG["goal_prefix"], [c["inst_id"] for c in snapshot["anchor_cards"][:1]])
     # 纪律③: 失败归因四枚举(与权重并行)——失败时必打标签, 成功链也记录归因=空
@@ -392,6 +409,23 @@ def main():
                   f"C={fac.get('C_conf')} F={fac.get('F_fresh')} D={fac.get('D_density')} "
                   f"| {b['to_summary'][:40]}")
     md.append("")
+    # F30 正向演化报告段
+    if f30_result is not None:
+        md.append("## F30 正向演化(确定性图推进)")
+        _fm = f30_result["f30_meta"]
+        md.append(f"- profile={_fm['profile']} max_steps={_fm['max_steps']} "
+                  f"prune_w={_fm['prune_w']} LLM叙述={'开' if _fm['enable_llm_epilog'] else '关'}")
+        md.append(f"- 到达T {f30_result['n_reached_T']} / 冻结 {f30_result['n_frozen']} "
+                  f"/ 淘汰 {f30_result['n_discarded']} / 死亡 {f30_result['n_dead']}"
+                  + (f" | 汇聚点 {[_short(x) for x in f30_result['convergence_points']]}"
+                     if f30_result['convergence_points'] else ""))
+        for br in f30_result["branches"]:
+            md.append(f"  - 分支#{br['k']} 起点{_short(br['start'])} → 终态{_short((br['S_T'] or {}).get('inst_id'))} "
+                      f"state={br['state']}({br['stop_reason']}) {br['n_steps']}步 "
+                      f"路径: " + " → ".join(_short(p['to']) for p in br['path']))
+            if br.get("llm_epilog"):
+                md.append(f"      [LLM情景] {str(br['llm_epilog'])[:80]}")
+        md.append("")
     md.append("## F40 逆向回溯")
     if path is None:
         md.append(f"- **失败**: {note}")
@@ -420,6 +454,10 @@ def main():
     snapshot["f20_meta"] = {"beta_profile": _profile,
                             "failure_attr": failure_attr,
                             "top_k_factors": [b.get("f20_factors") for b in branches]}
+    if f30_result is not None:
+        snapshot["f30_meta"] = f30_result["f30_meta"]
+        snapshot["f30_branches"] = f30_result["branches"]
+        snapshot["f30_convergence_points"] = f30_result["convergence_points"]
     with io.open(OUT_SNAP, "w", encoding="utf-8") as f:
         json.dump(snapshot, f, ensure_ascii=False, indent=1)
     md.append("记忆红线: 本链路只读, 未新增卡/主题/范式; 快照与报告为唯一落盘物")
