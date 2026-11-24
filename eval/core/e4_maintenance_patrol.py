@@ -316,6 +316,49 @@ def patrol(as_of=None):
     except Exception as e:
         report["items"]["quality_gate_error"] = str(e)
 
+    # 10d. #30 护栏2（2026-11-24）：语义等价拦截全量留痕的增量告警。
+    #   数据源 = data/memory/equiv_intercepts.jsonl（dry-run would_skip 与 on 真 skip 均写，见 memory_organize）。
+    #   目的：解决"无声吞卡"黑盒——误拦不可感知。增量语义：与上次巡检已读条数比对，只看新增。
+    #   前 EQUIV_ALERT_DETAIL 条新增加完整摘要+sim 提示人工抽检；超过后退化为计数统计。
+    #   状态文件 logs/equiv_intercepts_seen.json 记录上次已读条数，避免每轮刷屏。
+    try:
+        _ei_path = os.path.join(getattr(mo, "MEM_DIR", os.path.join(HERE, "data", "memory")),
+                                "equiv_intercepts.jsonl")
+        _ei_rows = _load_jsonl(_ei_path) if os.path.exists(_ei_path) else []
+        _ei_total = len(_ei_rows)
+        _seen_path = os.path.join(HERE, "logs", "equiv_intercepts_seen.json")
+        _seen = 0
+        try:
+            if os.path.exists(_seen_path):
+                with io.open(_seen_path, encoding="utf-8") as _f:
+                    _seen = int(json.load(_f).get("seen", 0))
+        except Exception:
+            _seen = 0
+        _new = _ei_rows[_seen:] if _ei_total >= _seen else _ei_rows   # 日志被轮转/清空时兜底全读
+        report["items"]["equiv_intercepts_total"] = _ei_total
+        report["items"]["equiv_intercepts_new"] = len(_new)
+        EQUIV_ALERT_DETAIL = 20
+        if _new:
+            report["alerts"].append(
+                f"[equiv-intercept] 语义等价拦截新增 {len(_new)} 条（累计 {_ei_total}）——"
+                f"请人工抽检是否误拦，误拦可从 equiv_intercepts.jsonl 捞出完整内容重入库")
+            for r in _new[:EQUIV_ALERT_DETAIL]:
+                report["alerts"].append(
+                    f"  被拦 mode={r.get('mode')} sim={r.get('best_sim')} origin={r.get('origin')} | "
+                    f"{(r.get('summary') or '')[:60]}")
+            if len(_new) > EQUIV_ALERT_DETAIL:
+                report["alerts"].append(
+                    f"  …其余 {len(_new) - EQUIV_ALERT_DETAIL} 条见 equiv_intercepts.jsonl（已退化计数）")
+        # 无论有无新增都推进 seen 水位到当前总数
+        try:
+            os.makedirs(os.path.dirname(_seen_path), exist_ok=True)
+            with io.open(_seen_path, "w", encoding="utf-8") as _f:
+                json.dump({"seen": _ei_total, "ts": now.isoformat()}, _f, ensure_ascii=False)
+        except Exception:
+            pass
+    except Exception as e:
+        report["items"]["equiv_intercepts_error"] = str(e)
+
     # 11. 记忆系统健康度聚合（#20 可观测性）：从既有 jsonl 聚合业务效果指标，
     #     只读统计、不改任何规则。输出到 report["health"] 供晨报人读+趋势追踪。
     try:
@@ -374,9 +417,17 @@ def _memory_health(mems):
     simhash_bearing = sum(1 for r in gate_rows if r.get("simhash"))
 
     # — #30 P3（2026-11-23）：P0/P2 运行效果观测三指标 —
-    # skip_equiv_count: P0 语义查重拦截数（op=skip_equivalent_derived / p0_equiv_dry）
-    # cross_pool_warn:  P2 跨池疑似等价告警数（op=warn_corpus_runtime_equivalent）
-    skip_equiv_count = op_cnt.get("skip_equivalent_derived", 0) + op_cnt.get("p0_equiv_dry", 0)
+    # #10/#11（2026-11-24）口径修复：区分 raw（原始全量）与 clean（真实业务有效）。
+    # raw_skip_equiv_count: 原始全部计数（兼容旧日志回看）。
+    # clean_skip_equiv_count: 仅 would_skip=true AND origin=business 的真实业务有效命中，
+    #   作为切 on 评估依据。存量 29 条 re-ingest 污染已标 origin=script-reingest 被排除。
+    #   origin 缺省（旧日志无该字段）视为 business（历史真实业务，保守计入 clean）。
+    raw_skip_equiv_count = op_cnt.get("skip_equivalent_derived", 0) + op_cnt.get("p0_equiv_dry", 0)
+    _p0_rows = [r for r in gate_rows
+                if r.get("op") in ("skip_equivalent_derived", "p0_equiv_dry")]
+    clean_skip_equiv_count = sum(
+        1 for r in _p0_rows
+        if r.get("would_skip") is True and r.get("origin", "business") == "business")
     cross_pool_warn = op_cnt.get("warn_corpus_runtime_equivalent", 0)
     # active_same_summary_multi: active 卡 summary 近似(embedding≥0.95)的多卡组数
     # 依赖 embed_semantic，失败降级为 None（不阻断巡检）
@@ -470,7 +521,9 @@ def _memory_health(mems):
         },
         "dedup": {"store_pending_total": len(sp), "hold_reason_dist": dict(hold_reasons),
                   "gate_dedup_hits": dedup_hits, "simhash_bearing": simhash_bearing,
-                  "skip_equiv_count": skip_equiv_count,
+                  "skip_equiv_count": raw_skip_equiv_count,   # 兼容旧字段名=raw
+                  "raw_skip_equiv_count": raw_skip_equiv_count,
+                  "clean_skip_equiv_count": clean_skip_equiv_count,
                   "active_same_summary_multi": active_same_summary_multi},
         "archive": {"hold_aged": len(aged), "max_hold_age_days": max_age,
                     "over14d": over14, "mem_total": _total_mem,

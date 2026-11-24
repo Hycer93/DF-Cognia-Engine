@@ -155,7 +155,8 @@ def _get_pool_matrix(pool: list) -> tuple:
     return mat, ids
 
 
-def _p0_equiv_check(summary: str, pool: list, origin: str = "business") -> tuple:
+def _p0_equiv_check(summary: str, pool: list, origin: str = "business",
+                    detail: str = "", source_ref: str = "") -> tuple:
     """#30 P0 语义等价查重。返回 (verdict, best_inst_id, best_sim, elapsed_ms)。
 
     verdict: 'pass'(放行) | 'skip'(语义等价, 应拦截)
@@ -164,6 +165,9 @@ def _p0_equiv_check(summary: str, pool: list, origin: str = "business") -> tuple
     - origin（#10 2026-11-24）：来源标记，'business'=真实会话流入 h-channel；
       'script-reingest'=脚本对存量卡重新入库/回放。写入 p0_equiv_dry 供统计过滤，
       避免 re-ingest 虚增 clean_skip_equiv_count。
+    - #30 护栏1（2026-11-24）：命中等价时（dry-run 的 would_skip 与 on 的真 skip 均算），
+      把**完整未截断**的 summary/detail/source_ref 追加写入 equiv_intercepts.jsonl，
+      对齐 replica_intercepts.jsonl。防误拦丢内容不可捞回——拦截有据可查、可人工重入库。
     """
     import time as _t
     t0 = _t.perf_counter()
@@ -184,6 +188,22 @@ def _p0_equiv_check(summary: str, pool: list, origin: str = "business") -> tuple
     if elapsed > SUMMARY_EQUIV_SLOW_MS:
         _log_p0("p0_slow", {"elapsed_ms": round(elapsed, 2), "pool_size": len(pool)})
     hit = best >= SUMMARY_EQUIV_THRESHOLD
+    # #30 护栏1：命中即全量留痕（dry-run / on 均写，影子模式也留痕迹）
+    # 路径跟随 MEM_DIR（与 _log_p0 一致，便于测试隔离重定向）
+    if hit:
+        try:
+            append_jsonl(os.path.join(MEM_DIR, "equiv_intercepts.jsonl"), {
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                "mode": SUMMARY_EQUIV_MODE,                 # dry-run | on
+                "summary": summary,                          # 完整未截断
+                "detail": detail,
+                "source_ref": source_ref,
+                "best_inst_id": bid,
+                "best_sim": round(best, 4),
+                "origin": origin,
+            })
+        except OSError as e:
+            print(f"[equiv_intercept_log_fail] {type(e).__name__}: {e}", file=sys.stderr)
     if SUMMARY_EQUIV_MODE == "dry-run":
         _log_p0("p0_equiv_dry", {
             "new_summary": summary[:120], "best_inst_id": bid,
@@ -256,7 +276,8 @@ def atomic_store(
     if SUMMARY_EQUIV_MODE != "off":
         _pool = load_active_pool()
         if _pool:
-            _verdict, _bid, _bsim, _el = _p0_equiv_check(summary, _pool, origin=origin)
+            _verdict, _bid, _bsim, _el = _p0_equiv_check(
+                summary, _pool, origin=origin, detail=detail, source_ref=source_ref)
             if _verdict == "skip":
                 return "replica", f"语义等价拦截: {(_bid or '')[:8]} sim={_bsim:.3f}"
 

@@ -186,10 +186,97 @@ check("用例9a: on 态命中真拦(replica)", st9 == "replica" and "语义等�
 check("用例9b: on 态 DB 无新行", cnt_after == cnt_before, f"before={cnt_before} after={cnt_after}")
 check("用例9c: on 态写 skip_equivalent_derived", "skip_equivalent_derived" in ops9, f"ops={ops9}")
 
+# ===== 用例10: origin 字段打标（#10 2026-11-24 口径修复）=====
+# 10a: 默认 origin=business
+mo = reload_mode("dry-run")
+if os.path.exists(gp):
+    os.remove(gp)
+_pool_sum = con.execute("SELECT summary FROM core_memory_card LIMIT 1").fetchone()["summary"]
+mo.atomic_store(_pool_sum + "微调v4biz", "d", "biz-src",
+    {"domain": "005-001", "behavior": "Ht", "relation": "H", "confidence": "L1"})
+_dry_biz = [json.loads(l) for l in open(gp, encoding="utf-8")
+            if l.strip() and json.loads(l)["op"] == "p0_equiv_dry"] if os.path.exists(gp) else []
+check("用例10a: 默认 origin=business",
+      bool(_dry_biz) and _dry_biz[0].get("origin") == "business",
+      f"rec={_dry_biz[:1]}")
+
+# 10b: 显式 origin=script-reingest 透传打标
+if os.path.exists(gp):
+    os.remove(gp)
+mo.atomic_store(_pool_sum + "微调v4scr", "d", "scr-src",
+    {"domain": "005-001", "behavior": "Ht", "relation": "H", "confidence": "L1"},
+    origin="script-reingest")
+_dry_scr = [json.loads(l) for l in open(gp, encoding="utf-8")
+            if l.strip() and json.loads(l)["op"] == "p0_equiv_dry"] if os.path.exists(gp) else []
+check("用例10b: 显式 origin=script-reingest 透传",
+      bool(_dry_scr) and _dry_scr[0].get("origin") == "script-reingest",
+      f"rec={_dry_scr[:1]}")
+
+# ===== 用例11: clean/raw 统计过滤（#11 2026-11-24）=====
+# 构造混合日志：2条 business would_skip=true + 1条 script-reingest would_skip=true + 1条 business would_skip=false
+_mixed = [
+    {"op": "p0_equiv_dry", "would_skip": True,  "origin": "business"},
+    {"op": "p0_equiv_dry", "would_skip": True,  "origin": "business"},
+    {"op": "p0_equiv_dry", "would_skip": True,  "origin": "script-reingest"},
+    {"op": "p0_equiv_dry", "would_skip": False, "origin": "business"},
+    {"op": "skip_equivalent_derived", "would_skip": True, "origin": "business"},  # 旧on态无would_skip字段,这条有
+]
+_raw = len(_mixed)
+_clean = sum(1 for r in _mixed
+             if r.get("would_skip") is True and r.get("origin", "business") == "business")
+check("用例11a: raw 统计=全部P0记录", _raw == 5, f"raw={_raw}")
+check("用例11b: clean 仅计 would_skip=true AND business", _clean == 3, f"clean={_clean}")
+# 旧日志无 origin 字段 → 保守视为 business
+_legacy = [{"op": "p0_equiv_dry", "would_skip": True}]  # 无origin
+_clean_legacy = sum(1 for r in _legacy
+                    if r.get("would_skip") is True and r.get("origin", "business") == "business")
+check("用例11c: 旧日志无origin视为business(保守计入clean)", _clean_legacy == 1, f"clean={_clean_legacy}")
+
 # ===== 阈值静态断言 =====
 import memory_organize as _mo
 check("静态断言: SUMMARY_EQUIV_THRESHOLD == 0.95", _mo.SUMMARY_EQUIV_THRESHOLD == 0.95,
       str(_mo.SUMMARY_EQUIV_THRESHOLD))
+
+# ===== 用例12: 护栏1 equiv_intercepts 全量留痕（#30 2026-11-24 dry-run/on 均写）=====
+_eq_path = os.path.join(tmpdir, "equiv_intercepts.jsonl")
+# 12a: dry-run 模式命中也写
+mo = reload_mode("dry-run")
+if os.path.exists(_eq_path):
+    os.remove(_eq_path)
+_pool_sum = con.execute("SELECT summary FROM core_memory_card LIMIT 1").fetchone()["summary"]
+_full_detail = "完整未截断的detail内容-用于护栏验证-不应被截断"
+_full_src = "guard-src-full-ref"
+mo.atomic_store(_pool_sum + "微调guard-dry", _full_detail, _full_src,
+    {"domain": "005-001", "behavior": "Ht", "relation": "H", "confidence": "L1"})
+_eq_dry = [json.loads(l) for l in open(_eq_path, encoding="utf-8") if l.strip()] if os.path.exists(_eq_path) else []
+check("用例12a: dry-run 命中写 equiv_intercepts(1条)",
+      len(_eq_dry) == 1, f"n={len(_eq_dry)}")
+check("用例12b: dry-run 拦截日志含完整未截断 detail/source_ref/mode",
+      bool(_eq_dry) and _eq_dry[0].get("detail") == _full_detail
+      and _eq_dry[0].get("source_ref") == _full_src
+      and _eq_dry[0].get("mode") == "dry-run"
+      and _eq_dry[0].get("best_sim", 0) >= 0.95,
+      f"rec={_eq_dry[:1]}")
+
+# 12c: on 模式命中也写
+mo = reload_mode("on")
+if os.path.exists(_eq_path):
+    os.remove(_eq_path)
+mo.atomic_store(_pool_sum + "微调guard-on", _full_detail + "-on", "guard-src-on",
+    {"domain": "005-001", "behavior": "Ht", "relation": "H", "confidence": "L1"})
+_eq_on = [json.loads(l) for l in open(_eq_path, encoding="utf-8") if l.strip()] if os.path.exists(_eq_path) else []
+check("用例12c: on 命中写 equiv_intercepts 且 mode=on",
+      len(_eq_on) == 1 and _eq_on[0].get("mode") == "on"
+      and _eq_on[0].get("detail") == _full_detail + "-on",
+      f"rec={_eq_on[:1]}")
+
+# 12d: 未命中(低相似)不写日志
+if os.path.exists(_eq_path):
+    os.remove(_eq_path)
+mo.atomic_store("完全无关的全新内容：今天天气晴朗适合散步购物看电影", "无关detail", "no-match-src",
+    {"domain": "005-001", "behavior": "Ht", "relation": "H", "confidence": "L1"})
+_eq_nomatch = [json.loads(l) for l in open(_eq_path, encoding="utf-8") if l.strip()] if os.path.exists(_eq_path) else []
+check("用例12d: 未命中(低相似)不写 equiv_intercepts", len(_eq_nomatch) == 0, f"n={len(_eq_nomatch)}")
 
 con.close()
 shutil.rmtree(tmpdir, ignore_errors=True)

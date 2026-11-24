@@ -108,6 +108,29 @@ INHERIT=dry-run
 
 ---
 
+## 3.5 两道安全护栏（2026-11-24 补，切 on 前置条件）
+
+> 背景：shadow n=280 对抗验证零假阳，但**离线快照 ≠ 线上活分布**。业务新模式（新专利族/新领域组合/跨域拼接）是分布外样本，离线永远验不了。切 on 后一旦误拦，原实现**丢弃 detail/source_ref 且无告警**（不可逆 + 无感知）。故补两道纯观测护栏，把风险降到「可捞回 + 会告警」——**不改核心判定逻辑、阈值、拦截路径**，dry-run 阶段即生效预热。
+
+### 护栏1：语义拦截全量留痕（兜底生命线）
+- **文件**：`memory/memory_organize.py` `_p0_equiv_check`
+- **机制**：语义命中（dry-run 的 `would_skip` 与 on 的真 `skip` **均算**）时，把**完整未截断**的 `summary/detail/source_ref/best_inst_id/best_sim/origin/ts/mode` 追加写入 `data/memory/equiv_intercepts.jsonl`，格式对齐 `replica_intercepts.jsonl`。
+- **价值**：误拦的内容可从此文件捞出重入库，**从不可逆变可捞回**。
+- **路径跟随 `MEM_DIR`**（与 `_log_p0` 一致，便于测试隔离）。
+
+### 护栏2：拦截增量告警（消除无声吞卡黑盒）
+- **文件**：`eval/core/e4_maintenance_patrol.py` patrol 第 10d 段
+- **机制**：统计 `equiv_intercepts.jsonl` 新增条目（与 `logs/equiv_intercepts_seen.json` 水位比对，只看增量）。前 **20 条**新增输出完整摘要+sim+mode+origin 提示人工抽检；超过 20 条退化为计数统计。水位每轮推进到当前总数，避免刷屏。
+- **items 新增**：`equiv_intercepts_total` / `equiv_intercepts_new`。
+- **价值**：误拦发生后主动告知，**从无感知变会告警**，无需人工翻 gate_log。
+
+### 回归
+- `eval/audit/e30_p0_regression.py` 新增用例 12（12a dry-run 写日志 / 12b 完整未截断字段 / 12c on 写日志 / 12d 未命中不写）。
+- 全套回归：e30_p0 21 + e30_p2_p3 13 + e30_smoke 7 + e46 10 + e44 16 + e7 13 = **80 PASS / 0 FAIL**。
+- **当前开关维持 `DF_SUMMARY_EQUIV_DEDUPE=dry-run`，不切 on**——护栏先就位预热，再走段七评估。
+
+---
+
 ## 4.1 调度决策（2026-11-23 15:10 用户裁决）
 
 **决策：等待自然调度 18:05 `CGV3_Nightly_1805` 执行，不手动触发全量 nightly。**
