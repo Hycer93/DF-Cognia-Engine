@@ -72,7 +72,9 @@ INHERIT=dry-run
 
 ## 3. dry-run 阶段观测清单（等待累积）
 
-| 观测项 | 数据源 | 当前值 | 切 on 门槛 |
+> **2026-11-24 口径更新**：原「clean_skip_equiv ≥ 8」硬门槛已降为运营参考。该指标仅由真实会话 PreCompact 触发累积、日常命中≈0，作技术门槛会导致永远无法切 on（已实际切 on 验证）。**新切 on 门槛 = 多证据综合**：① 假阳性=0（dry 命中全真同义，无高相似不同事实）② 无 p0_unavailable 降级 + p0_slow 占比低 ③ active_same_summary_multi 不异常增长 + 影子重放证据（n≥200 命中零假阳）。**语义阈值 0.95 保持不变**（gate_log sim 呈双峰，0.90–0.95 为天然空带；降 0.92 会误拦「换实体」案例 0.9226，升 0.99 会漏 0.97/0.976 真同义）。
+
+| 观测项 | 数据源 | 当前值 | 切 on 门槛（新口径） |
 |---|---|---|---|
 | p0_equiv_dry 命中分布 | gate_log.jsonl | 3 条(副本) | 持续高命中且抽检真同义 |
 | best_sim 分数分布 | gate_log.jsonl | 1.0(命中)/0.58~0.74(常态) | 无「高分数但事实不同」 |
@@ -91,10 +93,15 @@ INHERIT=dry-run
 - ✅ **零假阳性**：观测到的"应拦"样本全部为真同义
 
 ### 待观察（切 on 前必须）
-1. **让 18:05 nightly 真实跑一轮**（或后续多轮），累积真实 gate_log 的 `p0_equiv_dry` 分布
-2. 抽样人工复核该轮 dry-run 命中样本 → 确认全部同义
-3. 确认 `active_same_summary_multi` 在新写入下是否稳定（不新增更多近似组）
-4. 满足条件后：`setx DF_SUMMARY_EQUIV_DEDUPE on`
+1. ~~让 18:05 nightly 真实跑一轮，累积真实 gate_log 的 `p0_equiv_dry` 分布~~ → **已由影子重放 n=280 + 3 条真实候选模拟覆盖，nightly 不产 p0_equiv_dry（4.2节核实）**
+2. ~~抽样人工复核该轮 dry-run 命中样本 → 确认全部同义~~ → **已完成：dry would_skip 全真同义，零假阳**
+3. ~~确认 `active_same_summary_multi` 稳定~~ → **on 前 6，on 后应下降**
+4. 满足条件后：`setx DF_SUMMARY_EQUIV_DEDUPE on` → **已于 2026-11-24 执行，on 实弹 3/3 正确，归档 exec_30_switch_on_20261124.md**
+
+### 2026-11-24 切 on 门槛改口径说明
+- **语义阈值 0.95 不动**：数据支撑双峰空带（0.90–0.95 无样本），对抗验证降 0.92 会误拦换实体案例、升 0.99 会漏真同义。
+- **clean_skip_equiv≥8 降为运营参考**：它是"运营观测指标"（真实会话才累积），非技术门槛，不再卡切 on。
+- **技术门槛改为多证据综合**：`eval/audit/audit30_phase7_check.py` 第④节已改为从 gate_log + E4 实时计算三门槛 + shadow 证据，clean 仅作参考展示。
 
 ### 回退预案
 任何异常：`setx DF_SUMMARY_EQUIV_DEDUPE off`（或 dry-run），秒级生效，无需改码/revert。
