@@ -62,10 +62,10 @@
 
 | 编号 | 事项 | 状态 | 出处 |
 |---|---|---|---|
-| **#34** | memory_class 分类回填收尾（26条 ok 后仍剩 pending 候选待 LLM 裁定 + 冲突待人工裁决） | 🟡 部分完成 | `audit_memory_chain:29-33` |
+| **#34** | memory_class 分类回填收尾。**2026-11-24 盘点完成**（`dryrun_34_memory_class_20261124.md`）：pending 167条不全是待办，对账后仅 **64 条需动作** = 36 真待回填（可 LLM 批量）/ 3 真冲突（1ae1bf0a、7dc9e36d、9b865e07）/ 25 无提案（21 active 清单已列）。另有 57 已回填 + 69 提案None但DB已分类（不动）。原记 42 条过时 | 🟡 盘点完成，待执行 | `audit_memory_chain:29-33` + dryrun_34 |
 | **#44** | detail<30字写入校验护栏（自 #36 watchlist w-949ef95d 拆出：detail 为空或<30字时警告/拒收，防占位符再发） | 🔲 待办 | 本次 #36 拆出 |
 | **#45** | watchlist 余 2 条继续跟踪：w-949ef95d3b54(33条detail瘦身,未达K=3)、w-52e4c6ddc6b3(EEA架构考古,待找全称) | ⏳ 观察中 | 本次 #36 裁决 |
-| **#37** | event_ts 空值 39 条分批回填 | 🔲 最低优先级 | `audit_memory_chain:§5` |
+| **#37** | event_ts 空值回填。**2026-11-24 盘点完成**（`dryrun_37_event_ts_20261124.md`）：实际 **91 条**（非台账原记 39）。A1=22（source_ref 含 session-YYYYMMDD 可脚本推导）/ A2=3（summary 含日期：aa1d785b75=2026-05-08、a9cd420d51=2026-11-08、ddd691156d=2026-05-21）/ B=66（人工，ts 为批量导入时刻≠event_ts） | 🟡 盘点完成，待执行 | `audit_memory_chain:§5` + dryrun_37 |
 | **#38** | P0 语义查重继续攒样本（目标 clean_skip_equiv ≥8~10 再评估切 on，当前 clean=1） | ⏳ dry-run 进行中 | `audit_memory_chain:70-71` |
 | **#39** | 组8 corpus 锚点 detail 回填（降级后 anchor detail 也空，独立证据回填） | 🔲 挂起 | `review_29:25-26` |
 | **#40** | 其它写入入口 jsonl 同步巡检（#33 只修 gate 路径） | 🔲 待办 | `green_card_gate_concurrency_fix:92` |
