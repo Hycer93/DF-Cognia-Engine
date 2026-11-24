@@ -73,12 +73,12 @@
 
 **分两种性质：**
 
-**C-1 · `core_experience`（根资产，最重要，绝不能删）**
+**C-1 · `core_experience`（根资产，已接线，绝不能删）**
 - `v3_schema.py` 注释：「② 经验层（17条迁入）」——是**正式资产层**，与认知卡同级
 - 内容真是**经验学习**：`[经验]非农超预期金价不涨反跌复盘`、`[经验]Topic锚层六规约定案`、`[经验]新机制上线前伪演示基线法`、专利 P4~P9 方法论复盘
 - 字段：`xid/summary/detail/polarity/referenced_by/tier/status`（`polarity`=正/负经验，负经验禁固化；`tier='merged'`=已归并稳定，**停止更新是正常的**，经验库不需天天变）
-- **断线点**：`memory_hook.py` 走 `memory_distill.load_experiences()` 读 **jsonl**（`experiences.jsonl`，只是 `exp_id/cluster_key/behavior/dfcp_tag` 的**另一套结构**，与表不同源），表被绕过。18 行是 2026-11-08~16 迁移快照 + 后续 jsonl 增量没回灌表
-- **处置：保留，标注"经验层根资产，读侧未接线"。若要做经验学习闭环，应把 jsonl→core_experience 回灌打通，而非删表**
+- **✅ 2026-11-24 已接线**：`memory/memory_distill.py` 的 `load_experiences()` 改为 **DB 优先 + jsonl 兜底**（列=真相，meta 仅补缺），写侧新增 `_upsert_experience_db()` 双写（jsonl + DB 同步）。表已扩 10 列（cluster_key/entity_id/dfcp_tag/weight/derived_from/atom_count 等）+ 回灌 28 条，与 jsonl 零差异。`core_experience` 现为经验层真相源，jsonl 降为存档。
+- 备份：`corpus_store.db.bak_expwire_*`
 
 **C-2 · `audit_judge/distill/confidence/code_change`（审计流水，可归档）**
 - 字段是 `meta/op/change` JSON 流水，记录判定/蒸馏/置信度变更/字段变更**事件**

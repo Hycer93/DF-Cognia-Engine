@@ -28,9 +28,69 @@ from memory_relations import load_graph, _embed, _cosine, EMBEDDING_BASE, grams
 
 EXPERIENCE_JSONL = os.path.join(MEM_DIR, "experiences.jsonl")       # 经验层（独立物理文件，与原子层分离）
 DISTILL_LOG_JSONL = os.path.join(MEM_DIR, "distill_log.jsonl")      # 聚类操作日志
+EXPERIENCE_DB = os.path.join(MEM_DIR, "corpus_store.db")            # 经验层 DB 主存（2026-11-24 #49 接线）
 
 
 def load_experiences() -> list:
+    """经验层读取（DB 优先，jsonl 兜底）。
+
+    2026-11-24 #49 接线：core_experience 表成为主真相，jsonl 降为存档。
+    返回结构保持与原 jsonl 完全一致（exp_id/cluster_key/... 全字段），下游零改动。
+    表无数据或不可读时回退 jsonl（保证旧环境/未迁移库仍可用）。
+    """
+    # ---- DB 优先 ----
+    try:
+        if os.path.exists(EXPERIENCE_DB):
+            import sqlite3
+            con = sqlite3.connect(f"file:{EXPERIENCE_DB}?mode=ro", uri=True, timeout=5)
+            con.row_factory = sqlite3.Row
+            try:
+                rows = con.execute("SELECT * FROM core_experience").fetchall()
+            finally:
+                con.close()
+            if rows:  # 表有数据 → 以表为准（列=真相，meta 仅补缺）
+                out = []
+                for r in rows:
+                    d = dict(r)
+                    # 列优先重建（列是主数据，改列即生效）；meta 只补列里没有的字段
+                    try:
+                        meta = json.loads(d["meta"]) if d.get("meta") else {}
+                    except Exception:
+                        meta = {}
+                    def _j(v, default):
+                        if v is None:
+                            return default
+                        try:
+                            return json.loads(v)
+                        except Exception:
+                            return default
+                    base = {
+                        "exp_id": d.get("xid"),
+                        "cluster_key": d.get("cluster_key"),
+                        "entity_id": d.get("entity_id"),
+                        "behavior": d.get("behavior"),
+                        "dfcp_tag": _j(d.get("dfcp_tag"), None),
+                        "summary": d.get("summary"),
+                        "detail": d.get("detail"),
+                        "derived_from": _j(d.get("derived_from"), []),
+                        "atom_count": d.get("atom_count"),
+                        "weight": d.get("weight"),
+                        "tier": d.get("tier"),
+                        "created": d.get("created"),
+                        "last_updated": d.get("last_updated"),
+                        "embedding_base": d.get("embedding_base"),
+                        "split_pending": bool(d.get("split_pending")),
+                    }
+                    # 列缺失(空)时用 meta 兜底，保证不丢信息
+                    for k, v in base.items():
+                        if v is None and k in meta:
+                            base[k] = meta[k]
+                    out.append(base)
+                return out
+    except Exception:
+        pass  # 任何 DB 异常 → 回退 jsonl，绝不因接线中断主流程
+
+    # ---- jsonl 兜底 ----
     if not os.path.exists(EXPERIENCE_JSONL):
         return []
     out = []
@@ -118,6 +178,7 @@ def distill_all(min_cluster: int = 2, sim_threshold: float = 0.5) -> dict:
             # 新经验
             exp = _new_experience(key, coherent)
             append_jsonl(EXPERIENCE_JSONL, exp)
+            _upsert_experience_db(exp)   # #49 双写：jsonl + DB 同步
             _log({"op": "create", "cluster_key": key, "atoms": len(coherent)})
             created += 1
 
@@ -189,6 +250,53 @@ def _rewrite_experience(exp: dict):
     with io.open(EXPERIENCE_JSONL, "w", encoding="utf-8", newline="\n") as f:
         for e in out:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
+    _upsert_experience_db(exp)   # #49 双写：jsonl + DB 同步
+
+
+def _upsert_experience_db(exp: dict):
+    """经验层 DB 双写（2026-11-24 #49 接线）。
+
+    core_experience 表与 jsonl 同步：按 exp_id 存在则 UPDATE，否则 INSERT。
+    表不可用时静默跳过（不阻断 jsonl 主流程）。
+    """
+    if not os.path.exists(EXPERIENCE_DB):
+        return
+    try:
+        import sqlite3
+        row = {
+            "xid": exp.get("exp_id"), "summary": exp.get("summary"), "detail": exp.get("detail"),
+            "polarity": exp.get("polarity"),
+            "referenced_by": json.dumps(exp.get("referenced_by", []), ensure_ascii=False),
+            "tier": exp.get("tier"), "status": exp.get("status", "active"),
+            "ts": exp.get("created") or exp.get("last_updated"), "event_ts": exp.get("event_ts"),
+            "cluster_key": exp.get("cluster_key"), "entity_id": exp.get("entity_id"),
+            "behavior": exp.get("behavior"),
+            "dfcp_tag": json.dumps(exp.get("dfcp_tag"), ensure_ascii=False),
+            "weight": exp.get("weight"), "atom_count": exp.get("atom_count"),
+            "derived_from": json.dumps(exp.get("derived_from", []), ensure_ascii=False),
+            "embedding_base": exp.get("embedding_base"), "created": exp.get("created"),
+            "last_updated": exp.get("last_updated"),
+            "split_pending": 1 if exp.get("split_pending") else 0,
+            "meta": json.dumps(exp, ensure_ascii=False),
+        }
+        if not row["xid"]:
+            return
+        con = sqlite3.connect(EXPERIENCE_DB, timeout=10)
+        try:
+            exists = con.execute("SELECT 1 FROM core_experience WHERE xid=?", (row["xid"],)).fetchone()
+            if exists:
+                sets = ",".join("%s=?" % k for k in row if k != "xid")
+                vals = [row[k] for k in row if k != "xid"] + [row["xid"]]
+                con.execute("UPDATE core_experience SET %s WHERE xid=?" % sets, vals)
+            else:
+                ks = list(row)
+                con.execute("INSERT INTO core_experience(%s) VALUES(%s)" % (
+                    ",".join(ks), ",".join("?" * len(ks))), [row[k] for k in ks])
+            con.commit()
+        finally:
+            con.close()
+    except Exception:
+        pass  # DB 双写失败不影响 jsonl 主流程
 
 
 def _log(obj: dict):
