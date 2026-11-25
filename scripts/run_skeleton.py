@@ -51,18 +51,29 @@ def _load_graph():
 SUMMARY_FRAME = "收敛各节点结论 → 结构化输出 → 生成 repro_hint(derived/situational/flash) + repro_reason"
 
 
-def build_skeleton(question: str, preserve_router_tip: bool = True) -> dict:
-    """生成元核思维骨架（纯数据，零 LLM）。
+def build_skeleton(question: str, preserve_router_tip: bool = True,
+                   router_llm=None) -> dict:
+    """生成元核思维骨架（纯数据，节点框架零 LLM）。
 
-    - 路由：复用 ComplexityRouter(llm=None) 的关键词分类 + 图贪心，纯规则不调 LLM。
+    路由双模式（方案 Y 预演）：
+      - router_llm=None（默认）：纯规则，ComplexityRouter(llm=None) 关键词分类+图贪心，
+        工具内耗时 <1ms，完全确定。
+      - router_llm=LLM 实例：保留 Router 语义分类头（方案 Y），LLM 输出 depth +
+        deepen_candidates 驱动 mind_graph 选路，维持赫布权重更新回路；代价是每次
+        多一次 LLM 分类调用（codechat 后端实测 56-73s）。
+
+    ★ 无论哪种模式，节点【框架内容】都是纯数据（节点 behaviors），不调 LLM；
+      语义推演一律由主 AI 承接。router_llm 只影响「选哪条路径」，不影响「节点怎么想」。
+
     - 节点：path 中每个节点取其 behaviors 的 action 序列作为 frame（固定推理骨架）。
     - 汇总：固定 summary frame（由主 AI 收敛作答 + 生成 repro_hint）。
     """
     t0 = time.perf_counter()
     from cgraph.router import ComplexityRouter
     g = _load_graph()
-    router = ComplexityRouter(g, llm=None)  # llm=None → 强制走关键词分类，零 LLM
+    router = ComplexityRouter(g, llm=router_llm)  # None→关键词分类；有LLM→语义分类头
     dec = router.route(question)
+    router_mode = "llm_semantic" if router_llm is not None else "rule_keyword"
 
     node_list = []
     for code in dec.path:
@@ -93,6 +104,7 @@ def build_skeleton(question: str, preserve_router_tip: bool = True) -> dict:
             "depth": dec.complexity,
             "path": list(dec.path),
             "reason": dec.reason,
+            "router_mode": router_mode,
             "preserve_router_tip": preserve_router_tip,
         },
         "node_list": node_list,
@@ -108,8 +120,9 @@ def build_skeleton(question: str, preserve_router_tip: bool = True) -> dict:
 def _selftest():
     q = "对比方案A：本地部署开源模型 vs 方案B：调用云端API。我们是30人创业公司，做智能客服产品。请多维度分析"
     sk = build_skeleton(q)
-    print(f"[selftest] depth={sk['router']['depth']} | 节点数={len(sk['node_list'])} "
-          f"| 含Jw复盘={sk['has_jw_review']} | 工具内耗时={sk['elapsed_ms_tool']}ms")
+    print(f"[selftest] router_mode={sk['router']['router_mode']} | depth={sk['router']['depth']} "
+          f"| 节点数={len(sk['node_list'])} | 含Jw复盘={sk['has_jw_review']} "
+          f"| 工具内耗时={sk['elapsed_ms_tool']}ms")
     print("[selftest] 节点 frame 预览:")
     for n in sk["node_list"]:
         print(f"  {n['node_id']} {n['label']}: {'→'.join(n['frame'])}")
@@ -117,9 +130,17 @@ def _selftest():
 
 
 if __name__ == "__main__":
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
     if "--selftest" in sys.argv:
         sys.exit(_selftest())
-    if len(sys.argv) > 1:
-        print(json.dumps(build_skeleton(sys.argv[1]), ensure_ascii=False, indent=2))
+    router_llm = None
+    if "--y" in sys.argv:
+        # 方案 Y 预演：接入 Router 轻 LLM 分类头（每次多一次 LLM 调用，慢）
+        from cgraph.llm import LLMClient
+        router_llm = LLMClient()
+        print("[run_skeleton] --y 模式：Router 语义分类头已启用（每次约 56-73s）", file=sys.stderr)
+    if args:
+        print(json.dumps(build_skeleton(args[0], router_llm=router_llm),
+                         ensure_ascii=False, indent=2))
     else:
-        print("用法: python scripts/run_skeleton.py \"问题\" | --selftest")
+        print("用法: python scripts/run_skeleton.py \"问题\" [--y] | --selftest")
