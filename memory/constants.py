@@ -1,5 +1,5 @@
 # constants.py — 全局常量分级表（裁决2：不写死硬编码字面常量）
-# 分级口径：docs/design_memory_v02.md §3.7；新增常量必须标注来源等级
+# 分级口径：docs/02_memory_storage/design_memory_v02.md §3.7；新增常量必须标注来源等级
 
 # ---- 原子存储层 ----
 SUMMARY_MAX_CHARS = 200        # [先验-业务设定] 摘要收敛上限（裁决2 从硬编码移入；按摘要质量数据调整）

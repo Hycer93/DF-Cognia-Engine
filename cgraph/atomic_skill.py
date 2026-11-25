@@ -77,7 +77,7 @@ class ThinkState:
     final_deliverable: object = None                # 终稿推演(交付内容)
     alternatives_appendix: object = None            # 备选假设完整留存
     source_intents: list = None                     # skill_source_intent 意图清单
-    # ---- P-skeleton-complete(2026-11-19 段一定稿 v1.0, docs/design_skeleton_skills_v01.md) ----
+    # ---- P-skeleton-complete(2026-11-19 段一定稿 v1.0, docs/04_cgraph_skill/design_skeleton_skills_v01.md) ----
     # 契约: 以下 9 字段各由对应技能独写(邻接表 state_outputs), 其余技能只读禁覆盖;
     # 默认 None=未写入态; 全家族混合范式——LLM 降级时产出置空+_degraded, 链路不阻塞
     topology: object = None          # skill_g24_topology 独写: 四图投影快照

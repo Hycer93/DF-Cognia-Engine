@@ -212,7 +212,7 @@ def attribute_failure(con, goal_prefix, anchor_ids, max_steps):
     return "step_exhausted", "搜索步数耗尽"
 
 
-# ---------- 门槛④ 降级分支(docs/design_f40_threshold_234.md §3 冻结口径) ----------
+# ---------- 门槛④ 降级分支(docs/03_future_sim/design_f40_threshold_234.md §3 冻结口径) ----------
 # 仅新增函数: 生产主链不自动调用, 仅供审计/人工分析素材。
 # 契约: 复用 attribute_failure 四枚举; 仅 step_exhausted / goal_isolated 触发降级;
 #      候选取"已探索边界内"(有界 BFS ≤ max_steps, 只走真实边)的分支按 score_branch 排序 top-k;

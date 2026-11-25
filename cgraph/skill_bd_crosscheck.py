@@ -2,7 +2,7 @@
 """
 skill_bd_crosscheck.py — 原子技能·Bd双维交叉验证(P-skeleton-complete 段一定稿 v1.0)
 
-七段定稿(2026-11-19 用户逐项裁决, docs/design_skeleton_skills_v01.md 节点②):
+七段定稿(2026-11-19 用户逐项裁决, docs/04_cgraph_skill/design_skeleton_skills_v01.md 节点②):
   - 定位: 假设谱x薄弱点逐对判定回应关系; 产关联矩阵+无回应薄弱点清单
   - 主线: f_reason -> Dk -> En -> Bd -> G24 -> terminate(就近交叉, gap提前暴露)
   - 裁决1: 输入消费 Dk 演绎链 + En 证据网(纵向链+横向网背景, 判定更扎实)

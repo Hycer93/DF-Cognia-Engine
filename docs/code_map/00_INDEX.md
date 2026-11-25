@@ -43,7 +43,7 @@ judge_repro      → repro       ∈ {derived(可复现), situational(条件), f
 ```
 - 两维**正交**：class 决定"怎么用"，repro 决定"存多省/怎么复现预算"。
 - repro 来自规则查表，但上游显式传值可 `or` 短路绕过 → **设施②已留痕**（`gate_log op=repro_override`）。
-- 详见 `01_memory.md §2.2` + `docs/design_repro_vs_judge_flow_20261125.md`。
+- 详见 `01_memory.md §2.2` + `docs/01_judge_repro/design_repro_vs_judge_flow_20261125.md`。
 
 ### 2.3 检索链路：查询 → 召回排序
 ```
@@ -95,7 +95,7 @@ scripts/nightly_run.py 串联 STEPS
 |---|---|
 | 改记忆卡的写入/落库逻辑 | 01_memory §2.1 + §三(organize 小节) |
 | 改 repro 判定/五问判定 | 01_memory §2.2 + design_repro_vs_judge_flow |
-| 查某张表存什么/谁在写 | 01_memory §四 + docs/db_table_registry.md |
+| 查某张表存什么/谁在写 | 01_memory §四 + docs/99_misc/db_table_registry.md |
 | 改系统怎么路由/调度 | 02_cgraph_core §三 + §四 |
 | 加一个新技能 | 03_cgraph_skills §一(基类契约) + §二(邻接表) |
 | 加一个回归测试 | 05_eval_audit §二 + e30 命名规律 |

@@ -1,7 +1,7 @@
 """
 轨迹组装器：把走链全程拼装成 DPO 可用的思维轨迹。
 
-背景（见 docs/design_affect_vector.md §5 P0）：
+背景（见 docs/02_memory_storage/design_affect_vector.md §5 P0）：
 - WalkResult 现在只保留每节点 400 字摘要——模型只学得到结论学不到过程
 - 本模块把 node_outputs（完整输出）拼成一段自然推理文本，
   带轻量结构标记（〔先想：…〕），作为 DPO 的 chosen 候选

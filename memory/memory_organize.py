@@ -95,7 +95,7 @@ def judge_repro(content: str, tags: dict) -> str:
       决策逻辑→可复现），经 add(repro=...) 显式传值，非本规则产出，不可推广到全部 Ht 卡。
     - 12 条 flash 非005且无affect 同理：上游显式传值覆盖，非本规则产出。
     本函数只覆盖「明文可判」的四类快捷分支，模糊带交上游语义判定（判定单元未落地，
-    见 docs/design_repro_vs_judge_flow_20261125.md §2.6）。"""
+    见 docs/01_judge_repro/design_repro_vs_judge_flow_20261125.md §2.6）。"""
     b = tags.get("behavior", "")
     if b in ("B00", "Fp", "Fq", "Fr"):
         return "derived"

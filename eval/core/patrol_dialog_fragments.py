@@ -2,7 +2,7 @@
 """session_dialog 碎片巡检(2026-11-21 用户裁决: 每周跑一次输出碎片占比报告)
 
 背景: 历史 session_dialog 表 93% 是单句碎片(t 通道 transcript 批量导入未过滤),
-     2026-11-21 已归档 ≤20 字节碎片(见 docs/maintenance_session_dialog_cleanup_20261121.md)。
+     2026-11-21 已归档 ≤20 字节碎片(见 docs/08_patrol_review/maintenance_session_dialog_cleanup_20261121.md)。
      本脚本长期防护: 定期巡检碎片占比, 超阈值告警, 防止 t/h 通道防护回退再度污染。
 
 口径铁律(2026-11-21 裁决修正): 碎片 = UTF-8 **字节**数 ≤20, 不是字符数。

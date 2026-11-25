@@ -155,3 +155,101 @@ daily_trend 佐证：2026-11-23 gate=18, store=10, dedup=4；今日有真实会�
 
 > 核实：仓库中**当前不存在** `run_memory_only_nightly.py`（如后续新增轻量记忆链调度脚本，须明确认知：）
 > **它只消费已经产生的会话，不能生成新的 P0 观测样本；样本来源唯一是真实业务对话。**
+
+---
+
+## 补充：2026-11-23 22:36 基线快照（治理闭环后实测，含样本污染剔除）
+
+> 背景：P2（151 条 class_backfill）/ P3（6 卡 governor）治理闭环后，实跑
+> `DF_SUMMARY_EQUIV_DEDUPE=dry-run python eval/audit/audit30_phase7_check.py` 固化基线。
+> **本轮实测 `skip_equiv_count=31`，但经逐条溯源，其中 29 条为当日脚本 re-ingest 污染，
+> 真实业务同义样本贡献 = 0。** 以下是剔除污染后的干净口径。
+
+### 一、原始输出（照抄 audit30，未清洗）
+
+| 指标 | 值 |
+|---|---|
+| gate_log 总记录 | 59（op 分布：probe 2 / judge 1 / dialog_stored 13 / dialog_dedup 5 / dialog_too_short 4 / p0_slow 3 / **p0_equiv_dry 31**） |
+| p0_equiv_dry（观测） | **31** |
+| skip_equiv_count（`e4_maintenance_patrol` 口径） | **31**（= skip_equivalent_derived 0 + p0_equiv_dry 31） |
+| dry 中 would_skip=true | **26 / 31** |
+| p0_slow（慢调用） | **3**（max=4959ms，均值=2522ms） |
+| p0_unavailable（降级） | 0 |
+| 日期分布 | 2026-11-23 全部 31 条 |
+
+### 二、31 条逐条溯源（关键：剔污染）
+
+按精确秒分组：
+
+| 时间戳 | 条数 | 性质 | would_skip |
+|---|---|---|---|
+| 18:05:07 | 1 | TOPIC_LAYER_ON 守卫探针测试卡 | false（sim 0.619，未达 0.95 阈值） |
+| 20:32:01 | 1 | 阈值细化讨论（真实内容） | false（sim 0.819，未达阈值） |
+| **22:17:27** | **26** | **fix_quarantine re-ingest 29 卡批量触发** | **26 true**（sim≈1.0，卡本身已在池） |
+| **22:17:28** | **3** | 同批次尾部 | 3 false |
+
+**结论：29 条 22:17 批次是污染源**——时间点精确匹配 `fix_quarantine_20261123.py`（mtime 22:17:01）执行 re-ingest 29 张隔离卡的时刻；每张卡调 `atomic_store` → P0 语义查重 → 在 dry-run 模式下各写一条 `p0_equiv_dry`。由于这些卡原本就在池里，故 `sim≈1.0 / would_skip=true`。
+
+### 三、剔除污染后的干净基线
+
+| 口径 | 值 | 说明 |
+|---|---|---|
+| 原始 skip_equiv_count | 31 | 含 29 条脚本回放污染 |
+| 剔除 re-ingest 污染（-29） | **2** | 仅剩 18:05 / 20:32 两条零散实测 |
+| 其中真实业务跨会话同义（would_skip=true） | **0** | 2 条零散均 would_skip=false（0.619 / 0.819，未达 0.95） |
+| **真实业务有效样本** | **≈0** | 距目标 8~10 缺口很大 |
+
+> **重要纠正**：此前文档（§4、19:31 补充节）记载的 "skip_equiv_count=1，重复重跑存量不会增长" 表述，
+> 在 **re-ingest 一类脚本**下不成立——`fix_quarantine` 这类"重新入库已有卡"的操作会真实写入
+> `p0_equiv_dry`，导致计数虚高。**判定标准应改为：只统计真实新会话流入 h 通道产生的 would_skip=true，
+> 排除任何形式的存量卡 re-ingest 回放。**
+
+### 四、算法口径缺陷记录（待修，本轮未改码）
+
+`eval/core/e4_maintenance_patrol.py:379`：
+```
+skip_equiv_count = op_cnt.get("skip_equivalent_derived", 0) + op_cnt.get("p0_equiv_dry", 0)
+```
+**缺陷**：把 `would_skip=false` 的观测也计入（本轮 5 条 false 被计入）。真实"同义命中"应只算
+`would_skip=true`。建议后续修：`p0_equiv_dry` 加 `origin` 字段（business / script-reingest）
+并仅统计 `would_skip=true AND origin=business`。**本轮按用户要求只记录不改码，留作后续。**
+
+### 五、E4 巡检快照（同步确认治理成果）
+
+| 项 | 值 |
+|---|---|
+| total_memories | 353 |
+| ok | False |
+| skip_equiv_count | 31（见上，含污染） |
+| cross_pool_warn | 0 |
+| active_same_summary_multi | 29 |
+| alerts 数 | 6 |
+
+6 项报警：
+1. 隔离区近7天新增 4 条校验拦截（其他3 / 枚举非法1）——拦截正常，非故障
+2. 冲突评审积压 3 条（同源分叉待元思域对撞）
+3. runtime 未跑四档判定 29 条——entity_timeline 挂靠需补 classify_and_link
+4. event_ts 空值存量 82 条待回填
+5. watchlist 3 条在池（0 仍 watching）
+6. 语料版本漂移 patent_disclosures(hash_changed)——合法更新
+
+### 六、治理池大盘点（2026-11-23 22:35 实测）
+
+| 池子 | 待处理 | 总数 | 状态 |
+|---|---|---|---|
+| core_conflict_queue | **0** | 149 | ✅ dismissed141 + merged8，全结清 |
+| core_quarantine | **0** | 43 | ✅ 28入库 + 15丢弃 |
+| core_class_backfill_pending | 151（verdict NULL） | 151 | ✅ 其中 7 条已填 suggested_class，144 留 NULL 待人工 |
+| core_governor_pending | **3**（仅 C 卡） | 17 | ✅ A/B/D/E/F 已裁决 |
+| core_watchlist | — | 3 | ⏳ 观察清单，非阻塞 |
+
+> 注：`class_backfill_pending` 是**提案池非裁决池**，P2 只填 suggested_class 不改 verdict，
+> 故 `verdict IS NULL` 仍=151 属正常；待人工审的实质=144 NULL + 7 待认可。
+
+### 七、当前行动基线（2026-11-23 22:40 固化）
+
+1. **维持** `DF_SUMMARY_EQUIV_DEDUPE=dry-run`，不切 on，不改 P0 逻辑。
+2. **干净基线**：真实业务有效样本 ≈ 0（剔除 29 条污染后），距 8~10 缺口大。
+3. **日常查看**：`python eval/audit/audit30_phase7_check.py`，但需**人工剔除 re-ingest 污染**再看 §④。
+4. **触发条件**：真实业务 would_skip=true ≥ 8~10 → 先清 C 卡 + watchlist → 安全性评估 → 讨论切 on。
+5. **禁止**：靠重跑存量记忆链/re-ingest 脚本期待指标上涨（已验证会虚增，属污染）。

@@ -1,5 +1,5 @@
 # DFCP 记忆模块 v0.2 — 领域树 v1.5 + 判定谓词 + 保护清单（唯一权威源）
-# 设计冻结：docs/design_memory_v02.md + 领域树三轮盲测定稿（logs/ds_tag_retrieval_sim*.txt）
+# 设计冻结：docs/02_memory_storage/design_memory_v02.md + 领域树三轮盲测定稿（logs/ds_tag_retrieval_sim*.txt）
 # 规则：树节点是合法编码集合，Op1 入库只认编码（v1.4-2）；语义聚类仅离线提案不直接写树
 
 DOMAIN_TREE = {

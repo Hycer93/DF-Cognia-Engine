@@ -1,6 +1,6 @@
 """retrieval_weight_doc_sync_regression.py — P2-4 文档/常量一致性回归 (2026-11-21)
 
-P2-4 产出检索权重标定实验设计文档 docs/design_retrieval_weight_calibration.md,
+P2-4 产出检索权重标定实验设计文档 docs/01_judge_repro/design_retrieval_weight_calibration.md,
 其中 §1.2 状态表记录了当前线上权重值。本回归固化"文档记载 == 代码常量",
 防止标定改值后忘记同步文档(或文档写着旧值误导后续实验)。
 

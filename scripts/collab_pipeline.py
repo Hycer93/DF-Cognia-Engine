@@ -4,7 +4,7 @@
 同任务纵向扇出: N 路子 Agent(独立进程/独立 ChainExecutor/差异化视角软注入)
 各跑一遍 run_atomic → F50 聚合层合并。
 
-F50 契约(docs/formula_future_sim_v2_1.md §6, v2 重大修订):
+F50 契约(docs/03_future_sim/formula_future_sim_v2_1.md §6, v2 重大修订):
 - 禁止对分支终态 S_T^(k) 做加权平均——状态是原生完整结构, 平均会造出
   "既不是A也不是B的幻觉中间态"(r105 公式五硬伤)。
 - 只允许聚合可插值的抽象指标(结论向量 𝒴): 𝒴 = Σ W_k · 𝒴_k

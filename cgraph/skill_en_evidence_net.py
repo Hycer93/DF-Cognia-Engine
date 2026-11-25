@@ -2,7 +2,7 @@
 """
 skill_en_evidence_net.py — 原子技能·En证据网(P-skeleton-complete 段一定稿 v1.0)
 
-七段定稿(2026-11-19 用户逐项裁决, docs/design_skeleton_skills_v01.md 节点④):
+七段定稿(2026-11-19 用户逐项裁决, docs/04_cgraph_skill/design_skeleton_skills_v01.md 节点④):
   - 定位: 多源证据横向交叉关联(印证/矛盾/补充); 只织网不裁决证据真伪
   - 主线: Dk -> En -> Bd -> G24 -> terminate
   - 配对契约(裁决2方案b): 只判 deduction_chains 内出现过的 evidence_ref

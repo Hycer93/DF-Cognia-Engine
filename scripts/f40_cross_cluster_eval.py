@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""F40 跨簇命中率考核器（门槛①执行件, docs/design_f40_hitrate.md v1.0 定案）
+"""F40 跨簇命中率考核器（门槛①执行件, docs/03_future_sim/design_f40_hitrate.md v1.0 定案）
 
 口径速览:
 - 考题 = (起点卡∈src簇, 目标卡∈dst簇) 且 src≠dst; 真值链 BFS 跨 ≥2 簇、长度≥3

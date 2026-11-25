@@ -398,7 +398,7 @@ def patrol(as_of=None):
 
 def _memory_health(mems):
     """#20 记忆健康度快照：检索/冲突/去重/归档四维，只读聚合。
-    指标口径见 docs/review_20_observability_20261122.md §四。"""
+    指标口径见 docs/08_patrol_review/review_20_observability_20261122.md §四。"""
     import glob as _glob
     from collections import Counter
     db_dir = os.path.join(HERE, "data", "memory")

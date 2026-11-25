@@ -2,7 +2,7 @@
 """
 skill_gs_review.py — 原子技能·Gs全局回视(P-skeleton-complete 段一定稿 v1.0)
 
-七段定稿(2026-11-19 用户逐项裁决, docs/design_skeleton_skills_v01.md 节点⑤):
+七段定稿(2026-11-19 用户逐项裁决, docs/04_cgraph_skill/design_skeleton_skills_v01.md 节点⑤):
   - 定位: 长链过程态轻量检查点(软挂全技能, router自主选路); 只观测不纠偏,
     不修改 trail/state 任何推理结论
   - 裁决1(触发): 邻接表软挂——E11/E12 放量采集触发率/命中率后回头议 router 强制

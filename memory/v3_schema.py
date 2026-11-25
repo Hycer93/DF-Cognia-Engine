@@ -169,7 +169,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_dialogue USING fts5(
 );
 
 -- ⑤-A 原始会话证据快照（权威真相源；整会话 messages 存 transcript 原始 JSON 数组）
--- 运行时记忆流水线【禁止读取】本表——仅排错/离线仿真/评测抽取用，见 docs/design_dialog_evidence_store.md
+-- 运行时记忆流水线【禁止读取】本表——仅排错/离线仿真/评测抽取用，见 docs/02_memory_storage/design_dialog_evidence_store.md
 CREATE TABLE IF NOT EXISTS core_raw_dialog_session (
   session_id           TEXT PRIMARY KEY,
   start_ts             TEXT,

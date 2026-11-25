@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """memory_consistency_fix.py — #14 记忆一致性修复（存量对账）
 
-修复三类存量不一致（详见 docs/review_memory_consistency_20261122.md）：
+修复三类存量不一致（详见 docs/08_patrol_review/review_memory_consistency_20261122.md）：
   ① 29 条降级卡: jsonl 有 superseded_by, db 为空 → UPDATE db
   ② 4 条仅 jsonl: db 缺失（真实丢失）→ INSERT 进 db
   ③ 75 条仅 db: jsonl 未同步 → 这是 db 权威/新增数据, 不删不补

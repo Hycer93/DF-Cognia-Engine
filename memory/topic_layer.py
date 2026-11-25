@@ -1,6 +1,6 @@
 # memory/topic_layer.py — Topic 抽象锚层（L4 顶层索引，2026-11-13 定案）
 #
-# 设计文档: docs/design_topic_layer.md（v1.0 用户终审版，六规约红线）
+# 设计文档: docs/02_memory_storage/design_topic_layer.md（v1.0 用户终审版，六规约红线）
 # 定位: 粗粒度降噪索引。只控制两件事：检索候选池范围 + 冲突比对是否进入。
 #       不参与置信/相似分/演化链等底层事实判定（规约5）。
 #

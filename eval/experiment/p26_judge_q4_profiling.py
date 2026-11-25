@@ -97,7 +97,7 @@ def main():
         "snapshot_reuse_scan_ms": round(t_reuse * 1000, 3),
         "grams_recompute_saved_pct": round(saved_pct, 1),
         "complexity": "O(C × N × G): 每条候选重复 load_memories() + 全库 grams() 重算",
-        "verdict": "调研结论见 docs/design_judge_q4_perf_20261121.md",
+        "verdict": "调研结论见 docs/01_judge_repro/design_judge_q4_perf_20261121.md",
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     io.open(OUT, "w", encoding="utf-8").write(

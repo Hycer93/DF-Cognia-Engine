@@ -2,7 +2,7 @@
 """
 skill_g24_topology.py — 原子技能·G24全局拓扑构建(P-skeleton-complete 段一定稿 v1.0)
 
-七段定稿(2026-11-19 用户逐项裁决, docs/design_skeleton_skills_v01.md 节点①):
+七段定稿(2026-11-19 用户逐项裁决, docs/04_cgraph_skill/design_skeleton_skills_v01.md 节点①):
   - 定位: 决策整合前全局回视; 四图投影+遗漏检测; 只投影不生产新证据不裁决
   - 裁决1(混合架构): 四图投影全部纯 Python(审计基底不能飘, 零LLM开销);
     仅子问题遗漏语义检测交 LLM

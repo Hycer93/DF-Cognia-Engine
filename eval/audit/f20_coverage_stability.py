@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""门槛③ 边覆盖率稳定性考核器（S3, docs/design_f40_threshold_234.md §2 冻结口径）
+"""门槛③ 边覆盖率稳定性考核器（S3, docs/03_future_sim/design_f40_threshold_234.md §2 冻结口径）
 
 定位: eval 层只读检测工具, 不改任何业务文件/常量。
 - 覆盖率代理: debt_ratio(§2.1), 与 f20_weight.factor_density 同口径
@@ -320,7 +320,7 @@ def run_stability(out_base=None, provider=None, scenarios=None):
     ineffective = [r["name"] for r in rows if not r.get("perturb_effective")]
     summary = {
         "generated_ts": now.isoformat(timespec="seconds"),
-        "spec": "docs/design_f40_threshold_234.md §2",
+        "spec": "docs/03_future_sim/design_f40_threshold_234.md §2",
         "thresholds": {"flip_max": C3_FLIP_MAX, "jaccard_min": C3_JACCARD_MIN},
         "scenarios": rows,
         "flip_total": flip_total,

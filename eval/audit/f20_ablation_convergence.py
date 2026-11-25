@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""门槛② 消融收敛考核器（S2, docs/design_f40_threshold_234.md §1 冻结口径）
+"""门槛② 消融收敛考核器（S2, docs/03_future_sim/design_f40_threshold_234.md §1 冻结口径）
 
 定位: eval 层只读检测工具, 不改任何业务文件/常量。
 - 网格: BETA[0.6,1.0,1.6] × LAMBDA_DEBT[0.25,0.5,0.75] 共 9 点(§1.1)
@@ -276,7 +276,7 @@ def _run_grid(out_base, run_dir, now, hit_provider, top3_provider, scenarios):
 
     summary = {
         "generated_ts": now.isoformat(timespec="seconds"),
-        "spec": "docs/design_f40_threshold_234.md §1",
+        "spec": "docs/03_future_sim/design_f40_threshold_234.md §1",
         "grid_def": {"beta": BETA_GRID, "lambda_debt": LAMBDA_DEBT_GRID},
         "thresholds": {"hit_delta_max": C2_HIT_DELTA_MAX, "jaccard_min": C2_JACCARD_MIN},
         "grid": grid,

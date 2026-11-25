@@ -5,7 +5,7 @@
 管住模型不越界/不死循环/不乱跳。不是第 9 个原子技能(R1): 不继承
 BaseAtomicSkill、不进邻接表 entries、不走 run 五步生命周期。
 
-红线 R1-R12(docs/design_skill_router.md + P-C3 附录):
+红线 R1-R12(docs/04_cgraph_skill/design_skill_router.md + P-C3 附录):
   R1 编排层组件, 非原子技能;      R2 只读邻接表绝不修改;
   R3 __planned__ 绝不进候选;       R4 冷启动 anchor_target 硬跑不走 LLM;
   R5 技能降级透传不干预;           R6 零 DB 写零记忆写入(gate 归 executor);

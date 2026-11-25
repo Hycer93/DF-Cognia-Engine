@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""F40 晋升门槛②③④ 总回归（S5, docs/design_f40_threshold_234.md 冻结口径集成）
+"""F40 晋升门槛②③④ 总回归（S5, docs/03_future_sim/design_f40_threshold_234.md 冻结口径集成）
 
 定位: eval 层只读检测工具, 集成三块单元回归。
 - 门槛②消融收敛: 网格完整性 / machine_converged 布尔 / 产物目录生成(委托 f20_ablation_convergence)

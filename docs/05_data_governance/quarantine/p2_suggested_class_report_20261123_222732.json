@@ -1,0 +1,129 @@
+{
+  "ts": "2026-11-23T22:27:32",
+  "dry_run": false,
+  "total": 151,
+  "high_conf_written": 7,
+  "kept_null": 144,
+  "orphans": [
+    "216da6ce7060408e887b934ffc70cffe"
+  ],
+  "tier_counts": {
+    "PRIOR_ONLY": 41,
+    "HIGH": 7,
+    "CONFLICT": 20,
+    "NULL": 77,
+    "FEAT_ONLY": 5,
+    "ORPHAN": 1
+  },
+  "written_detail": [
+    {
+      "inst_id": "167a909aa60a4aefbd138de84f36d229",
+      "class": "strategy_evolve",
+      "summary": "脑区四系统联动最早现场：太浅了+分阶段融合=当前施工路线原型决策"
+    },
+    {
+      "inst_id": "ee5caa6169c04c8fbac98552c2b4ff92",
+      "class": "scar_case",
+      "summary": "专利三交底书答非所问被用户连击三问，自反审视：AI幻觉抵御机制，'这一次的答非所问或许是不错方向'"
+    },
+    {
+      "inst_id": "a3b04463b32c4bdca23d0bb43a72a885",
+      "class": "scar_case",
+      "summary": "回归验收抓编码错标现场：S7-04置信度五级等4条记忆治理资产被错标005-001设计裁决，正确应挂"
+    },
+    {
+      "inst_id": "0b696dc209b140dbbb3d33b476622cb3",
+      "class": "strategy_evolve",
+      "summary": "多主题拆分终裁:主题拆分裁定权保留主AI,atomic_store永不主动切割;护栏⑥multi_t"
+    },
+    {
+      "inst_id": "58707552d4ec4371bf102b45ad7209c3",
+      "class": "strategy_evolve",
+      "summary": "复现率门禁专利写法待办(CC判词待用户终裁):建议不独立成件——专利一从属权利要求追加,成本最低补记"
+    },
+    {
+      "inst_id": "5f4550e94f3642e4b530fa42b7593e4f",
+      "class": "strategy_evolve",
+      "summary": "复现率门禁v0.1终裁冻结(docs/design_recurrence_gate_v01.md):"
+    },
+    {
+      "inst_id": "8857023187684defb67021153c349aa8",
+      "class": "strategy_evolve",
+      "summary": "批评拆解+利益相关标注立法(CLAUDE.md高频条目2a/利益相关条款,用户终裁'嗯嗯好的'):X"
+    }
+  ],
+  "filtered_samples": [
+    {
+      "inst_id": "7ee56837ba424912858585f7107c508e",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=strategy_evolve(无特征词)",
+      "summary": "紫光国微建仓分歧双AI对峙：新暮暮与原型暮暮在71-72元被动挂单与节前资金面流出风险上分歧，最终由"
+    },
+    {
+      "inst_id": "0b9e91d5a0c3425fac985b2838cf8d5b",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=strategy_evolve(无特征词)",
+      "summary": "光谱系数从Ht迁移至G22的架构决策现场，模块归属冲突解法=迁移而非并存"
+    },
+    {
+      "inst_id": "066893306e7c47f6ba40a9c85c62307a",
+      "tier": "CONFLICT",
+      "why": "feat=scar_case prior=skill_refine",
+      "summary": "G22决策整合诞生全链路。起因三失误：①主模型32B→8B切换时G00未重启追问'为什么'直接接受参"
+    },
+    {
+      "inst_id": "2cac7ea94f2a45f196aac252991a5552",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=strategy_evolve(无特征词)",
+      "summary": "光谱系数从Ht到G22的迁移决策。厂长指出光谱系数展开与Ht原有内核冲突，光谱展开正式迁移至G22。"
+    },
+    {
+      "inst_id": "ffcb294e10bd42cea3371c8c9eaf3b10",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=skill_refine(无特征词)",
+      "summary": "23骨架×73行为L3速查表。每骨架定义：核心追问+L3行为序列+唯一输出物。例：G00(任务空间扫"
+    },
+    {
+      "inst_id": "0fc430b5ff35401b852fa43e36cad972",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=scar_case(无特征词)",
+      "summary": "思维复活图V1.0（Mermaid全回路）。九层23骨架73行为完整数据流：主输入→Aa1→(Bb/"
+    },
+    {
+      "inst_id": "e706a6c1033047949e6b376664b33ded",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=skill_refine(无特征词)",
+      "summary": "归元仔人生.md（成长日记）。出生(4.10外快计划10万本金)/第一次被骗(4.15预告70-10"
+    },
+    {
+      "inst_id": "db3a4d5c3a8f41739e652097efd8f872",
+      "tier": "CONFLICT",
+      "why": "feat=strategy_evolve prior=skill_refine",
+      "summary": "沉默即降权 + 主被动进化。主人无视的追问自动降权，不再在未来对话中检出——沉默即降权。G21从被动"
+    },
+    {
+      "inst_id": "ddd691156d5141a4bdc21c60235c711d",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=skill_refine(无特征词)",
+      "summary": "进化史V1.5完整版（含第九章G22诞生+加载协议）。进化史MD完整版9417字（corpus3里只"
+    },
+    {
+      "inst_id": "d5661288509d4efabd5417c4fc10bae2",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=strategy_evolve(无特征词)",
+      "summary": "脑区四系统联动的最早现场（5月末）。用户原话：'或许我似乎找到了情感基线 记忆管理 知识 和思维的联"
+    },
+    {
+      "inst_id": "b0f8c008011b494fa04446b0ca06e039",
+      "tier": "CONFLICT",
+      "why": "feat=skill_refine prior=strategy_evolve",
+      "summary": "动态拓维神经元方案本体（专利五核心）。多级正态扩域：内层核心正态环(常规样本)/中层扩维环(中等偏离"
+    },
+    {
+      "inst_id": "ef590c1519704b27bbc813a688067351",
+      "tier": "PRIOR_ONLY",
+      "why": "prior=skill_refine(无特征词)",
+      "summary": "复盘结论：非农超预期金价不涨反跌，归因流动性拐点，市场已price in。"
+    }
+  ]
+}

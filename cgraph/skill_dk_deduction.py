@@ -2,7 +2,7 @@
 """
 skill_dk_deduction.py — 原子技能·Dk演绎链(P-skeleton-complete 段一定稿 v1.0)
 
-七段定稿(2026-11-19 用户逐项裁决, docs/design_skeleton_skills_v01.md 节点③):
+七段定稿(2026-11-19 用户逐项裁决, docs/04_cgraph_skill/design_skeleton_skills_v01.md 节点③):
   - 定位: 关键结论的证据->前提->结论可追溯链构建; 只织链不裁决不生成新假设
   - 主线: f_reason -> Dk -> En -> Bd -> G24 -> terminate(链先行, Bd判定需要链)
   - 混合范式: LLM 拆解生成推理步骤链; unsupported_premises 纯 Python 派生检出

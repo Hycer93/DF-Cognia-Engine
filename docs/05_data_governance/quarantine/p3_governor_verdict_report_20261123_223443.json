@@ -1,0 +1,101 @@
+{
+  "ts": "2026-11-23T22:34:43",
+  "dry_run": false,
+  "resolver": "user-p3-review-20261123",
+  "cards": {
+    "A": {
+      "inst_id": "f7a20eb77dde4c0ba77c4c5ede83e94c",
+      "name": "执行器契约v2定案",
+      "action": "accepted-hold",
+      "pending_rows": [
+        "gp_08e27a9096aa",
+        "gp_81e4d19f72f6",
+        "gp_6208329c277d"
+      ],
+      "n_rows": 3,
+      "verdict_after": "accepted-hold"
+    },
+    "B": {
+      "inst_id": "94d9826b0081444e88cc61bf11599148",
+      "name": "公开仓边界裁决",
+      "action": "accepted-hold",
+      "pending_rows": [
+        "gp_0a5c149c0ba0",
+        "gp_155aea19f383",
+        "gp_2e17f8e600ef"
+      ],
+      "n_rows": 3,
+      "verdict_after": "accepted-hold"
+    },
+    "C": {
+      "inst_id": "7a499925d367436f863b102896faa989",
+      "name": "伪演示基线法",
+      "action": "PENDING",
+      "pending_rows": [
+        "gp_501466854fc6",
+        "gp_ece99dfb8774",
+        "gp_090943563f3c"
+      ],
+      "n_rows": 3,
+      "note": "暂缓：待排查重复提案来源，原样保留 pending"
+    },
+    "D": {
+      "inst_id": "10764d3bf16f4dc98eaf7cb20fb79080",
+      "name": "记忆入库断档事故",
+      "action": "approved-anchor",
+      "pending_rows": [
+        "gp_a587de3c1ba3",
+        "gp_55f0a5467653",
+        "gp_5c116d7eca28"
+      ],
+      "n_rows": 3,
+      "topic_links_existing": {
+        "topic_id": "topic_memory_ops",
+        "method": "final-review",
+        "ts": "2026-11-20T17:43:31"
+      },
+      "anchor_already_mounted": true,
+      "verdict_after": "approved-anchor"
+    },
+    "E": {
+      "inst_id": "32684974ebae425c8a9385db8d8ecff0",
+      "name": "F系推演公式v2定稿",
+      "action": "accepted-hold",
+      "pending_rows": [
+        "gp_005548216ac8",
+        "gp_81dd19fc0fa3"
+      ],
+      "n_rows": 2,
+      "verdict_after": "accepted-hold"
+    },
+    "F": {
+      "inst_id": "e4f92fcb7170431aa18a55f2931b3e08",
+      "name": "F系公式硬伤修复",
+      "action": "accepted-hold",
+      "pending_rows": [
+        "gp_07f5951dee7f",
+        "gp_7a3f6b5f5fc4"
+      ],
+      "n_rows": 2,
+      "verdict_after": "accepted-hold"
+    }
+  },
+  "c_deferred": {
+    "inst_id": "7a499925d367436f863b102896faa989",
+    "name": "伪演示基线法",
+    "action": "PENDING",
+    "pending_rows": [
+      "gp_501466854fc6",
+      "gp_ece99dfb8774",
+      "gp_090943563f3c"
+    ],
+    "n_rows": 3,
+    "note": "暂缓：待排查重复提案来源，原样保留 pending"
+  },
+  "repeat_root_cause": {
+    "发现": "governor_pending.jsonl 54行中53行无 ts 字段",
+    "迁移代码": "v3_migrate_batch1.py:206 用 g.get('ts') or now()",
+    "本质": "多轮复审累积提案是设计允许；迁移丢失逐行时间粒度导致同秒",
+    "C卡行数": 3
+  }
+}
