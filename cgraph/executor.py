@@ -32,6 +32,12 @@ from cgraph.green_card_writer import commit_green_cards
 
 DEEPEN_MARK = "[[DEEPEN:"   # 旧协议标记：仅用于防御性清洗正文残留，不再作为路由信号
 
+# 试点（2026-11-25）：高频产记忆节点，执行时自报 repro 增量。dry-run 阶段只收集不接入库。
+# 选 Ht(G22决策整合)/Jw(G21复盘固化)——二者是记忆卡最大来源。验证"节点自报 vs judge_repro
+# 规则标签"不一致率达标(设计文档 §4.3 方向)后，才考虑切换正式入库。
+PILOT_REPRO_NODES = ("Ht", "Jw")
+REPRO_ENUM = ("derived", "situational", "flash")   # 与 memory_organize.judge_repro 三级口径一致
+
 
 @dataclass
 class WalkResult:
@@ -45,6 +51,10 @@ class WalkResult:
     node_outputs: dict = field(default_factory=dict)  # code -> 工作结果正文（含 Jw 支线产出）
     event_counts: dict = field(default_factory=dict)  # 情感阀1事件计数
     jw_sidebranch: str = ""        # 契约③：Jw 支线复盘产出，只归档记忆，不进主回答管线
+    # 试点（2026-11-25）：高频节点(Ht/Jw)执行时自报的 repro 增量提示。dry-run 阶段仅收集，
+    # 不接入库。结构 {node_code: {"repro_hint": "derived|situational|flash"|None, "repro_reason": str}}。
+    # 目的：对比"节点自报 hint"vs"judge_repro 规则标签"的不一致率，验证前不切换正式入库。
+    repro_hints: dict = field(default_factory=dict)
 
 
 class ChainExecutor:
@@ -59,12 +69,15 @@ class ChainExecutor:
 
         # ① 主链逐节点执行(上下文管理: O(1) token 增长, 完整产物不进历史)
         (walked, deepen_events, trace, failed_nodes, node_outputs,
-         _prev, last_good_answer, last_answer) = self._walk_chain(decision, system, orig_user)
+         _prev, last_good_answer, last_answer, repro_hints) = self._walk_chain(decision, system, orig_user)
 
         # ---------- 主链完成，进入两道独立工序 ----------
 
         # ② 契约③: Jw 支线复盘——产出只写记忆, 不进主回答管线
-        jw_out = self._run_jw_sidebranch(user_input, node_outputs, walked, trace)
+        jw_out, jw_repro = self._run_jw_sidebranch(user_input, node_outputs, walked, trace)
+        # 试点(2026-11-25): Jw 支线结论同样自报 repro(仅收集, dry-run)
+        if jw_repro and jw_repro.get("repro_hint"):
+            repro_hints["Jw"] = jw_repro
 
         # ③ 契约④: 汇总节点——基于主链全部摘要, 只面向原始用户问题作答
         final = self._run_summary(user_input, node_outputs, walked, trace,
@@ -90,17 +103,19 @@ class ChainExecutor:
                           path=walked, planned_path=decision.path,
                           deepen_events=deepen_events, llm_trace=trace,
                           verify_note=verify_note, node_outputs=node_outputs,
-                          event_counts=event_counts, jw_sidebranch=jw_out)
+                          event_counts=event_counts, jw_sidebranch=jw_out,
+                          repro_hints=repro_hints)
 
     def _walk_chain(self, decision, system, orig_user):
         """主链逐节点执行(P2-2 从 run() 抽出, 行为零变更)。
 
         返回 (walked, deepen_events, trace, failed_nodes, node_outputs,
-              prev_summary, last_good_answer, last_answer)。
+              prev_summary, last_good_answer, last_answer, repro_hints)。
         上下文管理: 每节点只携带 system + 原问题 + 上一节点摘要 + 本节点指令,
         完整中间产物不进历史(token 成本 O(1) 而非 O(n))。"""
         walked, deepen_events, trace, failed_nodes = [], [], [], []
         node_outputs = {}          # code -> 工作结果正文（不截断，轨迹组装器用）
+        repro_hints = {}           # 试点(2026-11-25): 仅 Ht 等主链试点节点自报的 repro 增量
         queue = [c for c in decision.path]
         deepens_left = self.max_deepen
         prev_summary = ""
@@ -146,6 +161,10 @@ class ChainExecutor:
 
             trace.append({"code": code, "resp_chars": len(analysis), "ms": ms})
             node_outputs[code] = analysis
+            # 试点(2026-11-25): 仅主链上の试点节点自报 repro 增量收集(dry-run, 不接入库)
+            if code in PILOT_REPRO_NODES and parsed.get("repro_hint"):
+                repro_hints[code] = {"repro_hint": parsed["repro_hint"],
+                                     "repro_reason": parsed.get("repro_reason", "")}
             # 摘要传递：给下一节点的是本节点输出的压缩要点（≤400字），非全文
             if code not in failed_nodes:
                 prev_summary = analysis[:400]
@@ -153,21 +172,32 @@ class ChainExecutor:
             last_answer = analysis
 
         return (walked, deepen_events, trace, failed_nodes, node_outputs,
-                prev_summary, last_good_answer, last_answer)
+                prev_summary, last_good_answer, last_answer, repro_hints)
 
     def _run_jw_sidebranch(self, user_input, node_outputs, walked, trace):
-        """契约③: 支线跑 Jw 复盘, 产出只写记忆, 不进主回答管线(P2-2 抽出)。"""
-        jw_out = ""
+        """契约③: 支线跑 Jw 复盘, 产出只写记忆, 不进主回答管线(P2-2 抽出)。
+        试点(2026-11-25): Jw 是 top 记忆来源, 让其输出 JSON(analysis+repro_hint);
+        解析出 analysis 文本作 jw_out(保持下游归档/记忆兼容), repro 增量单独返回。"""
+        jw_out, jw_repro = "", {}
         if "Jw" in walked:
             t0 = time.time()
-            jw_out = self.llm.chat([{"role": "user",
-                                     "content": self._jw_sidebranch_prompt(user_input, node_outputs, walked)}]) or ""
+            raw = self.llm.chat([{"role": "user",
+                                  "content": self._jw_sidebranch_prompt(user_input, node_outputs, walked)}]) or ""
             ms = int((time.time() - t0) * 1000)
-            if jw_out:
-                jw_out = self._sanitize(jw_out)
-                node_outputs["Jw"] = jw_out     # 轨迹组装器可见（训练数据），用户管线不可见
+            if raw:
+                # 先尝试 JSON 分离(试点); 失败则整段当文本(降级, 与原行为一致)
+                parsed = self._parse_node_json(raw)
+                if parsed.get("repro_hint") is not None or parsed.get("analysis"):
+                    jw_out = self._sanitize(parsed.get("analysis") or raw)
+                    if parsed.get("repro_hint"):
+                        jw_repro = {"repro_hint": parsed["repro_hint"],
+                                    "repro_reason": parsed.get("repro_reason", "")}
+                else:
+                    jw_out = self._sanitize(raw)
+                if jw_out:
+                    node_outputs["Jw"] = jw_out     # 轨迹组装器可见（训练数据），用户管线不可见
             trace.append({"code": "Jw#side", "resp_chars": len(jw_out), "ms": ms})
-        return jw_out
+        return jw_out, jw_repro
 
     def _run_summary(self, user_input, node_outputs, walked, trace, fallback):
         """契约④: 专门汇总节点, 只面向原始用户问题作答(P2-2 抽出)。"""
@@ -436,18 +466,34 @@ class ChainExecutor:
 
     def _node_prompt(self, node) -> str:
         qs = " ".join(f"{b.get('question', '')}" for b in node.behaviors[:3])
-        return (f"〔思维节点 {node.code} · {node.label}〕{qs}\n"
+        base = (f"〔思维节点 {node.code} · {node.label}〕{qs}\n"
                 f'只输出 JSON: {{"analysis": "本节点分析", "deepen": null 或需要加深的节点码}}')
+        # 试点（2026-11-25）：仅高频节点自报 repro 增量（dry-run 收集，不影响入库）。
+        # 其余节点 prompt 字节级不变（回归红线：非试点节点输出契约零变更）。
+        if node.code in PILOT_REPRO_NODES:
+            base = (f"〔思维节点 {node.code} · {node.label}〕{qs}\n"
+                    f'只输出 JSON: {{"analysis": "本节点分析", "deepen": null 或需要加深的节点码, '
+                    f'"repro_hint": "derived|situational|flash 之一", "repro_reason": "为何此可复现性(≤40字)"}}\n'
+                    "repro_hint 判定标准：\n"
+                    "- derived(完全可复现)：结论本质是确定性计算/检索所得，输入相同则稳定重算出同一结果；\n"
+                    "- situational(条件可复现)：需特定上下文/条件才能复现，条件变了结论可能变；\n"
+                    "- flash(不可复现)：依赖当时现场、个人判断、临时状态，无法重算。")
+        return base
 
     def _jw_sidebranch_prompt(self, user_input: str, node_outputs: dict, walked: list) -> str:
-        """契约③：支线复盘 prompt。明确告知是内部工序，产出不展示给用户。"""
+        """契约③：支线复盘 prompt。明确告知是内部工序，产出不展示给用户。
+        试点(2026-11-25): Jw 是 top 记忆来源, 追加 repro 自报字段(dry-run 收集)。"""
         jw = self.g.nodes.get("Jw")
         qs = " ".join(f"{b.get('question', '')}" for b in (jw.behaviors[:4] if jw else []))
         return (
             "〔支线任务 · 经验进化闭环〕这是系统内部复盘工序，产出不会展示给用户。\n"
             f"复盘问题: {qs}\n\n"
             f"用户原始问题: {user_input[:1000]}\n\n"
-            f"主链各节点工作结果:\n{self._chain_digest(node_outputs, walked)}"
+            f"主链各节点工作结果:\n{self._chain_digest(node_outputs, walked)}\n\n"
+            '只输出 JSON: {"analysis": "复盘结论", '
+            '"repro_hint": "derived|situational|flash 之一", "repro_reason": "为何此可复现性(≤40字)"}\n'
+            "repro_hint 判定：derived=确定性计算/检索可重算；"
+            "situational=需特定条件才复现；flash=依赖现场/个人判断不可重算。"
         )
     def _summary_prompt(self, user_input: str, node_outputs: dict, walked: list) -> str:
         """契约④：汇总节点 prompt——唯一任务：面向原始用户问题作答。"""
@@ -484,17 +530,24 @@ class ChainExecutor:
 
         2026-11-21 P0-1：改用 json_utils.extract_json_obj（括号计数扫描），
         修复 find/rfind 在嵌套 JSON / 字符串内花括号场景下切片错位的问题。
+
+        2026-11-25 试点：额外解析 repro_hint/repro_reason（仅 Ht/Jw prompt 会产出）。
+        非试点节点这两个键缺失→None，不影响原有 analysis/deepen 契约。
         """
         if not text:
-            return {"analysis": "", "deepen": None}
+            return {"analysis": "", "deepen": None, "repro_hint": None, "repro_reason": ""}
         j = extract_json_obj(text)
         if j is not None:
             analysis = str(j.get("analysis", "")).strip()
             deepen = j.get("deepen")
+            rh = j.get("repro_hint")
+            rh = rh if isinstance(rh, str) and rh in REPRO_ENUM else None
+            rr = str(j.get("repro_reason", "") or "").strip()[:80]
             if analysis:
                 return {"analysis": analysis,
-                        "deepen": deepen if isinstance(deepen, str) else None}
-        return {"analysis": text, "deepen": None}
+                        "deepen": deepen if isinstance(deepen, str) else None,
+                        "repro_hint": rh, "repro_reason": rr}
+        return {"analysis": text, "deepen": None, "repro_hint": None, "repro_reason": ""}
 
     def _valid_deepen(self, code_str: str):
         """加深码校验：完整码精确匹配（修复旧版 [:2] 截断 G08→G0 的 bug）。

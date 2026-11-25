@@ -132,6 +132,9 @@ class Engine:
             "hebbian": update,
             "complexity": decision.complexity,
             "jw_sidebranch": result.jw_sidebranch,
+            # 试点(2026-11-25): Ht/Jw 自报 repro 增量(dry-run 收集, 不接入库)。
+            # 主 AI 收到后可透传给 memory_hook.add(repro=...), 当前先只观测。
+            "repro_hints": result.repro_hints,
         }
 
 
