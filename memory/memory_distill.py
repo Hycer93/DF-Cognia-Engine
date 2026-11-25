@@ -103,8 +103,18 @@ def load_experiences() -> list:
 
 
 # ---- 簇锚键：entity_id + 行为码（同本体同骨架才算同簇）----
-def _cluster_key(entry: dict) -> str:
-    return f"{entry.get('entity_id')}|{entry['dfcp_tag']['behavior']}"
+def _cluster_key(entry: dict) -> str | None:
+    """返回簇锚键；dfcp_tag 缺 behavior 时返回 None(拒入簇，不静默)。
+
+    2026-11-25 加固: 历史 15 张旧卡 dfcp_tag 仅 {domain,relation} 缺 behavior
+    (绿卡写入源硬编码遗留, 见 schema.py 注释 + memory_relations.py:75 同批 11-23 补丁)。
+    此处对齐同款 .get 防御避免 KeyError 中断全量蒸馏; 但缺失≠可忽略——返回 None
+    交由 distill_all 计入 skipped['missing_behavior'] 并逐条告警, 需回炉重判或降级审计。
+    """
+    beh = (entry.get("dfcp_tag") or {}).get("behavior")
+    if not beh:
+        return None
+    return f"{entry.get('entity_id')}|{beh}"
 
 
 def distill_all(min_cluster: int = 2, sim_threshold: float = 0.5) -> dict:
@@ -127,7 +137,8 @@ def distill_all(min_cluster: int = 2, sim_threshold: float = 0.5) -> dict:
     # fragile 隔离（四缺口裁决2026-11-11缺口4）：级联三级≠全局图谱基石——
     # 会话闪念类卡(fragile)不参与自动聚类归纳, 否则大量轻量短卡会让蒸馏持续
     # 产出错误归纳。全局蒸馏护栏独立于局部判定链。
-    skipped = {"no_entity": 0, "conflict_pending": 0, "fragile": 0}
+    skipped = {"no_entity": 0, "conflict_pending": 0, "fragile": 0, "missing_behavior": 0}
+    missing_behavior_ids = []
     for m in mems:
         if m["inst_id"] in conflict_pending:
             skipped["conflict_pending"] += 1
@@ -138,7 +149,13 @@ def distill_all(min_cluster: int = 2, sim_threshold: float = 0.5) -> dict:
         if not m.get("entity_id"):
             skipped["no_entity"] += 1
             continue
-        clusters[_cluster_key(m)].append(m)
+        key = _cluster_key(m)
+        if key is None:
+            # dfcp_tag 缺 behavior: 不静默吞——计入 skipped 并逐条记录, 供晨报/审计回炉重判
+            skipped["missing_behavior"] += 1
+            missing_behavior_ids.append(m["inst_id"])
+            continue
+        clusters[key].append(m)
 
     # 现有经验（幂等：已有同簇经验则增量更新，不重建）
     existing = {e["cluster_key"]: e for e in load_experiences()}
@@ -187,6 +204,13 @@ def distill_all(min_cluster: int = 2, sim_threshold: float = 0.5) -> dict:
         "untouched": untouched, "skipped": skipped,
         "atom_total": sum(len(v) for v in clusters.values()),
     }
+    if missing_behavior_ids:
+        # 显式告警(不静默): 缺 behavior 的卡未参与聚类, 需回炉重判(补 behavior)或降级审计。
+        # 消费方(memory_hook.add 调用方/晨报)据此可见问题规模, 而非被 .get 防御悄悄吞掉。
+        print(f"[distill] 警告: {skipped['missing_behavior']} 条 dfcp_tag 缺 behavior, "
+              f"未参与聚类, 需回炉重判/降级审计: {missing_behavior_ids[:10]}"
+              f"{' ...' if len(missing_behavior_ids) > 10 else ''}", flush=True)
+        report["missing_behavior_ids"] = missing_behavior_ids
     _log({"op": "distill_all_report", **report})
     return report
 

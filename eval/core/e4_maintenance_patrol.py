@@ -285,6 +285,29 @@ def patrol(as_of=None):
         report["alerts"].append(
             f"[warning] {dual_conflicts} 条顶层/dfcp 内嵌 memory_class 双值矛盾——迁移期口径冲突，人工裁定权威值")
 
+    # 9b. 核心编码缺失巡检（2026-11-25：dfcp_tag 缺 behavior 等硬编码位）。
+    #    背景: 历史 15 张旧卡 dfcp_tag 仅 {domain,relation}, 绿卡写入源硬编码遗留
+    #    (见 schema.py 注释 + memory_relations.py:75 同批 11-23 补丁)。这类卡在
+    #    validate_memory_tags 上线前入库, 未被隔离闸门拦截, 却会让蒸馏聚类/DFCP近邻
+    #    等读取侧硬取抛 KeyError。读取侧已加防御(不崩), 此处独立巡检把它们捞出来告警,
+    #    不留黑盒——需回炉重判(补 behavior)或降级审计, 机器只报不自动改。
+    _missing_core = []
+    for m in mems:
+        dt = m.get("dfcp_tag") or {}
+        miss = [f for f in ("domain", "behavior", "relation") if not dt.get(f)]
+        if miss:
+            _missing_core.append((m["inst_id"][:8], ",".join(miss)))
+    report["items"]["core_tag_missing"] = len(_missing_core)
+    if _missing_core:
+        _by_field = {}
+        for iid, fields in _missing_core:
+            _by_field.setdefault(fields, []).append(iid)
+        _sample = _missing_core[0]
+        report["alerts"].append(
+            f"[warning] {len(_missing_core)} 条卡 dfcp_tag 缺核心编码(如 {_sample[0]} 缺 {_sample[1]})——"
+            f"按字段分布 {dict((k, len(v)) for k, v in _by_field.items())}；"
+            f"读取侧已加防御不崩, 但需回炉重判补码或降级审计(机器只报不改)")
+
     # 10. 质量门巡检（2026-11-11 四缺口裁决: registry版本锚+占位复合检测+fragile隔离）
     try:
         import memory_quality_gate as mq

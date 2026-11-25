@@ -72,6 +72,14 @@ def consolidate():
     except Exception as e:
         report["ops"]["memory_class_backfill"] = {"error": str(e)}
 
+    # 2.6 behavior 核心编码存量回填提案（2026-11-25：历史15张旧卡缺 behavior，
+    #     对齐 class_backfill 铁律——E5批量提案+judge确认，禁止机器直写主库）
+    try:
+        import memory_behavior_backfill as mbb
+        report["ops"]["memory_behavior_backfill"] = mbb.propose_batch(limit=8)
+    except Exception as e:
+        report["ops"]["memory_behavior_backfill"] = {"error": str(e)}
+
 # 3. 置信度动态兜底扫描（2026-11-10 用户裁决②：升降级事件统计+待重审积压，只读）
     try:
         sys.path.insert(0, os.path.join(HERE, "memory"))

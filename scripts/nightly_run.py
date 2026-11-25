@@ -1,6 +1,8 @@
 """
 夜间总驱动（AGI 自维护底盘主链）：串联 E2(分钟级) → E4/E5/E6 → E7 治理 → T1 归档。
 （E1 探针回归已于 2026-11-23 移出主链——LLM 路由单条卡 38min 会拖垮整链，改手动触发）
+（E11 原子技能冒烟 / E12 路由器冒烟 已于 2026-11-25 移出主链——同属真实 LLM 质量门、
+  零 DB 写非生产任务；主链现为纯本地内务闭环，LLM 质量门改手动/按需触发）
 
 2026-11-15 用户裁决重构（管线分级）:
   eval/core/       常驻自维护底盘——本主链只串这些
@@ -80,12 +82,18 @@ STEPS = [
     # nightly 冒烟步骤。真实 LLM 固定样例各跑一次, 断言非降级+schema+红线
     # (f_reason 无plausibility档/memory_gate 绿档类目封闭); FAIL 退出1晨报高亮;
     # 只调技能本体零 DB 写, 夜间不产生绿卡写入(不调 commit_green_cards))
-    ("E11 原子技能冒烟", [PY, "eval/core/e11_atomic_skill_smoke.py"], "logs/e11_atomic_smoke.json", 90),
+    # E11/E12 已于 2026-11-25 用户裁决移出自动主链(与 E1 同性质: 真实 LLM 质量门,
+    # 非生产任务——零 DB 写不产绿卡; 代码未改时每夜重跑纯属陪跑, 且单次超时300s×重试3次
+    # 足以吃光 90min 配额, 内网 LLM 慢时必爆并触发整轮熔断拖垮后面记忆步骤)。改手动触发:
+    #   NO_MEMORY=1 python eval/core/e11_atomic_skill_smoke.py
+    #   NO_MEMORY=1 python eval/core/e12_router_smoke.py
+    # 建议: 代码/技能有改动时手动跑一次做准入回归, 平时不陪跑。
+    # ("E11 原子技能冒烟", [PY, "eval/core/e11_atomic_skill_smoke.py"], "logs/e11_atomic_smoke.json", 90),
     # E12 skill_router 冒烟(2026-11-17 七段定稿段六③a变体: 编排组件双准入之
     # nightly 步骤, 豁免盲评。真实 LLM 一条标准故障根因目标走完整原子管线,
     # 断言 ok=True/exit_channel合法/steps≥3/fallback≤1/单技能≤2次;
     # FAIL 退出1晨报高亮; 零 DB 写, 不调 commit_green_cards)
-    ("E12 路由器冒烟", [PY, "eval/core/e12_router_smoke.py"], "logs/e12_router_smoke.json", 90),
+    # ("E12 路由器冒烟", [PY, "eval/core/e12_router_smoke.py"], "logs/e12_router_smoke.json", 90),
     # trace 月度归档（2026-11-15 #31 切换步骤④：主库流水开始灌入后归档能力直接就位；
     # 热窗30天, 归档前对账守恒, 切换读源后主库不再无限膨胀）
     ("T1 trace月度归档", [PY, "memory/trace_archive.py"], "logs/e7_governance.json", 60),
