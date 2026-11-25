@@ -3,7 +3,7 @@
 > **读者**：未来会话的我 / 任何要碰这张库的 agent。
 > **目的**：低成本判断「这张表能不能碰、真相源是谁、删了会怎样」。
 > **不是**字段字典（字段看 `PRAGMA table_info` 即可）。
-> **快照时间**：2026-11-24 22:30（数据会变，定性结论需按需复核）
+> **快照时间**：2026-11-25 09:30（**全 57 表已逐表核实代码归属**，非按名归类；数据会变，定性需按需复核）
 > **主库**：`data/memory/corpus_store.db`（36MB，唯一真相）
 
 ---
@@ -43,15 +43,28 @@
 | `core_hold_pool` | 16 | `topic_layer.py`(4,hold池)、`e7_nightly_governance.py`、`governance_reconcile.py` | 主题挂载 hold 池(topic_id=null 待夜间裁决)。夜间治理消费 |
 | `core_quarantine` | 43 | `fix_quarantine_20261123.py`(捞回)、`governance_reconcile.py` | 隔离区(问题卡)。捞回三步流程 |
 | `core_conflict_queue` / `core_alias_pending` / `core_governor_pending` / `core_class_backfill_pending` | 149/89/17/151 | `scripts/nightly_run.py`(队列统计)、`governance_reconcile.py` | 待审队列(verdict IS NULL 待处理)。冲突/别名/治理/分类回填 |
-| `core_dialogue_log` / `core_raw_dialog_session` / `session_dialog_archive_fragment` / `dialog_seq` / `_tmp_dialog_fragment` | 12/3/259/1/12 | `e9_dialog_governance.py`、`patrol_dialog_fragments.py` | 对话流水/原始会话/碎片归档/序号 |
-| `trace_cited` / `trace_call` / `trace_embedding` | 45472/-/- | 埋点、夜间报告 MAX(ts) | 流水埋点，30天窗口+月度归档(`trace_archive/`) |
-| `audit_topic_log` / `audit_pool` / `audit_schema_migrate` / `audit_maintenance` | 5813/3815/82/23 | 审计事件 | 主题日志/池/迁移记录/维护记录 |
-| `core_revision_pending` / `core_persona_evolution` | 1/0 | 修订/人格演化 | 修订待核/人格演化(空) |
-| `schema_version` | 2 | 迁移记录 | 迁移版本+结果 JSON |
-| `iterations` | 3364 | 12 处 | 迭代记录。**`audit_iteration`(2863) 是死镜像，别用** |
-| `persona_anchor` / `core_persona_anchor` | 10/10 | 都在用(11/9 处) | 人格锚点。两表并存属历史遗留，改动前必查谁在读 |
+| `core_dialogue_log` | 12 | `memory/dialog_evidence_store.py`(6) | 对话轮次日志（role/turn/content/session_topic/linked_cards/fts）。对话证据链 |
+| `core_raw_dialog_session` | 3 | `memory/dialog_evidence_store.py`(9) | 对话原始会话（messages/msg_count/terminate_reason/ref_archive_fragment）。碎片归档的父会话 |
+| `session_dialog_archive_fragment` | 259 | `memory/corpus_store.py`(1)、`patrol_dialog_fragments.py` | 对话碎片归档（与 raw_corpus 同构 + archive_reason/archive_ts）。碎片巡检 |
+| `_tmp_dialog_fragment` | 12 | `memory/dialog_evidence_store.py`(14) | 对话碎片**暂存区**（msg_raw/captured_ts/consumed）。捕获→消费的缓冲 |
+| `dialog_seq` | 1 | `memory/corpus_store.py`(4) | 对话序号发生器（seq_name→last_seq）。单行计数器 |
+| `trace_cited` | 45472 | `memory/memory_query.py`(5)、`shadow_regress.py` | **引用埋点**：每次召回记录 query→inst_id→score→source。喂影子回归 |
+| `trace_call` | 0 | `memory/trace_archive.py`(4) | 调用埋点（entry/meta）。**表就位但当前入口未打点**，30天窗口归档管辖 |
+| `trace_embedding` | 0 | `memory/trace_archive.py`(3) | 嵌入计算埋点（model/n_items）。同上，当前无数据流入 |
+| `audit_topic_log` | 5813 | `cgraph/executor.py`(3)、`cgraph/atomic_skill.py`(3) | **主题层操作审计**（op/payload）。executor 每次主题变更写 |
+| `audit_pool` | 3815 | `eval/audit/e3_sft_audit.py`(2) | SFT 审计池（pool/event）。审计事件池 |
+| `audit_schema_migrate` | 82 | `memory/schema_migrate.py`(4) | schema 迁移字段级记录（inst_id/field/old_val/new_val） |
+| `audit_maintenance` | 23 | `memory/trace_archive.py`(2) | 维护事件（case_desc/resolution） |
+| `audit_paradigm_evidence` | 2 | `e7_nightly_governance.py`(4)、`paradigm_review.py`(2) | 范式证据账（pid/outcome/delta/source_log）。范式命中/失效记分 |
+| `core_revision_pending` | 1 | `memory/corpus_revision.py`(9) | 修订待审（target_id/proposed_body/verdict）。人审后 adopt 升版 |
+| `schema_version` | 2 | 迁移记录 | schema 迁移版本账（版本名+结果 JSON）。2 条：enum_normalize / deprecate_persona_anchor |
+| `core_persona_evolution` | 0 | `memory/render_persona.py`(2) | 人格演化事件（kind/summary/evidence/impact）。**表空=尚无演化事件**，渲染时读 |
+| `iterations` | 3364 | `memory/corpus_store.py`(8)、`corpus_revision.py`(4) | 语料版本迭代记录（action/what/**why**/ts）。改版"为什么改"的承载。**`audit_iteration`(2863) 是死镜像，别用** |
+| `persona_anchor` / `core_persona_anchor` | 10/10 | `corpus_store.py`、`schema_migrate.py`、`render_persona.py` | 人格锚点(phase/summary/detail)。**两表内容已分叉**：core_ 版有 3 条标`[已迁范式]`(部分已迁范式表)，非简单重复。改动前必查谁在读 |
 | `core_watchlist` | 3 | `scripts/nightly_run.py`(仅 COUNT) | **准活**：仅夜间报告统计待审数，无业务读写 |
 | `fts_memory_card*` / `fts_dialogue*` | - | 全文检索 | FTS 影子表，随主表重建，**勿手改** |
+
+> 0 行表说明（2026-11-25 核实）：`trace_call`/`trace_embedding` 是埋点表**就位但无数据流入**（同套的 `trace_cited` 有 4.5 万，证明这套机制在跑，只是这两入口没打点）；`core_persona_evolution` 表空是**尚无人格演化事件**，`render_persona.py` 渲染时读它。
 
 ### B 类 · 镜像死壳（建表未用，数据不同步）
 
