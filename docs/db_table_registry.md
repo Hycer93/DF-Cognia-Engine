@@ -114,15 +114,27 @@
 
 ### B 类 · 镜像死壳（建表未用，数据不同步）
 
-代码**零读写**，只在 `memory/v3_schema.py` 的 CREATE 定义里出现；数据比旧表少（迁移半途停）；最后写入停在 2026-11-16。
+代码**零读写**，只在 `memory/v3_schema.py` 的 CREATE 定义里出现；建表来自已删除的一次性迁移脚本 `v3_migrate_batch1.py`（commit `43658f1`，2026-11-15）。数据非"空壳"而是**迁移遗留快照**，最后写入停在 2026-11-17。
 
-| 死壳表 | 行数 | 对应活表 | 处置建议 |
-|---|---|---|---|
-| `core_raw_corpus` | 1457 | `raw_corpus` (1690) | 补齐或删壳 |
-| `core_topic_links` | 179 | `topic_links` (197) | 同上 |
-| `core_topic_abstraction` | 11 | `topic_abstraction` (12) | 同上 |
-| `core_corpus_tags` | 147 | `corpus_tags` (159) | 同上 |
-| `audit_iteration` | 2863 | `iterations` (3364) | 同上 |
+**⚠️ 2026-11-25 重大发现：不能盲删，死表救回活表 7 条丢失数据**
+
+逐表核查"死表独有数据是否别处有留存"：
+
+| 死壳表 | 行数 | 死表独有 | 别处留存? | 结论 |
+|---|---|---|---|---|
+| `core_raw_corpus` | 1457 | 192 对话碎片 | ✅ 全在 `session_dialog_archive_fragment` | 数据不丢，无必要删 |
+| `core_corpus_tags` | 147 | 0（子集） | — | 活表子集 |
+| `audit_iteration` | 2863 | 0（子集） | — | 活表子集 |
+| `core_topic_abstraction` | 11 | 子集 | — | 活表子集 |
+| **`core_topic_links`** | 179 | **7 条 edge** | ❌ **活表完全没有** | **删了永久丢 7 条归属** |
+
+**`core_topic_links` 事故复盘**：
+- 7 张 `status=active/tier=active` 活卡（进化史G22/专利自省/SPI工具/范式定稿…）的主题归属，只在死表有、活表 `topic_links` 一条都没有
+- 时间线定位：死表 ts 分布有 **11-17 那批 manual_seed(4条)**，活表 ts 分布**唯独没有 11-17**——即 11-17 那批录入**写错表**（写进 `core_topic_links` 而非 `topic_links`）；另 3 条 seed/backfill 更早丢失
+- **✅ 已修复**：`INSERT OR IGNORE` 补 7 条进活表（`topic_links` 197→204，`manual_seed` 0→4），7 卡归属恢复，卡/主题均 active 非悬空。备份 `corpus_store.db.bak_topiclinkfix_*`
+- **剩余 4 条"死表独有"不补**：是正常归属变更（`e10-review` 复核改挂主题 / backfill 阶段版本差异 / 1 张已 superseded），补了反成脏数据
+
+**处置结论**：`core_topic_links` 至少保留作证据，建议改名 `_legacy_` 冻结，防再写错表；其余 4 张确认子集，可归档到 backup 库（非必须）。**任何删除前必须重新做上述"独有数据留存"核查。**
 
 > ⚠️ `audit_topic_log`(5813)/`audit_pool`(3815) **是活的**，别和 `audit_iteration` 混——同 audit_ 前缀不等于同类命运，逐个看引用数。
 
