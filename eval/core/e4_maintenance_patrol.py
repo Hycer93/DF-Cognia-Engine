@@ -234,9 +234,12 @@ def patrol(as_of=None):
             for t in terms:
                 if any(w in t for w in stop):
                     dirty.append((iid[:8], t))
-        pending = malias._load_pending()
+        # 设施③a（2026-11-25）：区分活跃态 vs 终态历史。旧写法 len(pending) 把 209 条
+        # rejected_weak_overlap 终态也计为"积压"，导致误报 231。真积压只看 active。
+        _pstat = malias.count_active_pending()
         report["items"]["alias_entries"] = sum(len(v) for v in alias_map.values())
-        report["items"]["alias_pending"] = len(pending)
+        report["items"]["alias_pending"] = _pstat["active"]           # 真待处理
+        report["items"]["alias_pending_terminal"] = _pstat["terminal"]  # 终态历史(供审计,不计积压)
         # v2 三层防御 L3：30天零命中读侧已失效的物理行（append-only 保留，供人决定是否 reactivate）
         recs = malias._load_alias_records()
         effective = malias.effective_alias_map()

@@ -51,6 +51,31 @@ def _load_pending():
     return [json.loads(l) for l in open(ALIAS_PENDING_JSONL, encoding="utf-8") if l.strip()]
 
 
+# 可解释性设施③a（2026-11-25）：pending 队列状态区分读取。
+# 背景：alias_pending.jsonl 是 append-only，含终态记录(rejected_weak_overlap 等)，
+# 直接 len() 会把"已终结"误算成"积压"（实测 231 条中 209 条是终态，真待处理仅 22）。
+# 真积压 = 仍需人处理的状态（pending 待审 / paired 待确认 等活跃态）。
+_PENDING_ACTIVE_STATES = ("pending", "paired", "marginal_ask", "uncertain")
+
+
+def count_active_pending() -> dict:
+    """返回 alias_pending 的【真积压】统计，区分活跃态 vs 终态历史。
+
+    供 E4 巡检/报表用：只看 active（真待处理），不把 rejected_* 等终态计入积压。
+    """
+    rows = _load_pending()
+    from collections import Counter
+    by_status = Counter(r.get("status", "pending") for r in rows)
+    active = sum(n for st, n in by_status.items()
+                 if st in _PENDING_ACTIVE_STATES or not st.startswith("rejected"))
+    return {
+        "total_rows": len(rows),          # 物理行数（含终态历史）
+        "active": active,                  # 真待处理
+        "terminal": len(rows) - active,    # 终态历史（已拒/已终结，不算积压）
+        "by_status": dict(by_status),
+    }
+
+
 def _load_alias_records():
     if not os.path.exists(ALIAS_TAGS_JSONL):
         return []

@@ -85,6 +85,17 @@ def is_protected(entry: dict) -> bool:
 
 # ---- 可复现性判定（专利A，编码预筛短路）----
 def judge_repro(content: str, tags: dict) -> str:
+    """三级可复现性判定：repro 由「可复现性」决定，与「重要性/思维动作」正交。
+
+    重要边界（2026-11-25 核查定案）：
+    - behavior=Ht(G22 决策整合) 不参与本判定。Ht 只标记"该记忆产自最终决策整合过程"，
+      不回答"这条记忆能否被确定性算法重算"。实测全库 115 条 Ht 卡 repro 三分布
+      flash39/situational38/derived38——若把 Ht 强判 derived 会误伤 77 条，故不可规则化。
+    - 现有 38 条 Ht+derived 系上游对「终裁/定稿/定案类结论卡」的有意覆盖（内容含明确
+      决策逻辑→可复现），经 add(repro=...) 显式传值，非本规则产出，不可推广到全部 Ht 卡。
+    - 12 条 flash 非005且无affect 同理：上游显式传值覆盖，非本规则产出。
+    本函数只覆盖「明文可判」的四类快捷分支，模糊带交上游语义判定（判定单元未落地，
+    见 docs/design_repro_vs_judge_flow_20261125.md §2.6）。"""
     b = tags.get("behavior", "")
     if b in ("B00", "Fp", "Fq", "Fr"):
         return "derived"
@@ -282,7 +293,29 @@ def atomic_store(
                 return "replica", f"语义等价拦截: {(_bid or '')[:8]} sim={_bsim:.3f}"
 
     inst_id = uuid.uuid4().hex
-    repro = tags.get("repro") or judge_repro(detail, tags)
+    # repro 三级判定 + 溯源元数据（2026-11-25，可解释性设施①）
+    # 记录"这个 repro 是哪条路径决定的"，终结考古：
+    #   rule     = judge_repro 规则判定（唯一规则源）
+    #   manual   = 上游 add(repro=...) / judge(add) 显式传值覆盖规则
+    #   migration= 迁移脚本/一次性治理脚本带入
+    _explicit_repro = tags.get("repro")
+    if _explicit_repro:
+        repro = _explicit_repro
+        # 溯源细分：迁移/回放脚本(script-reingest)带显式 repro → migration；否则为人工/上游判定 → manual
+        repro_source = "migration" if origin == "script-reingest" else "manual"
+        repro_reason = f"上游显式传值 {_explicit_repro}（judge_repro 规则被 or 短路跳过；origin={origin}）"
+        # 可解释性设施②（2026-11-25）：覆盖必留痕。任何"显式传值绕过规则"记 gate_log，
+        # 使 38 条 Ht+derived 那类"神秘覆盖"变成"有据可查"，不再静默发生。失败仅告警不阻断。
+        _log_p0("repro_override", {
+            "summary": summary[:60], "repro": repro,
+            "repro_source": repro_source, "origin": origin,
+        })
+    else:
+        repro = judge_repro(detail, tags)
+        repro_source = "rule"
+        repro_reason = (f"judge_repro 规则判定（behavior={tags.get('behavior','')}, "
+                        f"affect={'Y' if tags.get('affect_tags') else 'N'}, "
+                        f"domain={tags.get('domain','')}）")
 
     # 三层占用（§4.7 嵌套：判定三级决定对结构三层的占用权限）
     # #30 P1（2026-11-23）：derived 分支不再销毁 detail/source_ref——物理保留入库，
@@ -308,6 +341,10 @@ def atomic_store(
             "relation": tags["relation"],               # memory_class=记忆资产角色第五维，
             "memory_class": tags.get("memory_class"),   # null 合法=普通记录（S015：非万能分类）
             **({"derived_only": True} if repro == "derived" else {}),  # P1: 派生标记(内嵌,不改表)
+            # 可解释性设施①（2026-11-25）：repro 溯源元数据，内嵌 dfcp_tag 不改表。
+            # source: rule|manual|migration；reason: 人读的判定来路。解决"这个值哪来的"考古。
+            "repro_source": repro_source,
+            "repro_reason": repro_reason,
         },
         "affect_tags": tags.get("affect_tags"),        # 情感树可选层，独立于 dfcp_tag
         "memory_class": tags.get("memory_class"),      # 【迁移期双读】件②后权威位在 dfcp_tag.memory_class；顶层保留供 E4/E5 旧口径过渡，迁移完成（E4 memory_class_missing=0）后清退
