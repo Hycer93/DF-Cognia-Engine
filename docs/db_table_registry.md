@@ -8,13 +8,59 @@
 
 ---
 
-## 0. 一句话结论（先看这个）
+## 0. 概念导读（先建立世界观，再看技术细节）
+
+这套记忆系统的世界观：**原始感官 → 认知原子 → 主题/关系 → 身份 → 经验/方法论 → 性格**，
+全程由治理免疫系统把关、版本系统追溯、黑匣子记录。每张表在系统里扮演一个"概念角色"：
+
+### 记忆的形成链（数据自下而上蒸馏）
+- `raw_corpus` — **原始感官**：未被蒸馏的第一手材料（专利/小说/前身稿原文）+ `corpus_tags` 原文书签
+- `core_memory_card` — **认知原子**：系统思考的最小单元，一条"认知"，全部记忆的真相源
+- `core_relation` — **概念突触**：把原子连成联想网络（神经元之间的连接）
+- `topic_abstraction` — **主题簇**：一组原子抽象出的"一个概念"；`topic_links` 是其归属边
+- `fts_memory_card`/`fts_dialogue` — **检索索引**：给原子加快查目录，不存新东西
+
+### 身份与阅历（"这是谁、我学到了什么"）
+- `core_entity_timeline` — **实体锚**：一个真实对象（人/系统/项目）的身份档案 + 发展史
+- `core_term_alias` — **别名映射**：同一个东西的不同叫法（暮暮=蒸馏仔=归元仔）
+- `core_experience` — **经验**：多案例归纳出的"我学到了什么"（复盘/定案/踩坑教训），可复用判断
+
+### 方法论与性格（"我怎么想、我是谁"）
+- `core_thinking_paradigm` — **思维范式**：这类问题该怎么推
+- `core_skill_paradigm` — **技能范式**：这类事该怎么执行；`audit_paradigm_evidence` 是它的成绩单
+- `persona_anchor`/`core_persona_anchor` — **性格锚点**：出厂人格/底线（两版已分叉）
+- `core_persona_evolution` — **性格演化**：人格随经历的改变事件（当前为空）
+
+### 免疫系统（自我质检，防止记忆被污染）
+- `core_conflict_queue` 冲突待审 / `core_alias_pending` 别名待审 / `core_hold_pool` 存疑暂存
+- `core_quarantine` 隔离区 / `core_governor_pending` 治理提案 / `core_class_backfill_pending` 分类待补
+- `core_watchlist` 观察名单
+
+### 对话记忆（会话过程本身）
+- `core_raw_dialog_session` 一次完整对话 → `session_dialog_archive_fragment` 值得留存的碎片
+- `_tmp_dialog_fragment` 捕获缓冲 → `core_dialogue_log` 单轮细粒度记录 → `dialog_seq` 序号工具
+
+### 版本与观测（改动可追溯、运行有黑匣子）
+- `iterations` — **改版履历**（改了啥、**为什么**改）；`core_revision_pending` 修订待批
+- `trace_cited` 召回足迹 / `trace_call`·`trace_embedding` 运算足迹
+- `audit_topic_log` 主题变更 / `audit_pool` 审计池 / `audit_schema_migrate` 结构迁移 / `audit_maintenance` 维护记录
+- `audit_code_change`·`audit_distill`·`audit_judge`·`audit_confidence` — 四类历史流水（已成历史，真相在 jsonl）
+- `schema_version` — 结构版本账
+
+### 僵尸残壳（别碰，别在上面开发）
+- `core_raw_corpus`/`core_topic_links`/`core_topic_abstraction`/`core_corpus_tags`/`audit_iteration` — 迁移半途的空壳，活的是对应无前缀旧表
+
+> 概念图景到此为止；下面 §2 起进入"技术定性"（活/死壳/死资产 三类 + 判定方法）。
+
+---
+
+## 1. 一句话结论（技术定性，先看这个）
 
 `v3_schema.py`（2026-11-15 三前缀重设计：core_根资产/audit_审计/trace_流水）**只落地了一半**：
 - ✅ `core_memory_card` 迁完并用上（195 处引用，绝对主力）
 - ❌ `core_raw_corpus`/`core_topic_links`/`core_topic_abstraction`/`core_corpus_tags`/`audit_iteration` 只建空壳，**代码零引用**，数据还比旧表少（迁移半途停）
 - ✅ 旧的**无前缀表**（`raw_corpus`/`topic_links`/`topic_abstraction`/`corpus_tags`/`iterations`）**才是当前活的**——17~18 个文件在读它们
-- ⚠️ **C 类（`core_experience` + 4 张 audit 流水）不是死资产**：迁移后读侧没接线，数据仍在写 jsonl。`core_experience` 更是**经验层根资产**（见 §1 C 类），别误删
+- ⚠️ **C 类（`core_experience` + 4 张 audit 流水）不是死资产**：迁移后读侧没接线，数据仍在写 jsonl。`core_experience` 更是**经验层根资产**（见 §2 C 类），别误删
 
 **两个致命坑**：
 1. **`core_` 前缀 ≠ 新/活**。`core_raw_corpus` 是死壳，`raw_corpus` 才是活的。
@@ -22,7 +68,7 @@
 
 ---
 
-## 1. 三类定性
+## 2. 三类定性
 
 ### A 类 · 活表（照常用，36 张）
 
@@ -112,7 +158,7 @@
 
 ---
 
-## 2. 其他 db 文件（别误碰）
+## 3. 其他 db 文件（别误碰）
 
 | 文件 | 状态 | 说明 |
 |---|---|---|
@@ -124,7 +170,7 @@
 
 ---
 
-## 3. 判定方法（数据变了怎么自查）
+## 4. 判定方法（数据变了怎么自查）
 
 **唯一可信判据 = 代码引用数 + 最新写入时间**，不是表名、不是前缀。
 
@@ -147,7 +193,7 @@ sqlite3 ... "SELECT MAX(ts) FROM TABLE"
 
 ---
 
-## 4. 踩坑红线（血泪）
+## 5. 踩坑红线（血泪）
 
 1. **别信 `core_` 前缀 = 新/活**。`core_raw_corpus` 死、`raw_corpus` 活，反直觉。
 2. **改任何表前，先 grep 谁在读**。`persona_anchor` 和 `core_persona_anchor` 两表并存都还在用。
