@@ -315,7 +315,16 @@ def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs
     """
     try:
         from memory import memory_organize as _mo
-    except Exception as e:  # import 失败不阻断主流程(DB 已落库)
+    except (ImportError, ModuleNotFoundError) as e:
+        # 2026-11-26 治理: 命名空间冲突 / memory 包缺失必须暴露, 不静默。
+        # 正常生产从仓库根启动, memory/ 命名空间包可正常导入; 一旦被 cgraph/
+        # 抢先命中(或 memory 包不可用), 这里直接炸出, 提示排查 sys.path。
+        raise ImportError(
+            "green_card_writer 无法导入 memory.memory_organize"
+            "(疑似 sys.path 抢占/命名空间冲突, 或 memory 包不可用); "
+            "DB 已落库, jsonl 同步未执行, 需人工核查。" f"原始异常: {e}"
+        ) from e
+    except Exception as e:  # 其它导入期异常不阻断主流程(DB 已落库)
         errs.append(f"jsonl_import_fail:{type(e).__name__}")
         return
     for inst, summary, fh, x, tag, src_ref in committed:

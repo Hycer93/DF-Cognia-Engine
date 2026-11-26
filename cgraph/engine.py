@@ -12,7 +12,7 @@ from cgraph.router import ComplexityRouter
 from cgraph.executor import ChainExecutor
 from cgraph.hebbian import HebbianUpdater, WalkFeedback
 from cgraph.llm import LLMClient
-from cgraph.memory import MemoryStore
+from cgraph.vec_memory import MemoryStore
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

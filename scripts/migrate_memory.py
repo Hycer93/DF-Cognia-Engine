@@ -23,7 +23,7 @@ def main():
         return
 
     import chromadb
-    from cgraph.memory import MemoryStore
+    from cgraph.vec_memory import MemoryStore
 
     import yaml
     cfg = yaml.safe_load(open(os.path.join(HERE, "config", "config.example.yaml"), encoding="utf-8"))
