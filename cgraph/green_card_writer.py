@@ -303,6 +303,46 @@ def _judge_gate_commit(candidates: list, context: dict):
     return _mj.judge_and_store(candidates, context)
 
 
+def _connect_and_begin_retry(db, max_retries=3):
+    """打开连接并 BEGIN IMMEDIATE 取写锁，撞 locked/busy 时指数退避重试。
+
+    2026-11-26 统一写入口加固：补上绿卡批事务此前缺失的"锁竞争退避重试"
+    （对齐 memory_organize._write_card_to_db 的加固策略）。此前 BEGIN IMMEDIATE
+    一旦撞锁即整批 db_error 丢弃、无重试；collab_pipeline 多进程并行时偶发丢批。
+    仅对 locked/busy 退避重试，其它 OperationalError 立即上抛（不掩盖真实错误）。
+
+    返回已进入 IMMEDIATE 事务的连接；重试耗尽仍失败则上抛最后异常。
+    """
+    last_err = None
+    for attempt in range(max_retries):
+        con = None
+        try:
+            con = sqlite3.connect(db, timeout=10)
+            con.isolation_level = None   # 显式事务接管，避免与外层隐式 BEGIN 冲突
+            con.execute("PRAGMA busy_timeout=5000")
+            con.execute("BEGIN IMMEDIATE")
+            return con
+        except sqlite3.OperationalError as oe:
+            last_err = oe
+            if con is not None:
+                try:
+                    con.close()
+                except Exception:
+                    pass
+            if "locked" in str(oe).lower() or "busy" in str(oe).lower():
+                time.sleep(0.05 * (2 ** attempt))
+                continue
+            raise
+        except Exception:
+            if con is not None:
+                try:
+                    con.close()
+                except Exception:
+                    pass
+            raise
+    raise last_err
+
+
 def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs):
     """2026-11-24 任务②：DB INSERT 成功后同步追加 memories.jsonl。
 
@@ -406,17 +446,16 @@ def commit_green_cards(result, gate, user_input: str,
 
     # ---- 开关 false：原直写链路（下方行为与改前完全一致）+ 末尾 shadow 观测 ----
 
+    con = None
     try:
-        con = sqlite3.connect(db, timeout=10)
-        # 显式事务完全接管：关闭 python sqlite3 的隐式 BEGIN，避免
-        # "BEGIN IMMEDIATE" 与外层隐式事务冲突("事务内开事务")。
-        con.isolation_level = None
         # 2026-11-24 并发根治：查询-插入整块包裹 BEGIN IMMEDIATE 排他事务。
         # 根因：collab_pipeline 用 multiprocessing.Pool(spawn) 多进程并行 run_atomic，
         # 各进程独立 memory_gate，旧代码"先查后插"无事务 → 互相看不见对方未提交的写入
         # → 各算各的、同时插入副本。IMMEDIATE 立即取写锁，后到者排队、其查询能看到
         # 前者已提交的最新卡，从根源杜绝并发重复。
-        con.execute("BEGIN IMMEDIATE")
+        # 2026-11-26 加固：连接+BEGIN IMMEDIATE 走带退避重试的辅助函数，
+        # 撞锁时指数退避而非整批丢弃（对齐 _write_card_to_db 加固策略）。
+        con = _connect_and_begin_retry(db)
         # 语义级幂等补强(段七红线5编排侧实现): full_hash 只防完全同文,
         # 真实 LLM 两次盘点同资产措辞漂移→bigram-Jaccard>0.6 视为同资产跳过。
         # 2026-11-24 加固：在 Jaccard 之外叠加"同-session+同-node"硬去重(第二层兜底)。
@@ -457,19 +496,35 @@ def commit_green_cards(result, gate, user_input: str,
                                    "gist": x.get("gist", "")[:60]})
             tags_map[ci] = tag   # 改造B：保留动态标签供 shadow/judge 复用
             src_ref = _make_source_ref(inst, session_id, day, user_input)
+            # 2026-11-26 统一列契约：补齐为 22 列显式（此前 16 列走 DB 默认）。
+            # 目的：与 memory_organize._write_card_to_db 的 22 列契约对齐，消除两条
+            # 写库路径的列漂移。省略的 6 字段显式传等价默认：
+            # affect_tags=NULL / origin_ids='[]'(空) / entity_id=NULL /
+            # derived_from=NULL / protected=0 / superseded_by=NULL。
             con.execute(
                 "INSERT INTO core_memory_card (inst_id, ts, event_ts, full_hash, "
-                "asset_class, repro, confidence, dfcp_tag, summary, summary_converged, "
-                "detail, source_ref, memory_class, tier, weight, status) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "asset_class, repro, confidence, dfcp_tag, affect_tags, summary, "
+                "summary_converged, detail, source_ref, origin_ids, entity_id, "
+                "derived_from, tier, weight, protected, superseded_by, status, "
+                "memory_class) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (inst, ts, ts, fh, "runtime", tag["repro"], tag["confidence"],
                  json.dumps({"domain": tag["domain"], "behavior": tag["behavior"],
                              "relation": tag["relation"], "memory_class": None},
                             ensure_ascii=False),
+                 None,                       # affect_tags
                  s[:120], "0",
                  _green_detail(x),
                  src_ref,
-                 None, "active", '{"match": 0.0, "cited": 0}', "active"))
+                 "[]",                       # origin_ids 空（与 _write_card_to_db 对齐）
+                 None,                       # entity_id
+                 None,                       # derived_from
+                 "active",                   # tier
+                 '{"match": 0.0, "cited": 0}',   # weight
+                 0,                          # protected
+                 None,                       # superseded_by
+                 "active",                   # status
+                 None))                      # memory_class
             ids.append(inst[:16])
             nd2 = _extract_node(x.get("evidence_step", "")) or _extract_node(s)
             if nd2:
@@ -482,14 +537,18 @@ def commit_green_cards(result, gate, user_input: str,
         errs.append(f"db_error:{type(e).__name__}")
         committed = []  # 回滚后 DB 未落库, 禁止向 jsonl 同步幻影记录
         try:
-            con.rollback()
-            con.close()
+            if con is not None:
+                con.rollback()
+                con.close()
         except Exception:
             pass
-    # 2026-11-24 任务②：DB 写入成功后同步追加 memories.jsonl（保留 7 审计字段）。
-    # jsonl 是审计快照非真相源，但仍需与 DB 保持一致, 避免后续漂移。
-    if committed:
-        _sync_committed_to_jsonl(committed, ts, day, user_input, errs)
+    # 2026-11-26 存储收敛：实时双写 jsonl 已停。jsonl 改为 DB 的严格派生快照，
+    # 由夜间 scripts/export_jsonl_from_db.py --apply 全量覆盖（DB 是唯一真相源）。
+    # 停双写理由：两条独立写入路径（此函数 raw INSERT + 本函数手抄 jsonl）易漂移，
+    # 且 jsonl 运行时无人读（仅审计/应急回切）。改为单一 DB→jsonl 派生，一致性天然成立。
+    # 保留 _sync_committed_to_jsonl 函数体作应急手动工具（不删，避免误伤历史调用方）。
+    # if committed:
+    #     _sync_committed_to_jsonl(committed, ts, day, user_input, errs)
     # 段六b案: 成败一律落独立审计行
     try:
         con = sqlite3.connect(db, timeout=5)

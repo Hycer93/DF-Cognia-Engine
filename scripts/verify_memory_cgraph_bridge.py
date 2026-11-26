@@ -128,12 +128,15 @@ tmpdir = tempfile.mkdtemp(prefix="gcard_verify_")
 tmp_db = os.path.join(tmpdir, "test.db")
 tmp_jsonl = os.path.join(tmpdir, "memories.jsonl")
 
-# 建最小 core_memory_card 表（与生产 schema 对齐关键列）
+# 建最小 core_memory_card 表（与生产 schema 对齐关键列，2026-11-26 补齐 22 列
+# 契约：绿卡 INSERT 已从 16 列扩到 22 列显式，测试仓须同步，否则 db_error）
 con = sqlite3.connect(tmp_db)
 con.execute("""CREATE TABLE core_memory_card (
     inst_id TEXT, ts TEXT, event_ts TEXT, full_hash TEXT, asset_class TEXT,
-    repro TEXT, confidence TEXT, dfcp_tag TEXT, summary TEXT, summary_converged TEXT,
-    detail TEXT, source_ref TEXT, memory_class TEXT, tier TEXT, weight TEXT, status TEXT)""")
+    repro TEXT, confidence TEXT, dfcp_tag TEXT, affect_tags TEXT, summary TEXT,
+    summary_converged TEXT, detail TEXT, source_ref TEXT, origin_ids TEXT,
+    entity_id TEXT, derived_from TEXT, tier TEXT, weight TEXT, protected INTEGER,
+    superseded_by TEXT, status TEXT, memory_class TEXT)""")
 con.execute("CREATE TABLE audit_topic_log (ts TEXT, op TEXT, payload TEXT)")
 con.commit(); con.close()
 
@@ -182,14 +185,29 @@ try:
     all_ok = all(S.validate_domain(b[1])[0] for b in behaviors)
     check("落库domain全合法", all_ok, str([b[1] for b in behaviors]))
 
-    # jsonl 同步一致
-    if os.path.exists(tmp_jsonl):
-        jrows = [json.loads(l) for l in open(tmp_jsonl, encoding="utf-8") if l.strip()]
-        check("jsonl同步条数=3", len(jrows) == 3, str(len(jrows)))
-        jbeh = {r["dfcp_tag"]["behavior"] for r in jrows}
-        check("jsonl behavior与DB一致", jbeh == beh_set, f"{jbeh} vs {beh_set}")
-    else:
-        check("jsonl同步条数=3", False, "jsonl未生成")
+    # 2026-11-26 存储收敛：实时双写已停，绿卡落库【不再】实时写 jsonl。
+    # jsonl 改由 DB 全量派生（scripts/export_jsonl_from_db.py）。故此处断言新语义：
+    #   (a) 实时写后 tmp_jsonl 不应被创建（双写已停）；
+    #   (b) 用导出脚本从同一 tmp_db 派生，jsonl 条数与 behavior 应与 DB 一致。
+    check("实时双写已停(jsonl未实时生成)", not os.path.exists(tmp_jsonl),
+          "jsonl 被实时写入，双写未真正停止")
+    # 派生导出：复用 export_jsonl_from_db 的核心转换，指向 tmp_db → tmp_jsonl
+    import scripts.export_jsonl_from_db as _exp
+    _save_db, _save_jl = _exp.DB, _exp.JL
+    try:
+        _exp.DB = tmp_db
+        _exp.JL = tmp_jsonl
+        _db_rows = _exp._read_db()
+        _entries = [_exp.db_row_to_entry(r) for r in _db_rows]
+        with open(tmp_jsonl, "w", encoding="utf-8", newline="\n") as _f:
+            for _e in _entries:
+                _f.write(json.dumps(_e, ensure_ascii=False) + "\n")
+    finally:
+        _exp.DB, _exp.JL = _save_db, _save_jl
+    jrows = [json.loads(l) for l in open(tmp_jsonl, encoding="utf-8") if l.strip()]
+    check("导出派生jsonl条数=3", len(jrows) == 3, str(len(jrows)))
+    jbeh = {r["dfcp_tag"]["behavior"] for r in jrows}
+    check("派生jsonl behavior与DB一致", jbeh == beh_set, f"{jbeh} vs {beh_set}")
 finally:
     gw.db = _orig_db
     _mo.MEMORIES_JSONL = _orig_jsonl

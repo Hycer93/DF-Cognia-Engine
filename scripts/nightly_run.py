@@ -48,11 +48,11 @@ STEPS = [
     # ("E1 探针触发率全链回归", [PY, "eval/core/e1_probe_trigger.py"], "logs/e1_probe_result.jsonl", 90),
     # E4 维护巡逻（只读报警）+ E5 自动整理（幂等软层操作，只追加不删除）
     ("E4 记忆库维护巡逻", [PY, "eval/core/e4_maintenance_patrol.py"], "logs/e4_maintenance.json", 60),
-    # DB→jsonl 增量回补(2026-11-22 #20 漂移修复: 11-15 读源切 SQLite 后 jsonl 降级为
-    # 审计导出流, 但缺"下轮增量同步补"步骤致 11-15~11-19 漏写 75 条 active 卡, E4 天天报漂移。
-    # 本步把 DB 中 jsonl 没有的 active 卡补导出, 兑现注释承诺、防单向漂移复发。只补不删,
-    # 幂等(无新增→0补 exit0), 紧跟 E4 后(检测→修复)。红线: 不改 DB, 只写 jsonl 导出流)
-    ("DB→jsonl增量回补", [PY, "eval/audit/backfill_jsonl_from_db.py", "--nightly"], None, 60),
+    # DB→jsonl 同步：2026-11-26 存储收敛后，实时双写已停，jsonl 改为由 DB 全量派生。
+    # 全量导出必须放在整个夜跑【最后】(所有 DB 写步骤之后)，否则导出后被 E5/E7/E9 等
+    # 改动又漂移。故此处不进 STEPS，而在 main() 主循环结束后统一执行
+    # scripts/export_jsonl_from_db.py --apply（见 main() 末尾）。
+    # 旧脚本 eval/audit/backfill_jsonl_from_db.py 保留作应急手动"只补不删"工具，不常驻夜跑。
     ("E5 记忆自动整理", [PY, "eval/core/e5_consolidation.py"], "logs/e5_consolidation.json", 60),
     # E6 思维图巡逻（只读报警，2026-11-09 用户确认：记忆侧有E4/E5，思维侧专项体检）
     ("E6 思维图巡逻", [PY, "eval/core/e6_mind_graph_patrol.py"], "logs/e6_mind_graph_patrol.json", 60),
@@ -549,6 +549,13 @@ def main():
                   "晨报置顶高亮, 检查环境(LLM通道/DB/路径)", flush=True)
     if fused:
         durations.insert(0, ("本轮熔断: 连续3步异常, 部分步骤被跳过", 0))
+    # 2026-11-26 存储收敛：夜跑末尾统一 DB→jsonl 全量导出（严格 = DB 投影）。
+    # 必须在所有 DB 写步骤之后执行，保证次日 jsonl 与 DB 字段级一致、无漂移。
+    # 实时双写已于本次改动停止，jsonl 仅由此步 + 手动导出脚本维护。
+    print("[NIGHT] 收尾: DB→jsonl 全量导出", flush=True)
+    ok, mins = run_step("DB→jsonl全量导出", [PY, "scripts/export_jsonl_from_db.py", "--apply"],
+                        None, 30)
+    durations.append((f"DB→jsonl全量导出 [{'OK' if ok else 'FAIL'}]", mins))
     write_report(durations)
     print(f"[NIGHT] 全部结束于 {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
 
