@@ -218,27 +218,22 @@ OUTPUT_CONTRACT = (
 
 
 def _framework(node_code: str, question: str, scores=None) -> dict:
-    """拼装节点思维框架（纯数据，零 LLM）。可量化节点可传 scores 触发确定性聚合。"""
+    """拼装节点思维框架（纯数据，零 LLM）。可量化节点可传 scores 触发确定性聚合。
+
+    返回精简：只给 framework 正文(含步骤+repro+契约) + 量化结果；不再重复 steps 等结构字段。"""
     g = _graph_load()
     node = g.nodes.get(node_code)
     if node is None:
         return {"error": f"节点 {node_code} 不存在"}
-    steps = []
-    for i, b in enumerate(node.behaviors or []):
-        steps.append({
-            "step": i + 1,
-            "action": b.get("action", ""),
-            "question": b.get("question", ""),
-            "output": b.get("output", ""),
-        })
     lines = [f"〔思维节点 {node_code} · {node.label}〕"]
     if node.trigger:
         lines.append(f"触发条件：{node.trigger}")
+    lines.append(f"待分析问题：{question}")
     lines.append("请依次完成以下思维步骤：")
-    for s in steps:
-        lines.append(f"  {s['step']}. 【{s['action']}】{s['question']}")
-        if s["output"]:
-            lines.append(f"     → 产出：{s['output']}")
+    for i, b in enumerate(node.behaviors or []):
+        lines.append(f"  {i + 1}. 【{b.get('action', '')}】{b.get('question', '')}")
+        if b.get("output"):
+            lines.append(f"     → 产出：{b['output']}")
     lines.append("")
     lines.append(REPRO_CRITERIA)
     lines.append("")
@@ -247,11 +242,6 @@ def _framework(node_code: str, question: str, scores=None) -> dict:
     out = {
         "node": node_code,
         "label": node.label,
-        "trigger": node.trigger,
-        "question": question,
-        "steps": steps,
-        "repro_criteria": REPRO_CRITERIA,
-        "output_contract": OUTPUT_CONTRACT,
         "framework": "\n".join(lines),
     }
     # 量化层：本节点支持量化时，告知输入格式；传入 scores 则跑确定性聚合
