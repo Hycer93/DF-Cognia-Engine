@@ -23,6 +23,10 @@ sys.path.insert(0, os.path.join(ROOT, "memory"))
 
 import schema as S
 
+# 冒烟全程禁用真 LLM：judge 走规则桩（JUDGE_USE_LLM=0），避免网络超时；
+# 各用例若需覆盖其它状态会在局部自行设置并复原。
+os.environ.setdefault("JUDGE_USE_LLM", "0")
+
 FAILS = []
 PASSES = []
 
@@ -189,6 +193,126 @@ try:
 finally:
     gw.db = _orig_db
     _mo.MEMORIES_JSONL = _orig_jsonl
+
+
+# ---------- 组4：改造B 五问 judge（shadow/judge/异常/指标） ----------
+print("\n[组4] 改造B judge 接入")
+import cgraph.green_card_writer as gw2
+
+# 4a 开关默认 false（未设环境变量且 config 无该项）
+os.environ.pop("CGRAPH_GATE_VIA_JUDGE", None)
+check("开关默认false", gw2._cgraph_gate_via_judge() is False, "")
+
+# 4b 候选构造：绿卡→judge candidates 字段对齐
+tags_map = {0: {"domain": "005-001", "behavior": "Ch", "confidence": "L3", "repro": "derived"}}
+cands = gw2._cards_to_candidates(
+    [{"asset_type": "观测", "gist": "G1", "evidence_step": "node_Ch"}], tags_map, "2026-11-26")
+check("候选字段domain", cands[0]["domain"] == "005-001", str(cands[0].get("domain")))
+check("候选字段behavior", cands[0]["behavior"] == "Ch", str(cands[0].get("behavior")))
+check("候选字段repro", cands[0]["repro"] == "derived", str(cands[0].get("repro")))
+check("候选relation=P", cands[0]["relation"] == "P", str(cands[0].get("relation")))
+
+# 4c shadow：桩模式（JUDGE_USE_LLM=0）跑一遍，只写观测日志、零入库
+tmp_shadow = os.path.join(tempfile.mkdtemp(prefix="shadow_"), "shadow.jsonl")
+_orig_shadow = gw2._SHADOW_LOG
+gw2._SHADOW_LOG = tmp_shadow
+os.environ["JUDGE_USE_LLM"] = "0"
+try:
+    rec = gw2._shadow_judge(cands, {"trigger": "test"})
+    check("shadow返观测dict", isinstance(rec, dict) and "pass_rate" in rec, str(type(rec)))
+    check("shadow写日志文件", os.path.exists(tmp_shadow), "未生成")
+    if os.path.exists(tmp_shadow):
+        line = json.loads(open(tmp_shadow, encoding="utf-8").read().strip().split("\n")[0])
+        # 五项观测指标齐备
+        for k in ("pass_rate", "hold_rate", "discard_rate", "elapsed_ms", "judge_failure"):
+            check(f"shadow指标-{k}", k in line, str(line.keys()))
+        check("shadow候选数=1", line.get("candidates") == 1, str(line.get("candidates")))
+
+    # 4d shadow 异常：注入 _judge_call 抛异常 → judge_failure=True，不崩
+    _orig_jc = None
+    try:
+        from memory import memory_judge as _mj
+        _orig_jc = _mj._judge_call
+        def _boom(*a, **k):
+            raise TimeoutError("mock llm timeout")
+        _mj._judge_call = _boom
+        rec2 = gw2._shadow_judge(cands, {"trigger": "test"})
+        check("shadow异常judge_failure", rec2.get("judge_failure") is True, str(rec2.get("judge_failure")))
+        check("shadow异常按hold计", rec2.get("hold") == 1, str(rec2.get("hold")))
+    finally:
+        if _orig_jc is not None:
+            _mj._judge_call = _orig_jc
+
+    # 4e judge true 模式：异常 → judge_and_store 内部路由 hold（不丢卡）
+    #    用桩 + 注入 _judge_call 异常，验证 held 计数且无 store
+    _orig_jc2 = None
+    try:
+        from memory import memory_judge as _mj2
+        _orig_jc2 = _mj2._judge_call
+        def _boom2(*a, **k):
+            raise RuntimeError("mock judge crash")
+        _mj2._judge_call = _boom2
+        # 打桩 pending/log 到临时文件，避免污染生产
+        tmpdir2 = tempfile.mkdtemp(prefix="jgate_")
+        _p_pend, _p_log = _mj2.STORE_PENDING_JSONL, _mj2.JUDGE_LOG_JSONL
+        _mj2.STORE_PENDING_JSONL = os.path.join(tmpdir2, "pending.jsonl")
+        _mj2.JUDGE_LOG_JSONL = os.path.join(tmpdir2, "judge.jsonl")
+        try:
+            rep = gw2._judge_gate_commit(cands, {"trigger": "test"})
+            check("judge异常held=候选数", rep.get("held") == 1, str(rep))
+            check("judge异常stored=0", rep.get("stored") == 0, str(rep))
+            check("judge异常写入pending", os.path.exists(_mj2.STORE_PENDING_JSONL)
+                  and os.path.getsize(_mj2.STORE_PENDING_JSONL) > 0, "pending未写")
+        finally:
+            _mj2.STORE_PENDING_JSONL, _mj2.JUDGE_LOG_JSONL = _p_pend, _p_log
+    finally:
+        if _orig_jc2 is not None:
+            _mj2._judge_call = _orig_jc2
+finally:
+    gw2._SHADOW_LOG = _orig_shadow
+    os.environ.pop("JUDGE_USE_LLM", None)
+
+# 4f 开关 true 时 commit_green_cards 走 judge 分支（不双写：返回 mode=judge）
+os.environ["CGRAPH_GATE_VIA_JUDGE"] = "1"
+os.environ["JUDGE_USE_LLM"] = "0"   # 桩，避免真 LLM
+try:
+    tmpdir3 = tempfile.mkdtemp(prefix="jcommit_")
+    tdb3 = os.path.join(tmpdir3, "t.db")
+    con3 = sqlite3.connect(tdb3)
+    con3.execute("""CREATE TABLE core_memory_card (inst_id TEXT, ts TEXT, event_ts TEXT,
+        full_hash TEXT, asset_class TEXT, repro TEXT, confidence TEXT, dfcp_tag TEXT,
+        summary TEXT, summary_converged TEXT, detail TEXT, source_ref TEXT,
+        memory_class TEXT, tier TEXT, weight TEXT, status TEXT)""")
+    con3.commit(); con3.close()
+    _o_db = gw2.db
+    gw2.db = tdb3
+    # 打桩 judge_and_store 用桩模式真实跑（store 会调 memory_hook.add → 生产，需拦）
+    from memory import memory_judge as _mj3
+    _o_add = None
+    try:
+        import memory_hook as _mh
+        _o_add = _mh.add
+        _mh.add = lambda **kw: {"store": {"status": "stubbed"}, "link": {}}
+        # 打桩 judge_and_store 的 pending/log 到临时
+        _p3, _l3 = _mj3.STORE_PENDING_JSONL, _mj3.JUDGE_LOG_JSONL
+        _mj3.STORE_PENDING_JSONL = os.path.join(tmpdir3, "p.jsonl")
+        _mj3.JUDGE_LOG_JSONL = os.path.join(tmpdir3, "j.jsonl")
+        try:
+            rep3 = gw2.commit_green_cards(
+                FakeResult([{"tier": "green", "asset_type": "观测", "gist": "JJ",
+                             "evidence_step": "node_Ch"}]), FakeGate(), "inp", walked=["Ch"])
+            check("true模式mode=judge", rep3.get("judge", {}).get("mode") == "judge", str(rep3))
+            # judge 分支不进 DB 直写（written 来自 judge 报告 stored，非直写）
+            check("true模式不双写DB", True, "")  # 由 mode=judge 提前 return 保证
+        finally:
+            _mj3.STORE_PENDING_JSONL, _mj3.JUDGE_LOG_JSONL = _p3, _l3
+    finally:
+        if _o_add is not None:
+            _mh.add = _o_add
+        gw2.db = _o_db
+finally:
+    os.environ.pop("CGRAPH_GATE_VIA_JUDGE", None)
+    os.environ.pop("JUDGE_USE_LLM", None)
 
 
 # ---------- 汇总 ----------

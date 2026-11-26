@@ -38,6 +38,11 @@ memory:
     flash: "flash_v3"
     knowledge: "knowledge_v3"
     chat: "chat_v3"
+  # 改造B（2026-11-26）：绿卡是否经五问 judge 入库。
+  #   false（默认）= shadow 双跑：原直写不变，额外跑一遍 judge 纯判定写对比日志（logs/cgraph_judge_shadow.jsonl）
+  #   true         = 绿卡须过五问 judge（store→落库/hold→pending/discard→日志，异常路由 hold 不丢）
+  # 环境变量 CGRAPH_GATE_VIA_JUDGE 覆盖本项。灰度切 true 前须跑够 shadow 样本、指标收敛。
+  cgraph_gate_via_judge: false
 
 router:
   # 三条保底骨架（发散/验证/总结），任何路由结果都会被并入

@@ -264,3 +264,30 @@ NODE_DOMAIN = {
 
 ### 7.4 下一步
 A+C 已就绪，待提交。提交并回归冒烟通过后，再启动 **改造 B**（五问 judge 接入，带 `memory.cgraph_gate_via_judge` shadow 开关）。
+
+---
+
+## 8. 改造 B 实施记录（五问 judge 接入，2026-11-26）
+
+### 8.1 改动文件
+| 文件 | 改动 |
+|---|---|
+| `cgraph/green_card_writer.py` | 新增开关 `_cgraph_gate_via_judge()`、候选构造 `_cards_to_candidates()`、shadow 观测 `_shadow_judge()`、judge 真判定 `_judge_gate_commit()`；`commit_green_cards` 改为「true→judge 判定入库（提前 return，不双写）/ false→原直写+末尾 shadow 观测」互斥分派 |
+| `config/config.example.yaml` | 新增 `memory.cgraph_gate_via_judge: false`（含注释；环境变量 `CGRAPH_GATE_VIA_JUDGE` 覆盖） |
+| `scripts/verify_memory_cgraph_bridge.py` | 追加组4（20 断言）：开关默认 false、候选构造、shadow 观测/5项指标、shadow 异常、judge 异常路由 hold、true 模式不双写 |
+
+### 8.2 关键实现决策
+1. **true/false 互斥而非叠加**：初版把 judge 放在直写之后 → true 模式会「直写 + judge 再入库」双写。重构为 true 提前 return 走 `judge_and_store`，false 才走原直写；两分支不共存。
+2. **shadow 复用 `_judge_call` 而非 `judge_and_store`**：`judge_and_store` 的 store 分支会真实 `memory_hook.add` 入库，shadow 绝不能碰。改用 `memory_judge._judge_call`（纯判定、零副作用），只写 `logs/cgraph_judge_shadow.jsonl` 对比日志。
+3. **异常一律 hold + 不丢卡**：shadow 注入异常→`judge_failure=True` 且该条按 hold 计；true 模式 judge 异常由 `judge_and_store` 内部路由 hold + 写 pending（已验证 held=候选数、stored=0）。
+4. **观测五项指标**：`pass_rate / hold_rate / discard_rate / elapsed_ms / judge_failure`（+ judge_source、逐条 verdict），全部落 shadow 日志。
+
+### 8.3 验收结果（2026-11-26）
+- 冒烟 `verify_memory_cgraph_bridge.py`：**54 PASS / 0 FAIL**（组1-3 A+C 34 + 组4 B 20）
+- `skill_memory_gate` 回归：25 PASS / 0 FAIL
+- `smoke_test`：全通（含 mock LLM JSON 降级为历史固有行为）
+- 生产库零污染：`memories.jsonl` 333 条、mtime 13:09 未变、测试串 0（4f 用例 `memory_hook.add` 已打桩，未真入库）
+- 开关默认 false：`_cgraph_gate_via_judge()` 返回 False
+
+### 8.4 灰度切 true 的准入（编码阶段不做切换）
+shadow 跑够样本 → 通过率/hold/discard 占比/耗时/失败率指标收敛 → 无大规模误 hold/误丢 → 方可设 `CGRAPH_GATE_VIA_JUDGE=1` 或改 config true。

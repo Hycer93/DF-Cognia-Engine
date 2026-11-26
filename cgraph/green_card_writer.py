@@ -187,6 +187,122 @@ def _make_source_ref(inst_id: str, session_id: str | None, day: str,
     return f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}"
 
 
+# ---- 改造B（2026-11-26 用户裁决）：五问 judge 接入（shadow 双跑 → 灰度） ----
+# 开关 memory.cgraph_gate_via_judge（环境变量 CGRAPH_GATE_VIA_JUDGE 覆盖）默认 false：
+#   false = shadow 双跑：原绿卡直写链路【完全不变】，额外并行跑一遍 judge 纯判定，
+#           只产出对比日志（不改变入库结果）。
+#   true  = judge 真判定：绿卡须过五问，store→落库 / hold→pending / discard→日志。
+# 硬约束：无论开关何值，judge 异常（超时/报错/畸形）一律路由 hold + 写 judge_log，
+#        【绝不丢弃绿卡原始产出】。绝不因开关 false 替换入库链路。
+# shadow 复用 memory_judge._judge_call（纯判定、零副作用），
+#        不调 judge_and_store（其 store 分支会真实 memory_hook.add 入库）。
+_SHADOW_LOG = os.path.join(_HERE, "logs", "cgraph_judge_shadow.jsonl")
+
+
+def _cgraph_gate_via_judge() -> bool:
+    """开关读取：环境变量优先（便于灰度/测试），否则读 config（缺省 false）。"""
+    env = os.environ.get("CGRAPH_GATE_VIA_JUDGE")
+    if env is not None:
+        return env.strip().lower() in ("1", "true", "yes", "on")
+    try:
+        import yaml
+        cfg_path = os.path.join(_HERE, "config", "config.yaml")
+        if not os.path.exists(cfg_path):
+            cfg_path = os.path.join(_HERE, "config", "config.example.yaml")
+        cfg = yaml.safe_load(open(cfg_path, encoding="utf-8")) or {}
+        return bool((cfg.get("memory") or {}).get("cgraph_gate_via_judge", False))
+    except Exception:
+        return False   # 任何读取失败 → 保守 false（不改变既有入库行为）
+
+
+def _cards_to_candidates(cards: list, tags_map: dict, day: str) -> list:
+    """绿档卡 → judge candidates 格式（供 _judge_call / judge_and_store 消费）。
+
+    tags_map: {card_index: tag_dict}（由 _derive_tag 产出的动态标签）。
+    与人工 add() 的候选字段对齐，五问可据此判 Q1-Q5。
+    """
+    cands = []
+    for i, x in enumerate(cards):
+        tag = tags_map.get(i, {})
+        cands.append({
+            "summary": x.get("gist", ""),
+            "detail": _green_detail(x),
+            "source": f"memory_gate; session {day}",
+            "event_ts": None,
+            "memory_class": None,
+            "domain": tag.get("domain", _FALLBACK_DOMAIN),
+            "behavior": tag.get("behavior", _FALLBACK_BEHAVIOR),
+            "relation": "P",
+            "confidence": tag.get("confidence", "L2"),
+            "asset_class": "runtime",
+            "repro": tag.get("repro", "situational"),
+        })
+    return cands
+
+
+def _shadow_judge(candidates: list, context: dict):
+    """shadow 双跑：跑一遍 judge 纯判定并落观测日志（零副作用，不入库）。
+
+    复用 memory_judge._judge_call（只判定，不 store/hold/discard 落任何库）。
+    异常统一记 judge_failure（等价 hold 观测），绝不影响主链路。
+    返回观测统计 dict（写 _SHADOW_LOG，不返回给调用方依赖）。
+    """
+    started = time.time()
+    now = time.strftime("%Y-%m-%dT%H:%M:%S")
+    verdicts, judge_fail, judge_source = {}, False, "n/a"
+    try:
+        from memory import memory_judge as _mj
+        verdicts = _mj._judge_call(candidates, context) or {}
+        judge_source = next(iter(verdicts.values()), {}).get("_source", "unknown") \
+            if verdicts else "unknown"
+    except Exception as e:
+        judge_fail = True
+        verdicts = {}
+
+    n = len(candidates)
+    cnt = {"store": 0, "hold": 0, "discard": 0}
+    for v in verdicts.values():
+        vd = v.get("verdict")
+        if vd in cnt:
+            cnt[vd] += 1
+    elapsed_ms = round((time.time() - started) * 1000, 1)
+    # 未判定的条目按 hold 观测（异常/无 verdict 都算 hold 口径）
+    judged = sum(cnt.values())
+    hold_obs = cnt["hold"] + (n - judged)
+    rec = {
+        "ts": now, "op": "shadow_judge", "context": context,
+        "candidates": n, "judged": judged,
+        "store": cnt["store"], "hold": hold_obs, "discard": cnt["discard"],
+        "pass_rate": round(cnt["store"] / n, 4) if n else 0.0,
+        "hold_rate": round(hold_obs / n, 4) if n else 0.0,
+        "discard_rate": round(cnt["discard"] / n, 4) if n else 0.0,
+        "elapsed_ms": elapsed_ms, "judge_source": judge_source,
+        "judge_failure": judge_fail,
+        "verdicts": [{"summary": (c.get("summary") or "")[:80],
+                      "verdict": verdicts.get(i, {}).get("verdict", "hold(no_verdict)"),
+                      "reasons": verdicts.get(i, {}).get("reasons")}
+                     for i, c in enumerate(candidates)],
+    }
+    try:
+        os.makedirs(os.path.dirname(_SHADOW_LOG), exist_ok=True)
+        with open(_SHADOW_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # 观测日志失败不影响主链路
+    return rec
+
+
+def _judge_gate_commit(candidates: list, context: dict):
+    """开关 true 时：绿卡经原版 judge_and_store 真判定（store/hold/discard）。
+
+    复用 memory_judge.judge_and_store 完整原版 LLM 五问逻辑（不实现规则桩）。
+    judge 异常在其内部已路由 hold + 写 judge_log，绝不丢弃。
+    返回 judge 报告 dict。
+    """
+    from memory import memory_judge as _mj
+    return _mj.judge_and_store(candidates, context)
+
+
 def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs):
     """2026-11-24 任务②：DB INSERT 成功后同步追加 memories.jsonl。
 
@@ -257,9 +373,29 @@ def commit_green_cards(result, gate, user_input: str,
     day = time.strftime("%Y-%m-%d")
     written, ids, errs = 0, [], []
     committed = []  # 本事务内成功插入的 (inst_id, summary, full_hash, card, tag)(供 jsonl 同步)
+    tags_map = {}   # {card_index: tag}（改造B：shadow/judge 复用动态标签）
     gate_conf = getattr(gate, "confidence", None)
     if not isinstance(gate_conf, (int, float)):
         gate_conf = (getattr(gate, "result", {}) or {}).get("confidence")
+
+    # ---- 改造B：预推导标签（两分支共用，纯函数无副作用）----
+    for ci, x in enumerate(cards):
+        tags_map[ci] = _derive_tag(x, repro_hints, gate_conf)
+
+    # ---- 开关 true：五问 judge 判定入库（替代下方直写，避免双写）----
+    # 复用原版 judge_and_store（store→落库/hold→pending/discard→日志，异常内部路由 hold）。
+    if _cgraph_gate_via_judge():
+        ctx = {"trigger": "cgraph_gate", "session_id": session_id or f"day:{day}"}
+        cands = _cards_to_candidates(cards, tags_map, day)
+        try:
+            rep = _judge_gate_commit(cands, ctx)
+        except Exception as e:  # judge_and_store 自身异常 → 兜底按 hold 计（其内部已防丢）
+            rep = {"error": f"{type(e).__name__}: {e}", "stored": 0,
+                   "held": len(cands), "discarded": 0, "judge_failures": len(cands)}
+        return {"written": rep.get("stored", 0), "skipped": [],
+                "judge": {"mode": "judge", "report": rep}}
+
+    # ---- 开关 false：原直写链路（下方行为与改前完全一致）+ 末尾 shadow 观测 ----
 
     try:
         con = sqlite3.connect(db, timeout=10)
@@ -288,7 +424,7 @@ def commit_green_cards(result, gate, user_input: str,
             nd = _extract_node(r[0]) or _extract_node(r[1])
             if nd:
                 existing_nodes.add((day, nd))
-        for x in cards:
+        for ci, x in enumerate(cards):
             s = f"[{x['asset_type']}] {x['gist']}(evidence: {x['evidence_step']})"
             fh = hashlib.sha256((s + "\x1f" + user_input).encode()).hexdigest()
             if con.execute("SELECT 1 FROM core_memory_card WHERE full_hash=?",
@@ -305,11 +441,12 @@ def commit_green_cards(result, gate, user_input: str,
                 continue
             inst = _uuid.uuid4().hex
             # 改造A：动态推导标签（失败回落+审计，绝不阻断落卡）
-            tag = _derive_tag(x, repro_hints, gate_conf)
+            tag = tags_map[ci]
             for fb in tag["_fallbacks"]:
                 _log_tag_fallback({"inst_id": inst, "fallback": fb,
                                    "evidence_step": x.get("evidence_step", ""),
                                    "gist": x.get("gist", "")[:60]})
+            tags_map[ci] = tag   # 改造B：保留动态标签供 shadow/judge 复用
             src_ref = _make_source_ref(inst, session_id, day, user_input)
             con.execute(
                 "INSERT INTO core_memory_card (inst_id, ts, event_ts, full_hash, "
@@ -360,4 +497,20 @@ def commit_green_cards(result, gate, user_input: str,
               file=sys.stderr)
     if written:
         print(f"[memory_gate] 绿档落库 {written} 张: {ids}")
-    return {"written": written, "skipped": errs}
+
+    # ---- 改造B：shadow 双跑观测（开关 false 专属；true 已在函数开头 return）----
+    # 硬约束：此处只旁路跑 judge 纯判定写对比日志，原入库链路（上方 DB/jsonl）已完整执行，零改动。
+    judge_obs = None
+    try:
+        ctx = {"trigger": "cgraph_gate", "session_id": session_id or f"day:{day}"}
+        cands = _cards_to_candidates(cards, tags_map, day)
+        judge_obs = {"mode": "shadow", "report": _shadow_judge(cands, ctx)}
+    except Exception as e:
+        # 观测失败绝不阻断已完成的入库
+        judge_obs = {"mode": "error", "error": f"{type(e).__name__}: {e}"}
+        print(f"[memory_gate] shadow 观测异常(不阻断入库): {type(e).__name__}", file=sys.stderr)
+
+    out = {"written": written, "skipped": errs}
+    if judge_obs is not None:
+        out["judge"] = judge_obs
+    return out
