@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import time
@@ -97,7 +98,7 @@ class ChainExecutor:
         # 技能零DB写(段二C案): 本体只产 gate_list 分档清单; 绿档落库走
         # commit_green_cards() 机械执行(段六b案: 独立审计行 memory_commit:green);
         # 黄档入人闸提示; 红档仅会话内标记(段七a案)。降级只告警不炸主链路(段四a案)。
-        self._gate_and_commit(user_input, node_outputs, walked)
+        self._gate_and_commit(user_input, node_outputs, walked, repro_hints)
 
         return WalkResult(user_input=user_input, final_answer=final,
                           path=walked, planned_path=decision.path,
@@ -212,14 +213,18 @@ class ChainExecutor:
         trace.append({"code": "SUMMARY", "resp_chars": len(final), "ms": ms})
         return final
 
-    def _gate_and_commit(self, user_input, node_outputs, walked):
+    def _gate_and_commit(self, user_input, node_outputs, walked, repro_hints=None):
         """记忆写入闸门 + 绿档落库(P2-2: run/run_atomic 共用收尾, 消除重复)。
 
-        契约⑤ 段一B案: 技能零DB写, 绿档落库由本方法机械执行。返回 gate_result。"""
+        契约⑤ 段一B案: 技能零DB写, 绿档落库由本方法机械执行。返回 gate_result。
+        改造A/C(2026-11-26): 透传 walked + repro_hints, 让 writer 推导真实标签(不再写死);
+        session_id 由环境变量 DF_SESSION_ID 提供(executor 侧无会话上下文), 缺省退化旧文本锚。"""
         gate_result = self._run_memory_gate(user_input, node_outputs, walked)
         if gate_result is not None:
             result, gate = gate_result
-            commit_green_cards(result, gate, user_input)
+            commit_green_cards(result, gate, user_input,
+                               walked=walked, repro_hints=repro_hints or {},
+                               session_id=os.environ.get("DF_SESSION_ID") or None)
         return gate_result
 
     # ---------- 记忆写入闸门(段一B案后置钩子) ----------

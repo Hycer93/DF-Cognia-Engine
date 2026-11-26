@@ -843,8 +843,31 @@ def cross_view(domain_prefix: str = None, behavior: str = None):
 # fetch_full/fetch_by_ref 补上这一跳：地址解析 + superseded 拦截 + 内容一致性校验。
 
 def _parse_source_ref(ref: str) -> str | None:
-    """sqlite:corpus_store.db#<树地址>(注释…) → 树地址；非库地址返回 None。"""
-    if not ref or not ref.startswith("sqlite:corpus_store") or "#" not in ref:
+    """sqlite:corpus_store.db#<树地址>(注释…) → 树地址；非库地址返回 None。
+
+    2026-11-26 扩展（改造C，用户裁决）：新增指针格式 `session:<id>#card:<inst>`。
+      优先识别新指针 → 返回对应 raw_corpus 树地址（session:<id> 通过 list_dialog 反查）。
+      新指针解析失败/无匹配 → 降级旧文本模式（返回 None，调用方走旧文本匹配）。
+      存量 `sqlite:corpus_store.db#...` 格式维持原逻辑不变。
+    """
+    if not ref:
+        return None
+    # --- 新指针格式：session:<id>#card:<inst> ---
+    if ref.startswith("session:") and "#card:" in ref:
+        sess = ref[len("session:"):].split("#card:", 1)[0].strip()
+        if not sess:
+            return None
+        try:
+            # 该 session 最近的 session_dialog 段（title=session 标识），取最新一条
+            from corpus_store import list_dialog
+            rows = list_dialog(session_id=sess)
+            if rows:
+                return rows[0].get("id")
+        except Exception:
+            pass
+        return None
+    # --- 存量库地址格式 ---
+    if not ref.startswith("sqlite:corpus_store") or "#" not in ref:
         return None
     node = ref.split("#", 1)[1]
     return node.split("(")[0].split(" ")[0].strip()

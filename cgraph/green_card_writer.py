@@ -12,6 +12,7 @@ DB 路径同源硬约束（原 R17 回归锚，2026-11-18 round5 自举审计）
 """
 import hashlib
 import json
+import os
 import re
 import sqlite3
 import time
@@ -20,6 +21,34 @@ import sys
 
 # 同源绝对路径（R17 锚点：AUDIT_DB as db）
 from cgraph.atomic_skill import AUDIT_DB as db
+
+# ---- 改造A（2026-11-26 用户裁决）：green 卡标签动态化 ----
+# 节点码 → domain 映射。14 项全部过 memory.schema.validate_domain()（2026-11-26 核验）。
+# Bc 归 005-006（方案攻防与专利评审）——它是最弱环节/风险校验节点，不属通用元思域。
+NODE_DOMAIN = {
+    "Aa": "005-004",  # 任务空间扫描   → 认知科学-元思域
+    "Bb": "005-004",  # 信息源头意图   → 认知科学-元思域
+    "Bc": "005-006",  # 最弱环节定律   → 认知科学-方案攻防与专利评审
+    "Cf": "005-004",  # 三步认知法     → 认知科学-元思域
+    "Cg": "004-002",  # 利益者全景图   → 组织行为学-跨部门沟通
+    "Ch": "005-001",  # 多维状态机校验 → 认知科学-设计裁决
+    "Di": "005-004",  # 第一因溯源链   → 认知科学-元思域
+    "Dj": "005-002",  # 逆向第一因     → 认知科学-用户洞察
+    "Dk": "005-008",  # 直觉可验证锚定 → 认知科学-自我锚定与利害结算
+    "Eo": "005-004",  # 上下文等价性   → 认知科学-元思域
+    "Fp": "005-006",  # 动态风险量化   → 认知科学-方案攻防与专利评审
+    "Fq": "005-001",  # 周期性出清     → 认知科学-设计裁决
+    "Ht": "005-001",  # 决策整合       → 认知科学-设计裁决
+    "Jw": "005-003",  # 经验进化闭环   → 认知科学-记忆自我管理
+}
+# 未知节点/解析失败回落（与原写死值一致，宁用旧默认不漏卡）
+_FALLBACK_DOMAIN = "001-003"
+_FALLBACK_BEHAVIOR = "Ht"
+# 确定性聚合节点（有 Python 公式，可重算出同一结论）→ derived；其余 → situational
+DERIVED_NODES = {"Bc", "Ch", "Ht", "Fp", "Fq"}
+# 标签回落审计日志（不阻断落卡，仅可追溯）
+_HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_TAG_FALLBACK_LOG = os.path.join(_HERE, "logs", "green_card_tag_fallback.jsonl")
 
 
 def _jaccard(a: str, b: str) -> float:
@@ -65,6 +94,99 @@ def _green_detail(x: dict) -> str:
     return body[:400]
 
 
+# ---- 改造A（2026-11-26）：标签动态化——由真实路径推导 dfcp_tag/repro，替代写死 ----
+
+def _node_code(evidence_step: str, detail: str = "") -> str | None:
+    """从 evidence_step(形如 'node_Ch') 或 detail 提取真实节点码；取不到返回 None。"""
+    for text in (evidence_step, detail):
+        nd = _extract_node(text or "")          # 复用既有 node_[A-Za-z0-9]+ 提取
+        if nd:
+            return nd[len("node_"):] if nd.startswith("node_") else nd
+    return None
+
+
+def _log_tag_fallback(payload: dict):
+    """标签回落审计（不阻断落卡，尽力而为）。"""
+    try:
+        os.makedirs(os.path.dirname(_TAG_FALLBACK_LOG), exist_ok=True)
+        with open(_TAG_FALLBACK_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                                **payload}, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # 审计失败不影响落卡
+
+
+def _derive_tag(card: dict, repro_hints: dict | None = None,
+                gate_confidence: float | None = None) -> dict:
+    """由绿档卡真实来源推导 dfcp_tag / confidence / repro（改造A）。
+
+    推导口径（对应设计文档 §2 改造A）：
+      behavior : node_Ch 前缀剥离 → Ch；解析失败回落 behavior="Ht" + 审计日志，绝不阻断落卡
+      domain   : 按节点码查 NODE_DOMAIN；未知 → _FALLBACK_DOMAIN + 审计
+      confidence: green 卡 L2 起步；gate_confidence≥0.7 且 repro=derived → 升 L3
+      repro    : 优先 repro_hints[node]["repro_hint"]；缺则 derived 节点→derived，其余→situational
+      relation : 默认 "P"（本轮不改 relation 语义）
+    返回 {domain, behavior, relation, confidence, repro, repro_source, _fallbacks: [...]}。
+    任何字段推导失败都回落默认值并记 _fallbacks，调用方保证落卡不被阻断。
+    """
+    repro_hints = repro_hints or {}
+    fallbacks = []
+
+    node = _node_code(card.get("evidence_step", ""), card.get("gist", ""))
+    if node:
+        behavior = node
+        node_resolved = True
+    else:
+        behavior = _FALLBACK_BEHAVIOR
+        node_resolved = False
+        fallbacks.append("behavior:no_node_code")
+
+    domain = NODE_DOMAIN.get(behavior)
+    if not domain:
+        domain = _FALLBACK_DOMAIN
+        fallbacks.append(f"domain:unknown_node_{behavior}")
+
+    # repro：节点自报 hint 优先（试点 repro_hints），否则按节点类型推导。
+    # 关键：若节点码未解析（fallback 到 Ht），不得沿 Ht 的 derived 属性——
+    # 来源未知的弱卡不能声称"可确定性重算"，保守回落 situational（与原写死口径一致）。
+    hint = (repro_hints.get(behavior) or {}).get("repro_hint")
+    if not node_resolved:
+        repro = "situational"
+        repro_source = "fallback"
+    elif hint in ("derived", "situational", "flash"):
+        repro = hint
+        repro_source = "node_hint"
+    elif behavior in DERIVED_NODES:
+        repro = "derived"
+        repro_source = "node_type"
+    else:
+        repro = "situational"
+        repro_source = "node_type"
+
+    confidence = "L2"
+    if repro == "derived" and isinstance(gate_confidence, (int, float)) and gate_confidence >= 0.7:
+        confidence = "L3"
+
+    return {
+        "domain": domain, "behavior": behavior, "relation": "P",
+        "confidence": confidence, "repro": repro,
+        "repro_source": repro_source, "_fallbacks": fallbacks,
+    }
+
+
+def _make_source_ref(inst_id: str, session_id: str | None, day: str,
+                     user_input: str) -> str:
+    """构造可解析的 source_ref（改造C，2026-11-26 用户裁决）。
+
+    新格式: session:<session_id>#card:<inst_id>  —— 可被 _parse_source_ref 解析回原文
+    退化:   无 session_id（executor 侧本就拿不到）→ 保留旧文本形态，不破坏既有溯源。
+    """
+    if session_id:
+        return f"session:{session_id}#card:{inst_id}"
+    # 退化：无 session 上下文，沿用旧文本锚（解析器降级旧文本模式已兼容）
+    return f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}"
+
+
 def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs):
     """2026-11-24 任务②：DB INSERT 成功后同步追加 memories.jsonl。
 
@@ -80,23 +202,25 @@ def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs
     except Exception as e:  # import 失败不阻断主流程(DB 已落库)
         errs.append(f"jsonl_import_fail:{type(e).__name__}")
         return
-    for inst, summary, fh, x in committed:
+    for inst, summary, fh, x, tag, src_ref in committed:
         entry = {
             "inst_id": inst,
             "ts": ts,
             "event_ts": ts,
             "full_hash": fh,
             "asset_class": "runtime",
-            "repro": "situational",
-            "confidence": "L2",
-            "dfcp_tag": {"domain": "001-003", "behavior": "Ht",
-                         "relation": "P", "memory_class": None},
+            "repro": tag["repro"],
+            "confidence": tag["confidence"],
+            "dfcp_tag": {"domain": tag["domain"], "behavior": tag["behavior"],
+                         "relation": tag["relation"], "memory_class": None,
+                         "repro_source": tag.get("repro_source"),
+                         **({"derived_only": True} if tag["repro"] == "derived" else {})},
             "memory_class": None,
             "affect_tags": None,
             "summary": summary[:120],
             "summary_converged": "0",
             "detail": _green_detail(x),
-            "source_ref": f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
+            "source_ref": src_ref,
             "origin_ids": None,
             "entity_id": None,
             "derived_from": None,
@@ -113,18 +237,29 @@ def _sync_committed_to_jsonl(committed, ts: str, day: str, user_input: str, errs
             errs.append(f"jsonl_write_fail:{type(e).__name__}")
 
 
-def commit_green_cards(result, gate, user_input: str):
+def commit_green_cards(result, gate, user_input: str,
+                       walked: list | None = None,
+                       repro_hints: dict | None = None,
+                       session_id: str | None = None):
     """绿档落库 writer(段二C案: 编排层机械执行, 技能外)。
     仅写绿档条目(asset_type ∈ 观测/测试结果/踩坑), 逐卡 full_hash 去重防重
     (段七红线5幂等), raw 回链锚=本会话 user_input+日期窗口(0f2f4458 硬约束)。
-    段六b案: 成败一律落独立审计行 op=memory_commit:green。"""
+    段六b案: 成败一律落独立审计行 op=memory_commit:green
+
+    改造A/C（2026-11-26 用户裁决）：
+      walked/repro_hints → 驱动 _derive_tag 推导真实标签（不再写死 Ht/L2/situational）。
+      session_id → 构造可解析 source_ref（session:<id>#card:<inst>）；无则退化旧文本锚。
+      所有推导失败均回落 + 审计，绝不阻断落卡。"""
     cards = [x for x in (result.result.get("gate_list") or []) if x["tier"] == "green"]
     if not cards or result.result.get("_degraded"):
         return {"written": 0, "skipped": len(cards)}
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
     day = time.strftime("%Y-%m-%d")
     written, ids, errs = 0, [], []
-    committed = []  # 本事务内成功插入的 (inst_id, summary, full_hash, card)(供 jsonl 同步)
+    committed = []  # 本事务内成功插入的 (inst_id, summary, full_hash, card, tag)(供 jsonl 同步)
+    gate_conf = getattr(gate, "confidence", None)
+    if not isinstance(gate_conf, (int, float)):
+        gate_conf = (getattr(gate, "result", {}) or {}).get("confidence")
 
     try:
         con = sqlite3.connect(db, timeout=10)
@@ -169,23 +304,31 @@ def commit_green_cards(result, gate, user_input: str):
                 errs.append(f"nodedup:{x['gist'][:20]}")
                 continue
             inst = _uuid.uuid4().hex
+            # 改造A：动态推导标签（失败回落+审计，绝不阻断落卡）
+            tag = _derive_tag(x, repro_hints, gate_conf)
+            for fb in tag["_fallbacks"]:
+                _log_tag_fallback({"inst_id": inst, "fallback": fb,
+                                   "evidence_step": x.get("evidence_step", ""),
+                                   "gist": x.get("gist", "")[:60]})
+            src_ref = _make_source_ref(inst, session_id, day, user_input)
             con.execute(
                 "INSERT INTO core_memory_card (inst_id, ts, event_ts, full_hash, "
                 "asset_class, repro, confidence, dfcp_tag, summary, summary_converged, "
                 "detail, source_ref, memory_class, tier, weight, status) "
                 "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (inst, ts, ts, fh, "runtime", "situational", "L2",
-                 json.dumps({"domain": "001-003", "behavior": "Ht", "relation": "P",
-                             "memory_class": None}, ensure_ascii=False),
+                (inst, ts, ts, fh, "runtime", tag["repro"], tag["confidence"],
+                 json.dumps({"domain": tag["domain"], "behavior": tag["behavior"],
+                             "relation": tag["relation"], "memory_class": None},
+                            ensure_ascii=False),
                  s[:120], "0",
                  _green_detail(x),
-                 f"memory_gate; raw锚: session {day}; user_input={user_input[:60]}",
+                 src_ref,
                  None, "active", '{"match": 0.0, "cited": 0}', "active"))
             ids.append(inst[:16])
             nd2 = _extract_node(x.get("evidence_step", "")) or _extract_node(s)
             if nd2:
                 existing_nodes.add((day, nd2))  # 本事务内也加入, 防同批多卡同node
-            committed.append((inst, s, fh, x))
+            committed.append((inst, s, fh, x, tag, src_ref))
             written += 1
         con.commit()
         con.close()
