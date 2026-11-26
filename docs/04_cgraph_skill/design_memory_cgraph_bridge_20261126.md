@@ -291,3 +291,33 @@ A+C 已就绪，待提交。提交并回归冒烟通过后，再启动 **改造 
 
 ### 8.4 灰度切 true 的准入（编码阶段不做切换）
 shadow 跑够样本 → 通过率/hold/discard 占比/耗时/失败率指标收敛 → 无大规模误 hold/误丢 → 方可设 `CGRAPH_GATE_VIA_JUDGE=1` 或改 config true。
+
+---
+
+## 9. Shadow 观测台账（改造B 灰度前必读）
+
+### 9.1 观测工具
+`scripts/analyze_cgraph_judge_shadow.py`（只读）：汇总 `logs/cgraph_judge_shadow.jsonl`，
+输出五项指标均值/中位/极值 + 单卡裁决分布 + judge_source 分布 + 自动告警。
+
+### 9.2 采集纪律（样本真实性）
+- 采集 shadow 样本时**必须 `JUDGE_USE_LLM=1`**（默认即 1），剔除 stub 样本。
+  stub（`JUDGE_USE_LLM=0`）的延迟、裁决分布全部失真，不能作为切 true 依据。
+- 脚本会统计 `judge_source` 分布并告警 stub 占比，据此判断样本是否可用于评估。
+
+### 9.3 ⚠️ 已知长尾风险（2026-11-26 实测，必须记入台账）
+- **实测**：首轮 shadow 真调 LLM，单次 judge `elapsed_ms = 378370`（**约 378 秒**）。
+- **风险定性**：judge 是同步调用，若切 true 后落在元核思维收尾主链，将严重阻塞主思维链。
+- **切 true 的前置硬约束（二者至少其一）**：
+  1. 给 judge 单独加**超时熔断 + 兜底 hold**（超时即路由 hold，不阻塞主链判死）；
+  2. 或改为**异步 judge 链路**（judge 脱离主思维链同步路径，后台判定后再落库/pending）。
+- **结论**：长尾未解决前，**禁止同步切 true**；此风险为灰度准入的否决项之一。
+
+### 9.4 重点盯的两项指标
+1. **`elapsed_ms.max`（长尾延迟）**：脚本直接展示 max；378s 级别不可接受为同步路径。
+2. **discard 理由分布**：区分「合理 discard」（如空 summary/占位卡无新认知）与「误 discard」。
+   需逐条看 verdicts[].reasons，不能只看 discard_rate 总量。
+
+### 9.5 当前状态
+- 开关 `memory.cgraph_gate_via_judge = false`（shadow 模式），保持不动。
+- 尚未切 true；切 true 需：样本充分（真实 LLM）→ 五项指标收敛 → 无大范围误 hold/误丢 → 长尾熔断/异步方案就位。
