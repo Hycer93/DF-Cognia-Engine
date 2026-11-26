@@ -1,7 +1,7 @@
 {
   "name": "cognitive-thinking-nodes",
   "version": "0.1.0",
-  "description": "认知引擎思维节点 FC 原型：把 13 个高频思维节点（Aa/Bb/Cf/Cg/Ch/Di/Dj/Dk/Eo/Fp/Fq/Ht/Jw）各自暴露为独立 MCP 工具，供主 AI 通过 function calling 触发。返回该节点的固定思维框架（零额外 LLM），由主 AI 据此推理并产出 analysis + repro 可复现性判定。",
+  "description": "认知引擎思维节点 FC 原型：把 14 个高频思维节点（Aa/Bb/Bc/Cf/Cg/Ch/Di/Dj/Dk/Eo/Fp/Fq/Ht/Jw）各自暴露为独立 MCP 工具，供主 AI 通过 function calling 触发。返回该节点固定思维框架（零额外 LLM），其中 5 个量化节点（Bc/Ch/Ht/Fp/Fq）支持传入 scores 做确定性数值聚合。由主 AI 据此推理并产出 analysis + repro 可复现性判定。",
   "author": {
     "name": "cognitive_engine_v3"
   },
